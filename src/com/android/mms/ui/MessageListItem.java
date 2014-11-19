@@ -72,6 +72,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Checkable;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -95,6 +96,7 @@ import com.android.mms.transaction.Transaction;
 import com.android.mms.transaction.TransactionBundle;
 import com.android.mms.transaction.TransactionService;
 import com.android.mms.ui.WwwContextMenuActivity;
+import com.android.mms.ui.zoom.ZoomMessageListItem;
 import com.android.mms.util.DownloadManager;
 import com.android.mms.util.ItemLoadedCallback;
 import com.android.mms.util.MaterialColorMapUtils;
@@ -118,7 +120,7 @@ import com.suntek.rcs.ui.common.PropertyNode;
 /**
  * This class provides view of a message in the messages list.
  */
-public class MessageListItem extends LinearLayout implements
+public class MessageListItem extends ZoomMessageListItem implements
         SlideViewInterface, OnClickListener, Checkable {
     public static final String EXTRA_URLS = "com.android.mms.ExtraUrls";
 
@@ -243,6 +245,12 @@ public class MessageListItem extends LinearLayout implements
         mChecked = (CheckBox) findViewById(R.id.selected_check);
         mNameView = (TextView) findViewById(R.id.name_view);
         mAvatar.setOverlay(null);
+
+        // Add the views to be managed by the zoom control
+        addZoomableTextView(mBodyTopTextView);
+        addZoomableTextView(mBodyButtomTextView);
+        addZoomableTextView(mDateView);
+        addZoomableTextView(mSimMessageAddress);
     }
 
     // add for setting the background according to whether the item is selected
