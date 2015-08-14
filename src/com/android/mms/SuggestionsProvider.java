@@ -108,6 +108,8 @@ public class SuggestionsProvider extends android.content.ContentProvider {
             }
         }
 
+        public void setExtras(Bundle extras) { }
+
         public int getCount() {
             return mRows.size();
         }

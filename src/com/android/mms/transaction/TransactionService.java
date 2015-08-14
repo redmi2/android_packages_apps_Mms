@@ -143,7 +143,6 @@ public class TransactionService extends Service implements Observer {
     public static final String STATE_URI = "uri";
 
     private static final int EVENT_TRANSACTION_REQUEST = 1;
-    private static final int EVENT_CONTINUE_MMS_CONNECTIVITY = 3;
     private static final int EVENT_HANDLE_NEXT_PENDING_TRANSACTION = 4;
     private static final int EVENT_NEW_INTENT = 5;
     private static final int EVENT_MMS_PDP_ACTIVATION_TIMEOUT = 6;
@@ -154,9 +153,6 @@ public class TransactionService extends Service implements Observer {
     private static final int TOAST_NO_APN = 3;
     private static final int TOAST_NONE = -1;
 
-    // How often to extend the use of the MMS APN while a transaction
-    // is still being processed.
-    private static final int APN_EXTENSION_WAIT = 30 * 1000;
     private static final int PDP_ACTIVATION_TIMEOUT = 60 * 1000;
 
     private ServiceHandler mServiceHandler;
@@ -167,12 +163,16 @@ public class TransactionService extends Service implements Observer {
 
     private PowerManager.WakeLock mWakeLock;
 
-    private ConnectivityManager.NetworkCallback mMmsNetworkCallback = null;
-    private NetworkRequest mMmsNetworkRequest = null;
+    private ConnectivityManager.NetworkCallback[] mMmsNetworkCallback = null;
+    private NetworkRequest[] mMmsNetworkRequest = null;
 
+    private boolean[] mIsAvailable = null;
+    private TelephonyManager mTelephonyManager = null;
+    private int mPhoneCount;
 
     private ConnectivityManager.NetworkCallback  getNetworkCallback(String subId) {
         final String mSubId = subId;
+        final int mPhoneId = SubscriptionManager.getPhoneId(Integer.parseInt(mSubId));
 
         return new ConnectivityManager.NetworkCallback() {
             @Override
@@ -181,7 +181,8 @@ public class TransactionService extends Service implements Observer {
             }
             @Override
             public void onAvailable(Network network) {
-                Log.d(TAG, "sub:" + mSubId + "NetworkCallback.onAvailable: network=" + network);
+                mIsAvailable[mPhoneId] = true;
+                Log.d(TAG, "sub:" + mSubId + "NetworkCallback.onAvailable: network=" + network + " mIsAvailable=" + mIsAvailable[mPhoneId]);
                 mServiceHandler.removeMessages(EVENT_MMS_PDP_ACTIVATION_TIMEOUT);
                 onMmsPdpConnected(mSubId, network);
 
@@ -193,7 +194,8 @@ public class TransactionService extends Service implements Observer {
             }
             @Override
             public void onLost(Network network) {
-                Log.d(TAG, "sub:" + mSubId + "NetworkCallback.onLost: network=" + network);
+                mIsAvailable[mPhoneId] = false;
+                Log.d(TAG, "sub:" + mSubId + "NetworkCallback.onLost: network=" + network + " mIsAvailable=" + mIsAvailable[mPhoneId]);
             }
             @Override
             public void onUnavailable() {
@@ -231,20 +233,19 @@ public class TransactionService extends Service implements Observer {
                     Log.v(TAG, "   reason is " + Phone.REASON_VOICE_CALL_ENDED +
                             ", retrying mms connectivity");
                 }
-                renewMmsConnectivity();
                 return;
             }
 
             if (mmsNetworkInfo.isConnected()) {
                 TransactionSettings settings = new TransactionSettings(
                         TransactionService.this, mmsNetworkInfo.getExtraInfo(),
-                        Long.parseLong(subId));
+                        Integer.parseInt(subId));
                 // If this APN doesn't have an MMSC, mark everything as failed and bail.
                 if (TextUtils.isEmpty(settings.getMmscUrl())) {
                     Log.v(TAG, "   empty MMSC url, bail");
                     mToastHandler.sendEmptyMessage(TOAST_NO_APN);
                     mServiceHandler.markAllPendingTransactionsAsFailed();
-                    endMmsConnectivity();
+                    endMmsConnectivity(Integer.parseInt(subId));
                     return;
                 }
                 mServiceHandler.processPendingTransaction(null, settings);
@@ -258,7 +259,6 @@ public class TransactionService extends Service implements Observer {
                     if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
                         Log.v(TAG, "   retrying mms connectivity for it's available");
                     }
-                    renewMmsConnectivity();
                 }
             }
 
@@ -301,6 +301,16 @@ public class TransactionService extends Service implements Observer {
         if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
             Log.v(TAG, "Creating TransactionService");
         }
+
+        TelephonyManager mTelephonyManager = (TelephonyManager)getApplicationContext()
+                .getSystemService(Context.TELEPHONY_SERVICE);
+        if (mTelephonyManager != null) {
+            mPhoneCount = mTelephonyManager.getPhoneCount();
+        }
+
+        mMmsNetworkRequest = new NetworkRequest[mPhoneCount];
+        mMmsNetworkCallback = new ConnectivityManager.NetworkCallback[mPhoneCount];
+        mIsAvailable = new boolean[mPhoneCount];
 
         // Start up the thread running the service.  Note that we create a
         // separate thread because the service normally runs in the process's
@@ -377,18 +387,6 @@ public class TransactionService extends Service implements Observer {
         TelephonyManager telephonyManager = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
         flag = (telephonyManager != null
                 && (telephonyManager.getNetworkType() == TelephonyManager.NETWORK_TYPE_IWLAN));
-        return flag;
-    }
-
-    private boolean isMmsDataConnectivityPossible(long subId) {
-        boolean flag = false;
-        TelephonyManager telephonyManager = (TelephonyManager)getApplicationContext()
-                .getSystemService(Context.TELEPHONY_SERVICE);
-        if (telephonyManager != null) {
-            flag = telephonyManager.isDataPossibleForSubscription((int)subId,
-                    PhoneConstants.APN_TYPE_MMS);
-        }
-        Log.d(TAG, "isMmsDataConnectivityPossible = " + flag + "subId = " + subId);
         return flag;
     }
 
@@ -519,7 +517,7 @@ public class TransactionService extends Service implements Observer {
                                 Log.d(TAG, "destination Sub Id = " + subId[0]);
                                 if (subId[0] < 0) {
                                     Log.d(TAG, "Subscriptions are not yet ready.");
-                                    long defSmsSubId = getDefaultSmsSubId();
+                                    int defSmsSubId = getDefaultSmsSubId();
                                     // We dont have enough info about subId. We dont know if the
                                     // phoneId as persent in DB actually would match the subId of
                                     // defaultSmsSubId. We can not also ignore this transaction
@@ -532,7 +530,7 @@ public class TransactionService extends Service implements Observer {
                                     subId[0] = (int) defSmsSubId;
                                 }
 
-                                if (!isMmsDataConnectivityPossible(subId[0]) || !isMmsAllowed()) {
+                                if (!isMmsAllowed()) {
                                     Log.d(TAG, "mobileData off or no mms apn or APM, Abort");
                                     if (transactionType == Transaction.RETRIEVE_TRANSACTION) {
                                         downloadManager.markState(uri,
@@ -580,12 +578,12 @@ public class TransactionService extends Service implements Observer {
 
             Log.d(TAG, "destination Sub Id = " + subId[0]);
             if (subId[0] < 0) {
-               long defSmsSubId = getDefaultSmsSubId();
+                int defSmsSubId = getDefaultSmsSubId();
                 Log.d(TAG, "Override with default Sms subId = " + defSmsSubId);
                 subId[0] = (int)defSmsSubId;
             }
 
-            if (!isMmsDataConnectivityPossible(subId[0]) || !isMmsAllowed()) {
+            if (!isMmsAllowed()) {
                 Log.d(TAG, "Either mobile data is off or apn not present, Abort");
 
                 downloadManager.markState(uri, DownloadManager.STATE_SKIP_RETRYING);
@@ -593,14 +591,14 @@ public class TransactionService extends Service implements Observer {
             }
 
             Bundle bundle = intent.getExtras();
-            bundle.putLong(PhoneConstants.SUBSCRIPTION_KEY, subId[0]);
+            bundle.putInt(PhoneConstants.SUBSCRIPTION_KEY, subId[0]);
             // For launching NotificationTransaction and test purpose.
             TransactionBundle args = new TransactionBundle(bundle);
             launchTransaction(serviceId, args, noNetwork);
         }
     }
 
-    private long getDefaultSmsSubId() {
+    private int getDefaultSmsSubId() {
         return SubscriptionManager.getDefaultSmsSubId();
     }
 
@@ -697,8 +695,6 @@ public class TransactionService extends Service implements Observer {
             Log.v(TAG, "update transaction " + serviceId);
         }
 
-       releaseNetworkRequest();
-
         try {
             synchronized (mProcessing) {
                 mProcessing.remove(transaction);
@@ -715,7 +711,7 @@ public class TransactionService extends Service implements Observer {
                     if (nextTxn.getSubId() != transaction.getSubId()) {
                         Log.d(TAG, "update: Next pending txn is on different sub. "
                                 + "Finish for current sub.");
-                        endMmsConnectivity();
+                        endMmsConnectivity(transaction.getSubId());
                     }
 
                     Message msg = mServiceHandler.obtainMessage(
@@ -727,7 +723,7 @@ public class TransactionService extends Service implements Observer {
                     if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
                         Log.v(TAG, "update: endMmsConnectivity");
                     }
-                    endMmsConnectivity();
+                    endMmsConnectivity(transaction.getSubId());
                 } else {
                     if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
                         Log.v(TAG, "update: mProcessing is not empty");
@@ -821,71 +817,57 @@ public class TransactionService extends Service implements Observer {
     /* MMS app initiates one transaction at a time. Next transaction is started only on the
        completion(success/failure) of previous one.
     */
-    protected int beginMmsConnectivity(String subId) throws IOException {
+    protected void beginMmsConnectivity(int subId) throws IOException {
         if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
             Log.v(TAG, "beginMmsConnectivity for subId = " + subId);
         }
         // Take a wake lock so we don't fall asleep before the message is downloaded.
         createWakeLock();
 
-        int result = mConnMgr.startUsingNetworkFeatureForSubscription(
-                ConnectivityManager.TYPE_MOBILE, Phone.FEATURE_ENABLE_MMS, subId);
+        int phoneId = SubscriptionManager.getPhoneId(subId);
 
-        if (mMmsNetworkRequest == null) {
-            mMmsNetworkRequest = buildNetworkRequest(subId);
-            mMmsNetworkCallback = getNetworkCallback(subId);
-
-            mConnMgr.registerNetworkCallback(mMmsNetworkRequest, mMmsNetworkCallback);
+        if (mMmsNetworkRequest[phoneId] == null) {
+            mMmsNetworkRequest[phoneId] = buildNetworkRequest(Integer.toString(subId));
+            mMmsNetworkCallback[phoneId]  = getNetworkCallback(Integer.toString(subId));
+            mConnMgr.requestNetwork(mMmsNetworkRequest[phoneId], mMmsNetworkCallback[phoneId]);
+            if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
+                Log.v(TAG, "beginMmsConnectivity:call ConnectivityManager.requestNetwork ");
+            }
 
             mServiceHandler.sendMessageDelayed(mServiceHandler.obtainMessage(
                                EVENT_MMS_PDP_ACTIVATION_TIMEOUT),
                                PDP_ACTIVATION_TIMEOUT);
-
         }
-
-        if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-            Log.v(TAG, "beginMmsConnectivity: result=" + result);
-        }
-
-        switch (result) {
-            case PhoneConstants.APN_ALREADY_ACTIVE:
-            case PhoneConstants.APN_REQUEST_STARTED:
-                acquireWakeLock();
-                return result;
-        }
-
-        throw new IOException("Cannot establish MMS connectivity");
+        acquireWakeLock();
     }
 
-    private void releaseNetworkRequest() {
-        if (mMmsNetworkCallback != null) {
-            Log.d(TAG, "releaseNetworkRequest");
-
-            mConnMgr.unregisterNetworkCallback(mMmsNetworkCallback);
-            mMmsNetworkRequest = null;
-            mMmsNetworkCallback = null;
+    private void releaseNetworkRequest(int subId) {
+        int phoneId = SubscriptionManager.getPhoneId(subId);
+        if (mMmsNetworkCallback[phoneId] != null) {
+            mIsAvailable[phoneId] = false;
+            Log.d(TAG, "releaseNetworkRequest mIsAvailable = " + mIsAvailable[phoneId]);
+            mConnMgr.unregisterNetworkCallback(mMmsNetworkCallback[phoneId]);
+            mMmsNetworkRequest[phoneId] = null;
+            mMmsNetworkCallback[phoneId] = null;
         }
     }
 
     protected void endMmsConnectivity() {
-        long subId = SubscriptionManager.getOnDemandDataSubId();
-        endMmsConnectivity(Long.toString(subId));
+        for (int i = 0; i < mPhoneCount; i++) {
+            int[] subId = SubscriptionManager.getSubId(i);
+            endMmsConnectivity(subId[0]);
+        }
     }
 
-    protected void endMmsConnectivity(String subId) {
+    protected void endMmsConnectivity(int subId) {
         try {
             if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
                 Log.v(TAG, "endMmsConnectivity for subId = " + subId);
             }
 
-            // cancel timer for renewal of lease
-            mServiceHandler.removeMessages(EVENT_CONTINUE_MMS_CONNECTIVITY);
             if (mConnMgr != null) {
-                releaseNetworkRequest();
+                releaseNetworkRequest(subId);
 
-                mConnMgr.stopUsingNetworkFeatureForSubscription(
-                        ConnectivityManager.TYPE_MOBILE,
-                        Phone.FEATURE_ENABLE_MMS, subId);
             }
         } finally {
             releaseWakeLock();
@@ -900,8 +882,6 @@ public class TransactionService extends Service implements Observer {
         private String decodeMessage(Message msg) {
             if (msg.what == EVENT_QUIT) {
                 return "EVENT_QUIT";
-            } else if (msg.what == EVENT_CONTINUE_MMS_CONNECTIVITY) {
-                return "EVENT_CONTINUE_MMS_CONNECTIVITY";
             } else if (msg.what == EVENT_TRANSACTION_REQUEST) {
                 return "EVENT_TRANSACTION_REQUEST";
             } else if (msg.what == EVENT_HANDLE_NEXT_PENDING_TRANSACTION) {
@@ -947,39 +927,6 @@ public class TransactionService extends Service implements Observer {
 
                 case EVENT_QUIT:
                     getLooper().quit();
-                    return;
-
-                case EVENT_CONTINUE_MMS_CONNECTIVITY:
-                    synchronized (mProcessing) {
-                        if (mProcessing.isEmpty()) {
-                            return;
-                        }
-                    }
-
-                    if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-                        Log.v(TAG, "handle EVENT_CONTINUE_MMS_CONNECTIVITY event...");
-                    }
-
-                    try {
-                        long subId = SubscriptionManager.getOnDemandDataSubId();
-                        if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-                            Log.v(TAG, "renew PDP connection for subscription: " + subId);
-                        }
-                        int result = beginMmsConnectivity(Long.toString(subId));
-                        if (result != PhoneConstants.APN_ALREADY_ACTIVE) {
-                            Log.v(TAG, "Extending MMS connectivity returned " + result +
-                                    " instead of APN_ALREADY_ACTIVE");
-                            // Just wait for connectivity startup without
-                            // any new request of APN switch.
-                            return;
-                        }
-                    } catch (IOException e) {
-                        Log.w(TAG, "Attempt to extend use of MMS connectivity failed");
-                        return;
-                    }
-
-                    // Restart timer
-                    renewMmsConnectivity();
                     return;
 
                 case EVENT_TRANSACTION_REQUEST:
@@ -1113,6 +1060,7 @@ public class TransactionService extends Service implements Observer {
 
                         if (txn != null) {
                             Log.d(TAG, "PDP activation timer expired, declare failure");
+                            endMmsConnectivity(txn.getSubId());
                             txn.attach(TransactionService.this);
                             markFailed(txn);
                         } else {
@@ -1233,7 +1181,8 @@ public class TransactionService extends Service implements Observer {
                     }
                 }
 
-                long subId = transaction.getSubId();
+                int subId = transaction.getSubId();
+                int phoneId = SubscriptionManager.getPhoneId(subId);
                 /*
                 * Make sure that the network connectivity necessary
                 * for MMS traffic is enabled. If it is not, we need
@@ -1243,8 +1192,8 @@ public class TransactionService extends Service implements Observer {
                 if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
                     Log.v(TAG, "processTransaction: call beginMmsConnectivity on subId = " + subId);
                 }
-                int connectivityResult = beginMmsConnectivity(Long.toString(subId));
-                if (connectivityResult == PhoneConstants.APN_REQUEST_STARTED) {
+                beginMmsConnectivity(subId);
+                if (!mIsAvailable[phoneId]) {
                     mPending.add(transaction);
                     if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
                         Log.v(TAG, "processTransaction: connResult=APN_REQUEST_STARTED, " +
@@ -1271,10 +1220,6 @@ public class TransactionService extends Service implements Observer {
                 }
             }
 
-            // Set a timer to keep renewing our "lease" on the MMS connection
-            sendMessageDelayed(obtainMessage(EVENT_CONTINUE_MMS_CONNECTIVITY),
-                               APN_EXTENSION_WAIT);
-
             if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
                 Log.v(TAG, "processTransaction: starting transaction " + transaction);
             }
@@ -1284,12 +1229,5 @@ public class TransactionService extends Service implements Observer {
             transaction.process();
             return true;
         }
-    }
-
-    private void renewMmsConnectivity() {
-        // Set a timer to keep renewing our "lease" on the MMS connection
-        mServiceHandler.sendMessageDelayed(
-                mServiceHandler.obtainMessage(EVENT_CONTINUE_MMS_CONNECTIVITY),
-                           APN_EXTENSION_WAIT);
     }
 }

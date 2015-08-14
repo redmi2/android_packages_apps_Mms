@@ -161,7 +161,8 @@ public class WorkingMessage {
     };
 
     private static final int MMS_MESSAGE_SIZE_INDEX  = 1;
-    public static int mCurrentConvPhoneId = PhoneConstants.PHONE_ID1;
+    //TODO: Revisit this in Phase2 of MMS app release
+    public static int mCurrentConvPhoneId = 0;
 
     // Flag indicate resend sms that the recipient of conversion is more than one.
     private boolean mResendMultiRecipients;

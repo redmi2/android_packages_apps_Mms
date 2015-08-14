@@ -126,9 +126,9 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
             deliveryIntents = null;
             validityPeriod = -1;
         }
-        try {
+        try { //TODO: Revisit this in Phase 2 as this is not needed for MSIM tests
             smsManager.sendMultipartTextMessage(mDest, mServiceCenter, messages,
-                    sentIntents, deliveryIntents, -1, false, validityPeriod);
+                    sentIntents, deliveryIntents); //, -1, false, validityPeriod);
         } catch (Exception ex) {
             Log.e(TAG, "SmsMessageSender.sendMessage: caught", ex);
             throw new MmsException("SmsMessageSender.sendMessage: caught " + ex +

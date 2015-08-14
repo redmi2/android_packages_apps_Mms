@@ -733,8 +733,8 @@ public class SmsReceiverService extends Service {
      *
      */
     private void displayClassZeroMessage(Context context, SmsMessage sms, String format) {
-        long subId = sms.getSubId();
-        int phoneId = SubscriptionManager.getPhoneId((int)subId);
+        int subId = sms.getSubId();
+        int phoneId = SubscriptionManager.getPhoneId(subId);
 
         // Using NEW_TASK here is necessary because we're calling
         // startActivity from outside an activity.
@@ -775,7 +775,7 @@ public class SmsReceiverService extends Service {
 
     private boolean saveMessageToIcc(SmsMessage sms) {
         boolean result = true;
-        int subId = (int) sms.getSubId();
+        int subId = sms.getSubId();
         int phoneId = SubscriptionManager.getPhoneId(subId);
         byte pdu[] = MessageUtils.getDeliveryPdu(null, sms.getOriginatingAddress(),
                 sms.getMessageBody(), sms.getTimestampMillis(), phoneId);

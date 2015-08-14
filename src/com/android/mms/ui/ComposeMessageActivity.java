@@ -812,14 +812,16 @@ public class ComposeMessageActivity extends Activity
     }
 
     private void sendMsimMessage(boolean bCheckEcmMode) {
-        if (SubscriptionManager.isSMSPromptEnabled()) {
+       // TODO: Revisit this in Phase2
+       /*
+       if (SubscriptionManager.isSMSPromptEnabled()) {
             LaunchMsimDialog(bCheckEcmMode);
-        } else {
-            long subId = SubscriptionManager.getDefaultSmsSubId();
-            int phoneId = SubscriptionManager.getPhoneId((int)subId);
+       } else {*/
+            int subId = SubscriptionManager.getDefaultSmsSubId();
+            int phoneId = SubscriptionManager.getPhoneId(subId);
             mWorkingMessage.setWorkingMessageSub(phoneId);
             sendMessage(bCheckEcmMode);
-        }
+       //}
     }
 
     private void confirmSendMessageIfNeeded() {

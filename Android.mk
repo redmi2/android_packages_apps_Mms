@@ -18,6 +18,7 @@ LOCAL_PACKAGE_NAME := Mms
 #LOCAL_SDK_VERSION := current
 
 LOCAL_JAVA_LIBRARIES += telephony-common
+LOCAL_JAVA_LIBRARIES += org.apache.http.legacy.boot
 LOCAL_STATIC_JAVA_LIBRARIES += android-common jsr305
 LOCAL_STATIC_JAVA_LIBRARIES += libchips
 
