@@ -1332,11 +1332,11 @@ public class MessagingNotification {
         if ((TelephonyManager.getDefault().getPhoneCount()) > 1) {
             //SMS/MMS is operating based of PhoneId which is 0, 1..
             SubscriptionInfo sir = SubscriptionManager.from(context)
-                    .getActiveSubscriptionInfoForSimSlotIndex(subId);
+                    .getActiveSubscriptionInfo(subId);
 
             String displayName = (sir != null) ? sir.getDisplayName().toString() : "";
 
-            Log.e(TAG, "PhoneID : " + subId + " displayName " + displayName);
+            Log.d(TAG, "SubID : " + subId + " displayName: " + displayName);
             buf.append(displayName);
             buf.append("-");
         }
