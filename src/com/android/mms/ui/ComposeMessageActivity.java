@@ -3459,13 +3459,13 @@ public class ComposeMessageActivity extends Activity
                 break;
 
             case AttachmentPagerAdapter.ADD_CONTACT_AS_TEXT:
-                /*pickContacts(SelectRecipientsList.MODE_INFO,
-                        REQUEST_CODE_ATTACH_ADD_CONTACT_INFO);*/
+                pickContacts(MultiPickContactsActivity.MODE_INFO,
+                        REQUEST_CODE_ATTACH_ADD_CONTACT_INFO);
                 break;
 
             case AttachmentPagerAdapter.ADD_CONTACT_AS_VCARD:
-                /*pickContacts(SelectRecipientsList.MODE_VCARD,
-                        REQUEST_CODE_ATTACH_ADD_CONTACT_VCARD);*/
+                pickContacts(MultiPickContactsActivity.MODE_VCARD,
+                        REQUEST_CODE_ATTACH_ADD_CONTACT_VCARD);
                 break;
 
             default:
