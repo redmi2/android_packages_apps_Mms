@@ -2563,9 +2563,8 @@ public class MessageUtils {
 
     public static boolean isCarrierSimCard(Context ctx) {
         boolean isCarrierSimCard = false;
-        String[] carrierMccMncs = null/*ctx.getResources().getStringArray(
-                com.android.internal.R.array.
-                config_regional_carrier_operator_list)*/;
+        String[] carrierMccMncs = ctx.getResources().getStringArray(
+                R.array.config_regional_carrier_operator_list);
         TelephonyManager tm = (TelephonyManager)ctx.getSystemService(
         Context.TELEPHONY_SERVICE);
         String simOperator = tm.getSimOperator();

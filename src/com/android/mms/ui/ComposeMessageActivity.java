@@ -1111,7 +1111,7 @@ public class ComposeMessageActivity extends Activity
                 MessageUtils.isMobileDataDisabled(getApplicationContext())) {
             showMobileDataDisabledDialog(subscription);
         } else {
-            if (false/*getResources().getBoolean(com.android.internal.R.bool.config_regional_mms_via_wifi_enable)*/
+            if (getResources().getBoolean(R.bool.config_regional_mms_via_wifi_enable)
                     && !TextUtils.isEmpty(getString(R.string.mms_recipient_Limit))
                     && isMms
                     && checkForMmsRecipients(getString(R.string.mms_recipient_Limit), true)) {
@@ -1154,7 +1154,7 @@ public class ComposeMessageActivity extends Activity
                 MessageUtils.isMobileDataDisabled(getApplicationContext())) {
             showMobileDataDisabledDialog();
         } else {
-            if (false/*getResources().getBoolean(com.android.internal.R.bool.config_regional_mms_via_wifi_enable)*/
+            if (getResources().getBoolean(R.bool.config_regional_mms_via_wifi_enable)
                     && !TextUtils.isEmpty(getString(R.string.mms_recipient_Limit))
                     && isMms
                     && checkForMmsRecipients(getString(R.string.mms_recipient_Limit), true)) {
@@ -1330,7 +1330,7 @@ public class ComposeMessageActivity extends Activity
     }
 
     private void checkForTooManyRecipients() {
-        if (false/*getResources().getBoolean(com.android.internal.R.bool.config_regional_mms_via_wifi_enable)*/
+        if (getResources().getBoolean(R.bool.config_regional_mms_via_wifi_enable)
                 && !TextUtils.isEmpty(getString(R.string.mms_recipient_Limit))
                 && checkForMmsRecipients(getString(R.string.mms_recipient_Limit), false)) {
             return;

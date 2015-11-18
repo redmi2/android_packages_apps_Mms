@@ -90,6 +90,34 @@
     <!-- configuration for display add attachment icon always -->
     <bool name="config_show_attach_icon_always">false</bool>
 
+    <bool name="config_regional_mms_via_wifi_enable">false</bool>
+
+    <string-array translatable="false" name="config_regional_carrier_operator_list">
+        <item>310160</item>
+        <item>310200</item>
+        <item>310210</item>
+        <item>310220</item>
+        <item>310230</item>
+        <item>310240</item>
+        <item>310250</item>
+        <item>310260</item>
+        <item>310270</item>
+        <item>310280</item>
+        <item>310330</item>
+        <item>310310</item>
+        <item>310580</item>
+        <item>310660</item>
+        <item>310800</item>
+        <item>310300</item>
+        <item>31031</item>
+    </string-array>
+
+    <!-- Whether to use https protocol for mms in wifi network -->
+    <bool name="config_regional_mms_use_https_in_wifi">false</bool>
+    <string-array translatable="false" name="config_regional_carrier_operator_list"></string-array>
+
+    <bool name="config_regional_sms_notification_from_911_disable">false</bool>
+
     <!-- configuration for retry scheme of sent failed message -->
     <integer-array name="retry_scheme">
         <item>0</item>

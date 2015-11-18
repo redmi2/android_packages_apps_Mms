@@ -430,8 +430,8 @@ public class TransactionService extends Service implements Observer {
             return;
         }
         boolean noNetwork = false;
-        if (false/*getResources().getBoolean(
-                com.android.internal.R.bool.config_regional_mms_via_wifi_enable)*/) {
+        if (getResources().getBoolean(
+                R.bool.config_regional_mms_via_wifi_enable)) {
             NetworkInfo ni = mConnMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE_MMS);
             boolean shouldUseWifi = MessageUtils.shouldHandleMmsViaWifi(getApplicationContext());
             noNetwork = !shouldUseWifi && (!mConnMgr.getMobileDataEnabled()
@@ -992,8 +992,8 @@ public class TransactionService extends Service implements Observer {
     protected void beginMmsConnectivity(int subId) throws IOException {
         // Take a wake lock so we don't fall asleep before the message is downloaded.
         createWakeLock();
-        if (false/*getResources().getBoolean(
-                com.android.internal.R.bool.config_regional_mms_via_wifi_enable)*/) {
+        if (getResources().getBoolean(
+                R.bool.config_regional_mms_via_wifi_enable)) {
             if (MessageUtils.shouldHandleMmsViaWifi(getApplicationContext())){
                 //return PhoneConstants.APN_ALREADY_ACTIVE;
             }
