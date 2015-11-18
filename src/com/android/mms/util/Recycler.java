@@ -82,6 +82,10 @@ public abstract class Recycler {
 
         int limit = getMessageLimit(context);
         Cursor cursor = getAllThreads(context, limit);
+        if (cursor == null) {
+            Log.e(TAG, "Recycler: deleteOldMessages got back null cursor");
+            return;
+        }
         try {
             while (cursor.moveToNext()) {
                 long threadId = getThreadId(cursor);
@@ -286,11 +290,10 @@ public abstract class Recycler {
 
     public static class MmsRecycler extends Recycler {
         private static final String[] ALL_MMS_THREADS_PROJECTION = {
-            "thread_id", "count(*) as msg_count"
+            "thread_id"
         };
 
         private static final int ID             = 0;
-        private static final int MESSAGE_COUNT  = 1;
 
         static private final String[] MMS_MESSAGE_PROJECTION = new String[] {
             BaseColumns._ID,
@@ -335,12 +338,15 @@ public abstract class Recycler {
 
         protected Cursor getAllThreads(Context context, int limit) {
             ContentResolver resolver = context.getContentResolver();
+            Uri uri = Telephony.Mms.CONTENT_URI.buildUpon()
+                    .appendEncodedPath("threads")
+                    .appendQueryParameter("filter_count", Integer.toString(limit))
+                    .build();
             Cursor cursor = SqliteWrapper.query(context, resolver,
-                    Uri.withAppendedPath(Telephony.Mms.CONTENT_URI, "threads"),
+                    uri,
                     ALL_MMS_THREADS_PROJECTION,
-                    "msg_count >= " + limit,
+                    null,
                     null, Conversations.DEFAULT_SORT_ORDER);
-
             return cursor;
         }
 
