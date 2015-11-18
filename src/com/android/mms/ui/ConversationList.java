@@ -192,6 +192,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             mSavedFirstVisiblePosition = AdapterView.INVALID_POSITION;
             mSavedFirstItemOffset = 0;
         }
+        MessageUtils.pupConnectWifiNotification(this);
     }
 
     @Override

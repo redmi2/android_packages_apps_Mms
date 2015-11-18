@@ -4493,6 +4493,9 @@ public class ComposeMessageActivity extends Activity
     public void onClick(View v) {
         mIsRTL = (v.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL);
         if ((v == mSendButtonSms || v == mSendButtonMms) && isPreparedForSending()) {
+            if (MessageUtils.pupConnectWifiAlertDialog(getContext())) {
+                return ;
+            }
             if (mShowTwoButtons) {
                 confirmSendMessageIfNeeded(SubscriptionManager.getSubId(PhoneConstants.SUB1)[0]);
             } else {

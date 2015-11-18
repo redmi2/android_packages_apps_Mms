@@ -468,9 +468,7 @@ public class MessagingNotification {
             }
         }
         Log.d(TAG, "blockingUpdateNewIccMessageIndicator: adding sound to the notification");
-
         defaults |= Notification.DEFAULT_LIGHTS;
-
         noti.setDefaults(defaults);
 
         // set up delete intent
