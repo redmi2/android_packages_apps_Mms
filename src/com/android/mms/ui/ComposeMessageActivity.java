@@ -162,6 +162,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Button;
 
+import com.android.internal.telephony.ConfigResourceUtil;
 import com.android.internal.telephony.IExtTelephony;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.RILConstants;
@@ -294,7 +295,7 @@ public class ComposeMessageActivity extends Activity
 
     private static final String EXIT_ECM_RESULT = "exit_ecm_result";
 
-    private static final String INTENT_MULTI_PICK = "com.android.contacts.action.MULTI_PICK";
+    private static final String INTENT_MULTI_PICK_ACTION = "com.android.contacts.action.MULTI_PICK";
 
     private static String FILE_PATH_COLUMN = "_data";
     private static String BROADCAST_DATA_SCHEME = "file";
@@ -1620,6 +1621,9 @@ public class ComposeMessageActivity extends Activity
     }
 
     private boolean isAllowForwardMessage(MessageItem msgItem) {
+        if (msgItem.getSlideshow() == null) {
+            return false;
+        }
         int messageSize = msgItem.getSlideshow().getTotalMessageSize();
         int smilSize = msgItem.getSlideshow().getSMILSize();
         int forwardStrSize = getString(R.string.forward_prefix).getBytes().length;
@@ -2087,7 +2091,6 @@ public class ComposeMessageActivity extends Activity
             mRecipientsPickerGroups.setVisibility(View.VISIBLE);
         }
         mRecipientsPicker.setOnClickListener(this);
-        mRecipientsPicker.setVisibility(View.GONE);
         mRecipientsPickerGroups.setOnClickListener(this);
         mRecipientsPickerGroups.setVisibility(View.GONE);
         mRecipientsEditor.addTextChangedListener(mRecipientsWatcher);
@@ -2209,8 +2212,9 @@ public class ComposeMessageActivity extends Activity
         // Create a new empty working message.
         mWorkingMessage = WorkingMessage.createEmpty(this);
 
-        mSendMmsMobileDataOff = false;/*getResources().getBoolean(
-                com.android.internal.R.bool.config_enable_mms_with_mobile_data_off);*/
+        ConfigResourceUtil configResUtil = new ConfigResourceUtil();
+        mSendMmsMobileDataOff = configResUtil.getBooleanValue(this,
+                "config_enable_mms_with_mobile_data_off");
 
         // Read parameters or previously saved state of this activity. This will load a new
         // mConversation
@@ -3459,13 +3463,13 @@ public class ComposeMessageActivity extends Activity
                 break;
 
             case AttachmentPagerAdapter.ADD_CONTACT_AS_TEXT:
-                /*pickContacts(SelectRecipientsList.MODE_INFO,
-                        REQUEST_CODE_ATTACH_ADD_CONTACT_INFO);*/
+                pickContacts(MultiPickContactsActivity.MODE_INFO,
+                        REQUEST_CODE_ATTACH_ADD_CONTACT_INFO);
                 break;
 
             case AttachmentPagerAdapter.ADD_CONTACT_AS_VCARD:
-                /*pickContacts(SelectRecipientsList.MODE_VCARD,
-                        REQUEST_CODE_ATTACH_ADD_CONTACT_VCARD);*/
+                pickContacts(MultiPickContactsActivity.MODE_VCARD,
+                        REQUEST_CODE_ATTACH_ADD_CONTACT_VCARD);
                 break;
 
             default:
@@ -4496,8 +4500,8 @@ public class ComposeMessageActivity extends Activity
         } else if ((v == mSendButtonSmsViewSec || v == mSendButtonMmsViewSec) &&
                 mShowTwoButtons && isPreparedForSending()) {
             confirmSendMessageIfNeeded(SubscriptionManager.getSubId(PhoneConstants.SUB2)[0]);
-        /*} else if (v == mRecipientsSelector) {
-            pickContacts(SelectRecipientsList.MODE_DEFAULT, REQUEST_CODE_ADD_RECIPIENTS);*/
+        } else if (v == mRecipientsPicker) {
+            launchMultiplePhonePicker();
         } else if ((v == mAddAttachmentButton)) {
             if (mAttachmentSelector.getVisibility() == View.VISIBLE && !mIsReplaceAttachment) {
                 mAttachmentSelector.setVisibility(View.GONE);
@@ -4508,6 +4512,19 @@ public class ComposeMessageActivity extends Activity
                             .show();
                 }
             }
+        }
+    }
+
+    private void launchMultiplePhonePicker() {
+        Intent intent = new Intent(INTENT_MULTI_PICK_ACTION, Contacts.CONTENT_URI);
+        String exsitNumbers = mRecipientsEditor.getExsitNumbers();
+        if (!TextUtils.isEmpty(exsitNumbers)) {
+            intent.putExtra(Intents.EXTRA_PHONE_URIS, exsitNumbers);
+        }
+        try {
+            startActivityForResult(intent, REQUEST_CODE_PICK);
+        } catch (ActivityNotFoundException ex) {
+            Toast.makeText(this, R.string.contact_app_not_found, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -4913,7 +4930,7 @@ public class ComposeMessageActivity extends Activity
     }
 
     private boolean isPreparedForSending() {
-        if (mIsAirplaneModeOn) {
+        if (mIsAirplaneModeOn && !TelephonyManager.getDefault().isImsRegistered()) {
             return false;
         }
 

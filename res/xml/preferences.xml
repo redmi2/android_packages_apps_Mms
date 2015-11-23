@@ -25,8 +25,7 @@
         android:summary="@string/pref_summary_sms_disabled"
         android:persistent="false">
         <intent
-            android:action="android.provider.Telephony.ACTION_CHANGE_DEFAULT"
-            android:targetPackage="com.android.settings">
+            android:action="android.provider.Telephony.ACTION_CHANGE_DEFAULT">
             <extra android:name="package" android:value="com.android.mms"/>
         </intent>
     </Preference>
@@ -36,8 +35,7 @@
         android:summary="@string/pref_summary_sms_enabled"
         android:persistent="false">
         <intent
-            android:action="android.settings.WIRELESS_SETTINGS"
-            android:targetPackage="com.android.settings">
+            android:action="android.provider.Telephony.ACTION_CHANGE_DEFAULT">
         </intent>
     </Preference>
     <PreferenceCategory android:title="@string/pref_sms_storage_title"

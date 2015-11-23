@@ -99,8 +99,8 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
         try {
             ISms iccISms = ISms.Stub.asInterface(ServiceManager.getService("isms"));
             if (iccISms != null) {
-                iccISms.sendTextForSubscriberWithSelfPermissions(SubscriptionManager.getSubId(
-                        mSubId)[0], ActivityThread.currentPackageName(), mDest,
+                iccISms.sendTextForSubscriberWithSelfPermissions(mSubId,
+                        ActivityThread.currentPackageName(), mDest,
                         mServiceCenter, "", sentIntent, deliveryIntent);
             }
         } catch (RemoteException ex) {
@@ -231,18 +231,20 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
     private int getValidityPeriod(int subscription) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
         String valitidyPeriod = null;
-        switch (subscription) {
-            case MessageUtils.SUB_INVALID:
-                valitidyPeriod = prefs.getString("pref_key_sms_validity_period", null);
-                break;
-            case MessageUtils.SUB1:
-                valitidyPeriod = prefs.getString("pref_key_sms_validity_period_slot1", null);
-                break;
-            case MessageUtils.SUB2:
-                valitidyPeriod = prefs.getString("pref_key_sms_validity_period_slot2", null);
-                break;
-            default:
-                break;
+        if (MessageUtils.isMultiSimEnabledMms()) {
+            int phoneId = SubscriptionManager.getPhoneId(subscription);
+            switch (phoneId) {
+                case MessageUtils.SUB1:
+                    valitidyPeriod = prefs.getString("pref_key_sms_validity_period_slot1", null);
+                    break;
+                case MessageUtils.SUB2:
+                    valitidyPeriod = prefs.getString("pref_key_sms_validity_period_slot2", null);
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            valitidyPeriod = prefs.getString("pref_key_sms_validity_period", null);
         }
         return (valitidyPeriod == null) ? -1 : Integer.parseInt(valitidyPeriod);
     }
