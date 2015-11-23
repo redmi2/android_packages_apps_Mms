@@ -118,6 +118,9 @@ public class MmsSystemEventReceiver extends BroadcastReceiver {
                 prefsEditor.commit();
             }
 
+            intent.setClass(context,SmsReceiverService.class);
+            SmsReceiver.beginStartingService(context,intent);
+
         /*} else if (action.equals(TelephonyIntents.ACTION_SUBSCRIPTION_SET_UICC_RESULT)) {
 
             int status = intent.getIntExtra(TelephonyIntents.EXTRA_RESULT, PhoneConstants.FAILURE);
