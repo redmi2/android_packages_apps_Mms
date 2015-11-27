@@ -4166,7 +4166,7 @@ public class ComposeMessageActivity extends Activity
 
         if (mConversation != null) {
             mConversation.setHasMmsForward(true);
-            String recipientNumber = intent.getStringExtra("msg_recipient");
+            String[] recipientNumber = intent.getStringArrayExtra("msg_recipient");
             mConversation.setForwardRecipientNumber(recipientNumber);
         }
         Uri uri = intent.getParcelableExtra("msg_uri");
