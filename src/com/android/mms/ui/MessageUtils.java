@@ -1522,14 +1522,8 @@ public class MessageUtils {
     }
 
     public static void dialNumber(Context context, String number) {
-        Intent dialIntent;
-        if (isMsimIccCardActive()) {
-            dialIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("tel:"
-                    + number));
-        } else {
-            dialIntent = new Intent(Intent.ACTION_CALL, Uri.parse("tel:"
-                    + number));
-        }
+        Intent dialIntent = new Intent(Intent.ACTION_CALL, Uri.parse("tel:"
+                + number));
         context.startActivity(dialIntent);
     }
 
