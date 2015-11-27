@@ -72,6 +72,7 @@ import android.text.style.TextAppearanceSpan;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.android.internal.telephony.PhoneConstants;
 import com.android.mms.LogTag;
 import com.android.mms.MmsConfig;
 import com.android.mms.R;
@@ -217,6 +218,9 @@ public class MessagingNotification {
     private static PduPersister sPduPersister;
     private static final int MAX_BITMAP_DIMEN_DP = 360;
     private static float sScreenDensity;
+
+    private static boolean includeEmergencySMS;
+    private static String emergentcyAddress = "911";
 
     private static final int MAX_MESSAGES_TO_SHOW = 8;  // the maximum number of new messages to
                                                         // show in a single notification.
@@ -396,7 +400,8 @@ public class MessagingNotification {
 
     public static void blockingUpdateNewIccMessageIndicator(Context context, String address,
             String message, int subId, long timeMillis) {
-        if (MessageUtils.getSimThreadByPhoneId(subId) == sCurrentlyDisplayedThreadId) {
+        int phoneId = SubscriptionManager.getPhoneId(subId);
+        if (MessageUtils.getSimThreadByPhoneId(phoneId) == sCurrentlyDisplayedThreadId) {
             // We are already diplaying the messages list view, no need to send notification.
             // Just play notification sound.
             Log.d(TAG, "blockingUpdateNewIccMessageIndicator displaying sim messages now");
@@ -415,13 +420,13 @@ public class MessagingNotification {
 //        TaskStackBuilder taskStackBuilder = TaskStackBuilder.create(context);
         // Update the notification.
         PendingIntent pendingIntent;
-        if (subId == MessageUtils.SUB_INVALID) {
+        if (phoneId == MessageUtils.SUB_INVALID) {
             pendingIntent = PendingIntent.getActivity(context, 0, info.mClickIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT);
         } else {
             // Use requestCode to avoid updating all intents of previous notifications
             pendingIntent = PendingIntent.getActivity(context,
-                    NEW_ICC_NOTIFICATION_ID[subId], info.mClickIntent,
+                    NEW_ICC_NOTIFICATION_ID[phoneId], info.mClickIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT);
         }
         String title = info.mTitle;
@@ -454,16 +459,16 @@ public class MessagingNotification {
         }
         String ringtoneStr = sp.getString(MessagingPreferenceActivity.NOTIFICATION_RINGTONE,
                 null);
-        if (isInCall()) {
-            noti.setSound(TextUtils.isEmpty(ringtoneStr) ? null : Uri.parse(ringtoneStr),
-                    AUDIO_ATTRIBUTES_ALARM);
-        } else {
-            noti.setSound(TextUtils.isEmpty(ringtoneStr) ? null : Uri.parse(ringtoneStr));
+        if (!includeEmergencySMS) {
+            if (isInCall()) {
+                noti.setSound(TextUtils.isEmpty(ringtoneStr) ? null : Uri.parse(ringtoneStr),
+                        AUDIO_ATTRIBUTES_ALARM);
+            } else {
+                noti.setSound(TextUtils.isEmpty(ringtoneStr) ? null : Uri.parse(ringtoneStr));
+            }
         }
         Log.d(TAG, "blockingUpdateNewIccMessageIndicator: adding sound to the notification");
-
         defaults |= Notification.DEFAULT_LIGHTS;
-
         noti.setDefaults(defaults);
 
         // set up delete intent
@@ -491,10 +496,10 @@ public class MessagingNotification {
 
         notifyUserIfFullScreen(context, title);
 
-        if (subId == MessageUtils.SUB_INVALID) {
+        if (phoneId == MessageUtils.SUB_INVALID) {
             nm.notify(ICC_NOTIFICATION_ID, notification);
         } else {
-            nm.notify(NEW_ICC_NOTIFICATION_ID[subId], notification);
+            nm.notify(NEW_ICC_NOTIFICATION_ID[phoneId], notification);
         }
 
     }
@@ -772,6 +777,7 @@ public class MessagingNotification {
             return;
         }
 
+        includeEmergencySMS = false;
         try {
             while (cursor.moveToNext()) {
 
@@ -780,6 +786,12 @@ public class MessagingNotification {
                         Long.toString(msgId)).build();
                 String address = AddressUtils.getFrom(context, msgUri);
 
+                if (context.getResources().getBoolean(
+                            R.bool.config_regional_sms_notification_from_911_disable)) {
+                    if (TextUtils.equals(address,emergentcyAddress)) {
+                        includeEmergencySMS = true;
+                    }
+                }
                 Contact contact = Contact.get(address, false);
                 if (contact.getSendToVoicemail()) {
                     // don't notify, skip this one
@@ -1026,7 +1038,7 @@ public class MessagingNotification {
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-        clickIntent.putExtra(MessageUtils.SUBSCRIPTION_KEY, subId);
+        clickIntent.putExtra(PhoneConstants.SLOT_KEY, SubscriptionManager.getPhoneId(subId));
         String senderInfo = buildTickerMessage(
                 context, address, null, null, subId).toString();
         String senderInfoName = senderInfo.substring(
@@ -1196,11 +1208,13 @@ public class MessagingNotification {
 
             String ringtoneStr = sp.getString(MessagingPreferenceActivity.NOTIFICATION_RINGTONE,
                     null);
-            if (isInCall()) {
-                noti.setSound(TextUtils.isEmpty(ringtoneStr) ? null : Uri.parse(ringtoneStr),
-                        AUDIO_ATTRIBUTES_ALARM);
-            } else {
-                noti.setSound(TextUtils.isEmpty(ringtoneStr) ? null : Uri.parse(ringtoneStr));
+            if (!includeEmergencySMS) {
+                if (isInCall()) {
+                    noti.setSound(TextUtils.isEmpty(ringtoneStr) ? null : Uri.parse(ringtoneStr),
+                            AUDIO_ATTRIBUTES_ALARM);
+                } else {
+                    noti.setSound(TextUtils.isEmpty(ringtoneStr) ? null : Uri.parse(ringtoneStr));
+                }
             }
             Log.d(TAG, "updateNotification: new message, adding sound to the notification");
         }
