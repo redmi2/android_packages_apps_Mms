@@ -34,6 +34,7 @@ import android.os.Handler;
 import android.provider.Telephony.Sms;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.MmsSms;
+import android.telephony.SubscriptionManager;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.StyleSpan;
@@ -153,10 +154,11 @@ public class MailBoxMessageListAdapter extends CursorAdapter implements Contact.
         }
 
         if (!isDraft && MessageUtils.isMsimIccCardActive()) {
-            sDefaultContactImage = (mSubscription == MessageUtils.SUB1) ? mContext.getResources()
+            int phoneId = SubscriptionManager.getPhoneId(mSubscription);
+            sDefaultContactImage = (phoneId == MessageUtils.SUB1) ? mContext.getResources()
                     .getDrawable(R.drawable.ic_contact_picture_card1) : mContext.getResources()
                     .getDrawable(R.drawable.ic_contact_picture_card2);
-            sDefaultContactImageMms = (mSubscription == MessageUtils.SUB1) ? mContext
+            sDefaultContactImageMms = (phoneId == MessageUtils.SUB1) ? mContext
                     .getResources().getDrawable(R.drawable.ic_contact_picture_mms_card1) : mContext
                     .getResources().getDrawable(R.drawable.ic_contact_picture_mms_card2);
         }
