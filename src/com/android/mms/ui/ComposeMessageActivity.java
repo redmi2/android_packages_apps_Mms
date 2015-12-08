@@ -163,7 +163,6 @@ import android.widget.Toast;
 import android.widget.Button;
 
 import com.android.internal.telephony.ConfigResourceUtil;
-import com.android.internal.telephony.IExtTelephony;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.RILConstants;
 import com.android.internal.telephony.TelephonyIntents;
@@ -1039,21 +1038,13 @@ public class ComposeMessageActivity extends Activity
     }
 
     private void sendMsimMessage(boolean bCheckEcmMode) {
-        IExtTelephony mExtTelephony = IExtTelephony.Stub.asInterface(ServiceManager
-                .getService("extphone"));
-        try {
-            if (mExtTelephony.isSMSPromptEnabled()) {
-                Log.d(TAG, "sendMsimMessage isSMSPromptEnabled: True");
-                LaunchMsimDialog(bCheckEcmMode);
-            } else {
-                int subId = SubscriptionManager.getDefaultSmsSubId();
-                mWorkingMessage.setWorkingMessageSub(subId);
-                sendMessage(bCheckEcmMode);
-            }
-        } catch (NullPointerException ex) {
-            Log.e(TAG, "fail to getService ", ex);
-        } catch (RemoteException ex) {
-            Log.e(TAG, "error in getService ", ex);
+        if (SmsManager.getDefault().isSMSPromptEnabled()) {
+            Log.d(TAG, "sendMsimMessage isSMSPromptEnabled: True");
+            LaunchMsimDialog(bCheckEcmMode);
+        } else {
+            int subId = SubscriptionManager.getDefaultSmsSubId();
+            mWorkingMessage.setWorkingMessageSub(subId);
+            sendMessage(bCheckEcmMode);
         }
     }
 
