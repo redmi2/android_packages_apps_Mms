@@ -44,6 +44,7 @@ import com.android.internal.telephony.PhoneConstants;
 import com.android.mms.LogTag;
 import com.android.mms.MmsConfig;
 import com.android.mms.ui.MessagingPreferenceActivity;
+import com.android.mms.util.DownloadManager;
 import com.android.mms.util.Recycler;
 import com.android.mms.widget.MmsWidgetProvider;
 import com.android.mms.R;
@@ -216,15 +217,24 @@ public class PushReceiver extends BroadcastReceiver {
                         if (!isDuplicateNotification(mContext, nInd)) {
                             int subId = intent.getIntExtra(PhoneConstants.SUBSCRIPTION_KEY, 0);
                             //Phone ID will be updated in data base
-                            Log.d(TAG, " subId : " + subId);
+                            Log.d(TAG, "PushReceiver subId : " + subId);
                             ContentValues values = new ContentValues(1);
                             values.put(Mms.SUBSCRIPTION_ID, subId);
                             Uri uri = p.persist(pdu, Inbox.CONTENT_URI,
                                     true,
                                     MessagingPreferenceActivity.getIsGroupMmsEnabled(mContext),
                                     null);
-
                             SqliteWrapper.update(mContext, cr, uri, values, null, null);
+
+                            if (!DownloadManager.getInstance().isAuto()) {
+                                threadId = MessagingNotification.getThreadId(mContext, uri);
+                                Log.d(TAG, "Auto retrieve is off, update new message notification" +
+                                        " for thread " + threadId);
+                                MessagingNotification.blockingUpdateNewMessageIndicator(mContext,
+                                        threadId, false);
+                                break;
+                            }
+
                             // Start service to finish the notification transaction.
                             Intent svc = new Intent(mContext, TransactionService.class);
                             svc.putExtra(TransactionBundle.URI, uri.toString());
