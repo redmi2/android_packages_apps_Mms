@@ -54,6 +54,10 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         android:showAsAction="never|withText"
         android:title="@string/operation_to_card_memory"/>
     <item
+        android:id="@+id/copy_text"
+        android:showAsAction="never|withText"
+        android:title="@string/copy_message_text"/>
+    <item
         android:id="@+id/detail"
         android:showAsAction="never|withText"
         android:title="@string/message_detail"/>

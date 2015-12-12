@@ -163,7 +163,6 @@ import android.widget.Toast;
 import android.widget.Button;
 
 import com.android.internal.telephony.ConfigResourceUtil;
-import com.android.internal.telephony.IExtTelephony;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.RILConstants;
 import com.android.internal.telephony.TelephonyIntents;
@@ -1039,21 +1038,13 @@ public class ComposeMessageActivity extends Activity
     }
 
     private void sendMsimMessage(boolean bCheckEcmMode) {
-        IExtTelephony mExtTelephony = IExtTelephony.Stub.asInterface(ServiceManager
-                .getService("extphone"));
-        try {
-            if (mExtTelephony.isSMSPromptEnabled()) {
-                Log.d(TAG, "sendMsimMessage isSMSPromptEnabled: True");
-                LaunchMsimDialog(bCheckEcmMode);
-            } else {
-                int subId = SubscriptionManager.getDefaultSmsSubId();
-                mWorkingMessage.setWorkingMessageSub(subId);
-                sendMessage(bCheckEcmMode);
-            }
-        } catch (NullPointerException ex) {
-            Log.e(TAG, "fail to getService ", ex);
-        } catch (RemoteException ex) {
-            Log.e(TAG, "error in getService ", ex);
+        if (SmsManager.getDefault().isSMSPromptEnabled()) {
+            Log.d(TAG, "sendMsimMessage isSMSPromptEnabled: True");
+            LaunchMsimDialog(bCheckEcmMode);
+        } else {
+            int subId = SubscriptionManager.getDefaultSmsSubId();
+            mWorkingMessage.setWorkingMessageSub(subId);
+            sendMessage(bCheckEcmMode);
         }
     }
 
@@ -4166,7 +4157,7 @@ public class ComposeMessageActivity extends Activity
 
         if (mConversation != null) {
             mConversation.setHasMmsForward(true);
-            String recipientNumber = intent.getStringExtra("msg_recipient");
+            String[] recipientNumber = intent.getStringArrayExtra("msg_recipient");
             mConversation.setForwardRecipientNumber(recipientNumber);
         }
         Uri uri = intent.getParcelableExtra("msg_uri");
@@ -6200,6 +6191,13 @@ public class ComposeMessageActivity extends Activity
             case R.id.report:
                 showReport();
                 break;
+            case R.id.copy_text:
+                int pos = mSelectedPos.get(0).intValue();
+                MessageItem copyItem = getMessageItemByPos(pos);
+                if (copyItem != null && copyItem.isSms()) {
+                    copyToClipboard(copyItem.mBody);
+                }
+                break;
             default:
                 break;
             }
@@ -6377,6 +6375,11 @@ public class ComposeMessageActivity extends Activity
                 mode.getMenu().findItem(R.id.report).setVisible(false);
                 // no save attachment
                 mode.getMenu().findItem(R.id.save_attachment).setVisible(false);
+                // no resend
+                mode.getMenu().findItem(R.id.resend).setVisible(false);
+                // no copy text
+                mode.getMenu().findItem(R.id.copy_text).setVisible(false);
+
                 // all locked show unlock, other wise show lock.
                 if (mUnlockedCount == 0) {
                     mode.getMenu()
@@ -6390,9 +6393,6 @@ public class ComposeMessageActivity extends Activity
                             .setTitle(
                                     getContext().getString(R.string.menu_lock));
                 }
-
-                // no resend
-                mode.getMenu().findItem(R.id.resend).setVisible(false);
 
                 if (mMmsSelected > 0) {
                     mode.getMenu().findItem(R.id.forward).setVisible(false);
@@ -6427,8 +6427,10 @@ public class ComposeMessageActivity extends Activity
 
                 if (mMmsSelected > 0) {
                     mode.getMenu().findItem(R.id.copy_to_sim).setVisible(false);
+                    mode.getMenu().findItem(R.id.copy_text).setVisible(false);
                 } else {
                     mode.getMenu().findItem(R.id.copy_to_sim).setVisible(true);
+                    mode.getMenu().findItem(R.id.copy_text).setVisible(true);
                 }
 
                 mode.getMenu().findItem(R.id.report).setVisible(isDeliveryReportMsg(position));
