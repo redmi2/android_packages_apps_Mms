@@ -927,37 +927,40 @@ public class SmsReceiverService extends Service {
         }
     }
 
-    // Returns true, if there are no queued messages on other subscriptions
+    /**
+     * Return true if there are no queued messages on other subscriptions.
+     */
     private boolean isUnRegisterAllowed(int subId) {
-        boolean success = true;
+        boolean allowed = true;
         List<SubscriptionInfo> subInfoList =
                 SubscriptionManager.from(getApplicationContext()).getActiveSubscriptionInfoList();
         if(subInfoList != null) {
             final Uri uri = Uri.parse("content://sms/queued");
             ContentResolver resolver = getContentResolver();
-            String where = "sub_id == ?";
+            String where = "sub_id=?";
             for (SubscriptionInfo info : subInfoList) {
                 int subInfoSubId = info.getSubscriptionId();
-                if (subInfoSubId == subId) {
-                    String[] whereArgs = new String[] {Integer.toString(subId)};
+                if (subInfoSubId != subId) {
+                    String[] whereArgs = new String[] {Integer.toString(subInfoSubId)};
                     Cursor c = SqliteWrapper.query(this, resolver, uri,
                             SEND_PROJECTION, where, whereArgs, "date ASC");
                     if (c != null) {
                         try {
                             if (c.moveToFirst()) {
-                                success = false;
+                                Log.d(TAG, "Find queued SMS on other sub, do not unregister.");
+                                allowed = false;
                             }
                         } finally {
                             c.close();
                         }
                     }
-                    if(!success) {
-                        return success;
+                    if(!allowed) {
+                        return allowed;
                     }
                 }
             }
         }
-        return success;
+        return allowed;
     }
 
     private boolean saveMessageToIcc(SmsMessage sms) {
