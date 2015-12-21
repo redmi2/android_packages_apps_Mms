@@ -4548,7 +4548,7 @@ public class ComposeMessageActivity extends Activity
                 return;
             }
             if (mWorkingMessage.hasAttachment()) {
-                if (!mAttachmentEditor.canAddTextForMms(s)) {
+                if ((before != count) && !mAttachmentEditor.canAddTextForMms(s)) {
                     if (mTextEditor != null) {
                         mIsChanged = true;
                         mTextEditor.setText(mTextBefore);
