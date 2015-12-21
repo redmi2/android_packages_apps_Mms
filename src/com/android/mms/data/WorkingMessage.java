@@ -1264,9 +1264,7 @@ public class WorkingMessage {
     public void send(final String recipientsInUI) {
         long origThreadId = mConversation.getThreadId();
 
-        if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-            LogTag.debug("send origThreadId: " + origThreadId);
-        }
+        LogTag.debugD("send origThreadId: " + origThreadId);
 
         removeSubjectIfEmpty(true /* notify */);
 
@@ -1303,9 +1301,7 @@ public class WorkingMessage {
             final CharSequence subject = mSubject;
             final boolean textOnly = mAttachmentType == TEXT;
 
-            if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-                LogTag.debug("Send mmsUri: " + mmsUri);
-            }
+            LogTag.debugD("Send mmsUri: " + mmsUri);
 
             // Do the dirty work of sending the message off of the main UI thread.
             new Thread(new Runnable() {
@@ -1325,6 +1321,7 @@ public class WorkingMessage {
             // Same rules apply as above.
             // Add user's signature first if this feature is enabled.
             String text = mText.toString();
+            LogTag.debugD("mText="+text);
             SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(mActivity);
             if (sp.getBoolean("pref_key_enable_signature", false)) {
                 String signature = (sp.getString("pref_key_edit_signature", "")).trim();
@@ -1433,10 +1430,8 @@ public class WorkingMessage {
 
     private void sendSmsWorker(String msgText, String semiSepRecipients, long threadId) {
         String[] dests = TextUtils.split(semiSepRecipients, ";");
-        if (LogTag.VERBOSE || Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-            Log.d(LogTag.TRANSACTION, "sendSmsWorker sending message: recipients=" +
+        LogTag.debugD("sendSmsWorker sending message: recipients=" +
                     semiSepRecipients + ", threadId=" + threadId);
-        }
         MessageSender sender = new SmsMessageSender(mActivity, dests, msgText, threadId,
                 mCurrentConvSubId);
         try {

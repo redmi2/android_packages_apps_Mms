@@ -153,7 +153,7 @@ public class SmsReceiverService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (!MmsConfig.isSmsEnabled(this)) {
-            Log.d(TAG, "SmsReceiverService: is not the default sms app");
+            LogTag.debugD("SmsReceiverService: is not the default sms app");
             // NOTE: We MUST not call stopSelf() directly, since we need to
             // make sure the wake lock acquired by AlertReceiver is released.
             SmsReceiver.finishStartingService(SmsReceiverService.this, startId);
@@ -164,7 +164,7 @@ public class SmsReceiverService extends Service {
         int resultCode = intent != null ? intent.getIntExtra("result", 0) : 0;
 
         if (resultCode != 0) {
-            Log.v(TAG, "onStart: #" + startId + " resultCode: " + resultCode +
+            LogTag.debugD("onStart: #" + startId + " resultCode: " + resultCode +
                     " = " + translateResultCode(resultCode));
         }
 
@@ -223,17 +223,13 @@ public class SmsReceiverService extends Service {
         public void handleMessage(Message msg) {
             int serviceId = msg.arg1;
             Intent intent = (Intent)msg.obj;
-            if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-                Log.v(TAG, "handleMessage serviceId: " + serviceId + " intent: " + intent);
-            }
+            LogTag.debugD("handleMessage serviceId: " + serviceId + " intent: " + intent);
             if (intent != null && MmsConfig.isSmsEnabled(getApplicationContext())) {
                 String action = intent.getAction();
 
                 int error = intent.getIntExtra("errorCode", 0);
 
-                if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-                    Log.v(TAG, "handleMessage action: " + action + " error: " + error);
-                }
+                LogTag.debugD("handleMessage action: " + action + " error: " + error);
 
                 if (MESSAGE_SENT_ACTION.equals(intent.getAction())) {
                     handleSmsSent(intent, error);
@@ -277,6 +273,8 @@ public class SmsReceiverService extends Service {
         }
         if (!mSending.get(subId)) {
             sendFirstQueuedMessage(subId);
+        } else {
+            LogTag.debugD("subId=" + subId + " is in mSending ");
         }
     }
 
@@ -339,13 +337,9 @@ public class SmsReceiverService extends Service {
                         ((SmsSingleRecipientSender)sender).setPriority(priority);
                     }
 
-                    if (LogTag.DEBUG_SEND ||
-                            LogTag.VERBOSE ||
-                            Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-                        Log.v(TAG, "sendFirstQueuedMessage " + msgUri +
-                                ", address: " + address +
-                                ", threadId: " + threadId);
-                    }
+                    LogTag.debugD("sendFirstQueuedMessage " + msgUri +
+                            ", address: " + address +
+                            ", threadId: " + threadId);
 
                     try {
                         sender.sendMessage(SendingProgressTokenManager.NO_TOKEN);;
@@ -389,17 +383,13 @@ public class SmsReceiverService extends Service {
         int subId = intent.getIntExtra(PhoneConstants.SUBSCRIPTION_KEY,
                 SubscriptionManager.getDefaultSmsSubId());
         mSending.put(subId, false);
-        if (LogTag.DEBUG_SEND) {
-            Log.v(TAG, "handleSmsSent uri: " + uri + " sendNextMsg: " + sendNextMsg +
-                    " resultCode: " + resultCode +
-                    " = " + translateResultCode(resultCode) + " error: " + error);
-        }
+        LogTag.debugD("handleSmsSent uri: " + uri + " sendNextMsg: " + sendNextMsg +
+                " resultCode: " + resultCode +
+                " = " + translateResultCode(resultCode) + " error: " + error);
 
         if (resultCode == Activity.RESULT_OK) {
             if (sendNextMsg) {
-                if (LogTag.DEBUG_SEND || Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-                    Log.v(TAG, "handleSmsSent: move message to sent folder uri: " + uri);
-                }
+                Log.v(TAG, "handleSmsSent: move message to sent folder uri: " + uri);
                 if (!Sms.moveMessageToFolder(this, uri, Sms.MESSAGE_TYPE_SENT, error)) {
                     Log.e(TAG, "handleSmsSent: failed to move message " + uri + " to sent folder");
                 }
@@ -411,9 +401,7 @@ public class SmsReceiverService extends Service {
             MessagingNotification.nonBlockingUpdateSendFailedNotification(this);
         } else if ((resultCode == SmsManager.RESULT_ERROR_RADIO_OFF) ||
                 (resultCode == SmsManager.RESULT_ERROR_NO_SERVICE)) {
-            if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-                Log.v(TAG, "handleSmsSent: no service, queuing message w/ uri: " + uri);
-            }
+            LogTag.debugD("handleSmsSent: no service, queuing message w/ uri: " + uri);
             // We got an error with no service or no radio. Register for state changes so
             // when the status of the connection/radio changes, we can try to send the
             // queued up messages.
@@ -443,9 +431,7 @@ public class SmsReceiverService extends Service {
     }
 
     private void messageFailedToSend(Uri uri, int error) {
-        if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE) || LogTag.DEBUG_SEND) {
-            Log.v(TAG, "messageFailedToSend msg failed uri: " + uri + " error: " + error);
-        }
+        LogTag.debugD("messageFailedToSend msg failed uri: " + uri + " error: " + error);
         Sms.moveMessageToFolder(this, uri, Sms.MESSAGE_TYPE_FAILED, error);
         MessagingNotification.notifySendFailed(getApplicationContext(), true);
     }
@@ -456,10 +442,15 @@ public class SmsReceiverService extends Service {
 
         // Because all sub id have been changed to phone id in Mms,
         // so also change it here.
+        SmsMessage sms4log = msgs[0];
+        LogTag.debugD("handleSmsReceived" + (sms4log.isReplace() ? "(replace)" : "") +
+                    ", address: " + sms4log.getOriginatingAddress() +
+                    ", body: " + sms4log.getMessageBody());
         int saveLoc = MessageUtils.getSmsPreferStoreLocation(this,
                 SubscriptionManager.getPhoneId(msgs[0].getSubId()));
         if (getResources().getBoolean(R.bool.config_savelocation)
                 && saveLoc == MessageUtils.PREFER_SMS_STORE_CARD) {
+            LogTag.debugD("PREFER SMS STORE CARD");
             for (int i = 0; i < msgs.length; i++) {
                 SmsMessage sms = msgs[i];
                 boolean saveSuccess = saveMessageToIcc(sms);
@@ -475,6 +466,7 @@ public class SmsReceiverService extends Service {
                     getContentResolver().notifyChange(MessageUtils.getIccUriBySubscription(
                             phoneId), null);
                 } else {
+                    LogTag.debugD("SaveMessageToIcc fail");
                     mToastHandler.post(new Runnable() {
                         public void run() {
                             Toast.makeText(getApplicationContext(),
@@ -495,21 +487,15 @@ public class SmsReceiverService extends Service {
     private void saveMessageToPhone(SmsMessage[] msgs, int error, String format){
         Uri messageUri = insertMessage(this, msgs, error, format);
 
-        if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE) || LogTag.DEBUG_SEND) {
-            SmsMessage sms = msgs[0];
-            Log.v(TAG, "handleSmsReceived" + (sms.isReplace() ? "(replace)" : "") +
-                    " messageUri: " + messageUri +
-                    ", address: " + sms.getOriginatingAddress() +
-                    ", body: " + sms.getMessageBody());
-        }
-
         MessageUtils.checkIsPhoneMessageFull(this);
 
         if (messageUri != null) {
             long threadId = MessagingNotification.getSmsThreadId(this, messageUri);
             // Called off of the UI thread so ok to block.
-            Log.d(TAG, "handleSmsReceived messageUri: " + messageUri + " threadId: " + threadId);
+            LogTag.debugD("saveMessageToPhone messageUri: " + messageUri + " threadId: " + threadId);
             MessagingNotification.blockingUpdateNewMessageIndicator(this, threadId, false);
+        } else {
+            LogTag.debugD("saveMessageToPhone messageUri is null !");
         }
     }
 

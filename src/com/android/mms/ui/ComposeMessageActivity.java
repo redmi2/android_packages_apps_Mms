@@ -1024,7 +1024,7 @@ public class ComposeMessageActivity extends Activity
                 new View.OnClickListener() {
                     public void onClick(View v) {
                         int subId = SubscriptionManager.getSubId(phoneId)[0];
-                        Log.d(TAG, "LaunchMsimDialog: subscription selected " + subId);
+                        LogTag.debugD("LaunchMsimDialog: subscription selected " + subId);
                         processMsimSendMessage(subId, bCheckEcmMode);
                 }
             });
@@ -1039,10 +1039,11 @@ public class ComposeMessageActivity extends Activity
 
     private void sendMsimMessage(boolean bCheckEcmMode) {
         if (SmsManager.getDefault().isSMSPromptEnabled()) {
-            Log.d(TAG, "sendMsimMessage isSMSPromptEnabled: True");
+            LogTag.debugD("sendMsimMessage isSMSPromptEnabled: True");
             LaunchMsimDialog(bCheckEcmMode);
         } else {
             int subId = SubscriptionManager.getDefaultSmsSubId();
+            LogTag.debugD("sendMsimMessage with default SmsSubId :" + subId);
             mWorkingMessage.setWorkingMessageSub(subId);
             sendMessage(bCheckEcmMode);
         }
@@ -1123,6 +1124,7 @@ public class ComposeMessageActivity extends Activity
                 || (!TelephonyManager.getDefault().isMultiSimEnabled()
                         && isLTEOnlyMode())) {
             showDisableLTEOnlyDialog(slot);
+            LogTag.debugD("return for disable LTEOnly");
             return;
         }
 
@@ -1132,8 +1134,10 @@ public class ComposeMessageActivity extends Activity
                     MessageUtils.isMobileDataDisabled(getApplicationContext())) {
                 showMobileDataDisabledDialog();
             } else if ((TelephonyManager.getDefault().getPhoneCount()) > 1) {
+                LogTag.debugD("sendMsimMessage true");
                 sendMsimMessage(true);
             } else {
+                LogTag.debugD("sendMessage true");
                 sendMessage(true);
             }
             return;
@@ -3710,6 +3714,7 @@ public class ComposeMessageActivity extends Activity
 
             case REQUEST_CODE_ECM_EXIT_DIALOG:
                 boolean outOfEmergencyMode = data.getBooleanExtra(EXIT_ECM_RESULT, false);
+                LogTag.debugD("outOfEmergencyMode:" + outOfEmergencyMode);
                 if (outOfEmergencyMode) {
                     sendMessage(false);
                 }
@@ -4486,7 +4491,13 @@ public class ComposeMessageActivity extends Activity
     public void onClick(View v) {
         mIsRTL = (v.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL);
         if ((v == mSendButtonSms || v == mSendButtonMms) && isPreparedForSending()) {
+            if (v == mSendButtonSms) {
+                LogTag.debugD("send SMS button clicked");
+            } else {
+                LogTag.debugD("send MMS button clicked");
+            }
             if (MessageUtils.pupConnectWifiAlertDialog(getContext())) {
+                LogTag.debugD("not send for pupConnectWifiAlertDialog");
                 return ;
             }
             if (mShowTwoButtons) {
@@ -4928,6 +4939,7 @@ public class ComposeMessageActivity extends Activity
 
     private boolean isPreparedForSending() {
         if (mIsAirplaneModeOn && !TelephonyManager.getDefault().isImsRegistered()) {
+            LogTag.debugD("airplane mode on and ims not registered");
             return false;
         }
 
@@ -5034,6 +5046,7 @@ public class ComposeMessageActivity extends Activity
     private void sendMessage(boolean bCheckEcmMode) {
         // Check message size, if >= max message size, do not send message.
         if(checkMessageSizeExceeded()){
+            LogTag.debugD("MessageSizeExceeded");
             return;
         }
 
@@ -5084,8 +5097,10 @@ public class ComposeMessageActivity extends Activity
 
             if (mWorkingMessage.getResendMultiRecipients()) {
                 // If resend sms recipient is more than one, use mResendSmsRecipient
+                LogTag.debugD("mWorkingMessage send mResendSmsRecipient=" + mResendSmsRecipient);
                 mWorkingMessage.send(mResendSmsRecipient);
             } else {
+                LogTag.debugD("mWorkingMessage send mDebugRecipients=" + mDebugRecipients);
                 mWorkingMessage.send(mDebugRecipients);
             }
 

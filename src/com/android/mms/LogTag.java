@@ -37,12 +37,14 @@ public class LogTag {
     public static final String PDU_CACHE = TAG;
     public static final String WIDGET = TAG;
     public static final String CONTACT = TAG;
+    public static final String MMS_DBG ="Mms-debug";
 
     /**
      * Log tag for enabling/disabling StrictMode violation log.
      * To enable: adb shell setprop log.tag.Mms:strictmode DEBUG
      */
     public static final String STRICT_MODE_TAG = TAG;
+    public static final boolean DEBUG = true;
     public static final boolean VERBOSE = false;
     public static final boolean SEVERE_WARNING = true;                  // Leave this true
     private static final boolean SHOW_SEVERE_WARNING_DIALOG = false;    // Set to false before ship
@@ -104,6 +106,12 @@ public class LogTag {
                 Contact.dump();
             }
         }).start();
+    }
+
+    public static void debugD (String msg) {
+        if (LogTag.DEBUG) {
+            Log.d(MMS_DBG,msg);
+        }
     }
 
     public static void warnPossibleRecipientMismatch(final String msg, final Activity activity) {

@@ -118,9 +118,7 @@ public class SmsMessageSender implements MessageSender {
 
         for (int i = 0; i < mNumberOfDests; i++) {
             try {
-                if (LogTag.DEBUG_SEND) {
-                    Log.v(TAG, "queueMessage mDests[i]: " + mDests[i] + " mThreadId: " + mThreadId);
-                }
+                LogTag.debugD("queueMessage mDests[i]: " + mDests[i] + " mThreadId: " + mThreadId);
                 // Check to see whether short message count is up to 2000 for cmcc
                 if (MessageUtils.checkIsPhoneMessageFull(mContext)) {
                     break;

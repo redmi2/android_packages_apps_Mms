@@ -116,10 +116,8 @@ public class SendTransaction extends Transaction implements Runnable {
                                       new PduComposer(mContext, sendReq).make());
             SendingProgressTokenManager.remove(tokenKey);
 
-            if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-                String respStr = new String(response);
-                Log.d(TAG, "[SendTransaction] run: send mms msg (" + mId + "), resp=" + respStr);
-            }
+            String respStr = new String(response);
+            LogTag.debugD("[SendTransaction] run: send mms msg (" + mId + "), resp=" + respStr);
 
             SendConf conf = (SendConf) new PduParser(response,
                    PduParserUtil.shouldParseContentDisposition()).parse();

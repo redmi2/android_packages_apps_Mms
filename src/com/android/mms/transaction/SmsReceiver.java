@@ -24,6 +24,8 @@ import android.content.Intent;
 import android.os.PowerManager;
 import android.provider.Telephony.Sms.Intents;
 
+import com.android.mms.LogTag;
+
 /**
  * Handle incoming SMSes.  Just dispatches the work off to a Service.
  */
@@ -46,6 +48,7 @@ public class SmsReceiver extends BroadcastReceiver {
 
     protected void onReceiveWithPrivilege(Context context, Intent intent, boolean privileged) {
         String action = intent.getAction();
+        LogTag.debugD("onReceiveWithPrivilege:intent="+intent+"|privileged="+privileged);
         // If 'privileged' is false, it means that the intent was delivered to the base
         // no-permissions receiver class.  If we get an SMS_RECEIVED message that way, it
         // means someone has tried to spoof the message by delivering it outside the normal

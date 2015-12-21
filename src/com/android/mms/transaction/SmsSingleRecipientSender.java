@@ -53,12 +53,8 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
     private boolean sendEmptyMessage() throws MmsException {
         boolean moved = Sms.moveMessageToFolder(mContext, mUri, Sms.MESSAGE_TYPE_OUTBOX, 0);
         if (!moved) {
-            throw new MmsException("SmsMessageSender.sendMessage: couldn't move message " +
+            throw new MmsException("SmsMessageSender.sendEmptyMessage couldn't move message " +
                     "to outbox: " + mUri);
-        }
-        if (LogTag.DEBUG_SEND) {
-            Log.v(TAG, "sendMessage mDest: " + mDest + " mRequestDeliveryReport: " +
-                    mRequestDeliveryReport);
         }
 
         PendingIntent deliveryIntent;
@@ -83,15 +79,13 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
         int requestCode = 1;
         intent.putExtra(SmsReceiverService.EXTRA_MESSAGE_SENT_SEND_NEXT, true);
 
-        if (LogTag.DEBUG_SEND) {
-            Log.v(TAG, "sendMessage sendIntent: " + intent);
-        }
+        LogTag.debugD("sendEmptyMessage sendIntent: " + intent);
         PendingIntent sentIntent = PendingIntent.getBroadcast(mContext, requestCode, intent, 0);
 
         int validityPeriod = getValidityPeriod(mSubId);
         // Remove all attributes for CDMA international roaming.
         if (MessageUtils.isCDMAInternationalRoaming(mSubId)) {
-            Log.v(TAG, "sendMessage during CDMA international roaming.");
+            Log.v(TAG, "sendEmptyMessage during CDMA international roaming.");
             mPriority = -1;
             deliveryIntent = null;
             validityPeriod = -1;
@@ -99,6 +93,13 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
         try {
             ISms iccISms = ISms.Stub.asInterface(ServiceManager.getService("isms"));
             if (iccISms != null) {
+                LogTag.debugD("sendTextForSubscriberWithSelfPermissions:"
+                        + "mDest=" + mDest
+                        + "mRequestDeliveryReport=" +mRequestDeliveryReport
+                        + "mServiceCenter=" + mServiceCenter
+                        + "mThreadId=" + mThreadId
+                        + "|mUri=" + mUri
+                        );
                 iccISms.sendTextForSubscriberWithSelfPermissions(mSubId,
                         ActivityThread.currentPackageName(), mDest,
                         mServiceCenter, "", sentIntent, deliveryIntent);
@@ -106,27 +107,19 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
         } catch (RemoteException ex) {
             // ignore it
         } catch (Exception ex) {
-            Log.e(TAG, "SmsMessageSender.sendMessage: caught", ex);
-            throw new MmsException("SmsMessageSender.sendMessage: caught " + ex +
-                    " from MSimSmsManager.sendTextMessage()");
-        }
-        if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE) || LogTag.DEBUG_SEND) {
-            log("sendMessage: address=" + mDest + ", threadId=" + mThreadId +
-                    ", uri=" + mUri);
+            Log.e(TAG, "iccISms.sendTextForSubscriberWithSelfPermissions: caught", ex);
+            throw new MmsException("SmsMessageSender.sendEmptyMessage: caught " + ex +
+                    " from iccISms.sendTextForSubscriberWithSelfPermissions()");
         }
         return false;
     }
 
     public boolean sendMessage(long token) throws MmsException {
-        if (LogTag.DEBUG_SEND) {
-            Log.v(TAG, "sendMessage token: " + token);
-        }
         if (mMessageText == null) {
             // Don't try to send an empty message, and destination should be just
             // one.
             throw new MmsException("Null message body or have multiple destinations.");
         }
-        Log.e(TAG, "send SMS subId = " + mSubId);
         SmsManager smsManager = SmsManager.getSmsManagerForSubscriptionId(mSubId);
         ArrayList<String> messages = null;
         if ((MmsConfig.getEmailGateway() != null) &&
@@ -161,10 +154,6 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
             throw new MmsException("SmsMessageSender.sendMessage: couldn't move message " +
                     "to outbox: " + mUri);
         }
-        if (LogTag.DEBUG_SEND) {
-            Log.v(TAG, "sendMessage mDest: " + mDest + " mRequestDeliveryReport: " +
-                    mRequestDeliveryReport);
-        }
 
         ArrayList<PendingIntent> deliveryIntents =  new ArrayList<PendingIntent>(messageCount);
         ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>(messageCount);
@@ -197,14 +186,11 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
                 requestCode = 1;
                 intent.putExtra(SmsReceiverService.EXTRA_MESSAGE_SENT_SEND_NEXT, true);
             }
-            if (LogTag.DEBUG_SEND) {
-                Log.v(TAG, "sendMessage sendIntent: " + intent);
-            }
+            LogTag.debugD("sendMessage sendIntent: " + intent);
             sentIntents.add(PendingIntent.getBroadcast(mContext, requestCode, intent, 0));
         }
 
         int validityPeriod = getValidityPeriod(mSubId);
-        Log.d(TAG, "sendMessage validityPeriod = "+validityPeriod);
         // Remove all attributes for CDMA international roaming.
         if (mContext.getResources().getBoolean(R.bool.config_ignore_sms_attributes) &&
                 MessageUtils.isCDMAInternationalRoaming(mSubId)) {
@@ -214,16 +200,25 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
             validityPeriod = -1;
         }
         try {
+            LogTag.debugD("sendMultipartTextMessage:mDest=" + mDest
+                    + "|mServiceCenter=" + mServiceCenter
+                    + "|messages=" + ((messages != null) ? TextUtils.join(">", messages) : "empty")
+                    + "|mPriority=" + mPriority
+                    + "|isExpectMore=" + isExpectMore
+                    + "|validityPeriod=" + validityPeriod
+                    + "|threadId=" + mThreadId
+                    + "|uri=" + mUri
+                    + "|msgs.count=" + messageCount
+                    + "|token=" + token
+                    + "|mSubId=" + mSubId
+                    + "|mRequestDeliveryReport=" + mRequestDeliveryReport
+                    );
             smsManager.sendMultipartTextMessage(mDest, mServiceCenter, messages,
                     sentIntents, deliveryIntents, mPriority, isExpectMore, validityPeriod);
         } catch (Exception ex) {
             Log.e(TAG, "SmsMessageSender.sendMessage: caught", ex);
             throw new MmsException("SmsMessageSender.sendMessage: caught " + ex +
                     " from SmsManager.sendMultipartTextMessage()");
-        }
-        if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE) || LogTag.DEBUG_SEND) {
-            log("sendMessage: address=" + mDest + ", threadId=" + mThreadId +
-                    ", uri=" + mUri + ", msgs.count=" + messageCount);
         }
         return false;
     }
