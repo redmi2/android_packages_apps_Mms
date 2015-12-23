@@ -587,8 +587,7 @@ public class MessagingPreferenceActivity extends PreferenceActivity
             final Preference pref = new Preference(this);
             pref.setKey(String.valueOf(i));
             pref.setTitle(getSMSCDialogTitle(count, i));
-            if (getResources().getBoolean(R.bool.show_edit_smsc)
-                || false/*getResources().getBoolean(com.android.internal.R.bool.config_regional_smsc_editable)*/) {
+            if (getResources().getBoolean(R.bool.show_edit_smsc)) {
                 pref.setOnPreferenceClickListener(null);
             } else {
                 pref.setOnPreferenceClickListener(new OnPreferenceClickListener() {
