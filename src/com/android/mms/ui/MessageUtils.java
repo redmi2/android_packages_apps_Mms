@@ -64,6 +64,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.drawable.Drawable;
 import android.media.CamcorderProfile;
+import android.media.MediaMetadataRetriever;
 import android.media.RingtoneManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -327,6 +328,11 @@ public class MessageUtils {
         }
     }
 
+    private static final String MIME_TYPE_3GPP_VIDEO = "video/3gpp";
+    private static final String MIME_TYPE_3GPP_AUDIO = "audio/3gpp";
+    private static final String MIME_TYPE_3GPP2_VIDEO = "video/3gpp2";
+    private static final String MIME_TYPE_3GPP2_AUDIO = "audio/3gpp2";
+
     private static final int OFFSET_ADDRESS_LENGTH = 0;
     private static final int OFFSET_TOA = 1;
     private static final int OFFSET_ADDRESS_VALUE = 2;
@@ -340,6 +346,35 @@ public class MessageUtils {
 
     private MessageUtils() {
         // Forbidden being instantiated.
+    }
+
+    public static boolean is3GPP(String ext) {
+        return "3gp".equals(ext) || "3gpp".equals(ext);
+    }
+
+    public static boolean is3GPP2(String ext) {
+        return "3g2".equals(ext) || "3gpp2".equals(ext);
+    }
+
+    public static String getMimeType(String absolutePath, String ext) {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        try {
+            retriever.setDataSource(absolutePath);
+            boolean hasVideo = retriever
+                    .extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) != null;
+            if (is3GPP(ext)) {
+                return hasVideo ? MIME_TYPE_3GPP_VIDEO : MIME_TYPE_3GPP_AUDIO;
+            } else if (is3GPP2(ext)) {
+                return hasVideo ? MIME_TYPE_3GPP2_VIDEO : MIME_TYPE_3GPP2_AUDIO;
+            }
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Unable to open 3GP file to determine mimetype");
+        } finally {
+            retriever.release();
+        }
+        // Default to video 3gp if the file is unreadable as this was the default before
+        // ambiguous resolution support was added.
+        return MIME_TYPE_3GPP_VIDEO;
     }
 
     /**

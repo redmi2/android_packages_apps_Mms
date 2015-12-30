@@ -4293,6 +4293,12 @@ public class ComposeMessageActivity extends Activity
                      metadataCursor.close();
                  }
             }
+        } else if ("file".equals(scheme)) {
+            String ext = MimeTypeMap.getFileExtensionFromUrl(uri.getPath());
+            if (MessageUtils.is3GPP(ext) || MessageUtils.is3GPP2(ext)) {
+                attachmentType = MessageUtils.getMimeType(uri.getPath(), ext);
+                Log.d(TAG, "remap file " + ext + " to " + attachmentType);
+            }
         }
 
         return attachmentType;
