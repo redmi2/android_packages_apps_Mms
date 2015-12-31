@@ -2242,7 +2242,7 @@ public class ComposeMessageActivity extends Activity
                         title = mTitle[getResources().getInteger(R.integer.wap_push_address_index)];
                     }
 
-                    if (mTextCounter.isLayoutRtl()) {
+                if (mTextCounter.isLayoutRtl() && !TextUtils.isEmpty(number.trim())) {
 
                         // Change the phonenumber display normally for RTL.
                         if (title.equals(number)) {
