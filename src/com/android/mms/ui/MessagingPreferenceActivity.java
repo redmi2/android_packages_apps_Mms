@@ -367,9 +367,9 @@ public class MessagingPreferenceActivity extends PreferenceActivity
         mSmsValidityCard2Pref
             = (ListPreference) findPreference("pref_key_sms_validity_period_slot2");
         // ConfigurationClient
-        if((MmsConfig.isOMACPEnabled())){
+        if((MmsConfig.isOMACPEnabled(MessagingPreferenceActivity.this))) {
             mConfigurationmessage = findPreference(CONFIGURATION_MESSAGE);
-        }else {
+        } else {
             PreferenceScreen prefRoot = (PreferenceScreen) findPreference("pref_key_root");
             PreferenceCategory OMACPConCategory =
                     (PreferenceCategory) findPreference(OMACP_CONFIGURATION_CATEGORY);

@@ -102,4 +102,6 @@
     <string-array translatable="false" name="config_regional_carrier_operator_list"></string-array>
     <bool name="def_rcs_sending_policy">true</bool>
 
+    <!-- Flag indicating whether OMA CP messages can be viewed -->
+    <bool name="enableOMACP">false</bool>
 </resources>
