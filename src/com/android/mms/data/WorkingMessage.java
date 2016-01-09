@@ -1039,7 +1039,7 @@ public class WorkingMessage {
                 mHasMmsDraft = true;
             }
         } else {
-            String content = mText.toString();
+            String content = (mText != null) ? mText.toString() : "";
 
             // bug 2169583: don't bother creating a thread id only to delete the thread
             // because the content is empty. When we delete the thread in updateDraftSmsMessage,
