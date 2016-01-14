@@ -661,11 +661,9 @@ public class TransactionService extends Service implements Observer {
     private void stopSelfIfIdle(int startId) {
         synchronized (mProcessing) {
             if (mProcessing.isEmpty() && mPending.isEmpty()) {
-                if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
-                    Log.v(TAG, "stopSelfIfIdle: STOP!");
-                }
+                LogTag.debugD("stopSelfIfIdle: STOP!");
+                stopSelf(startId);
             }
-            stopSelf(startId);
         }
     }
 
