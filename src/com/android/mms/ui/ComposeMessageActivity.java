@@ -513,6 +513,8 @@ public class ComposeMessageActivity extends Activity
             "com.qualcomm.qti.phonefeature.DISABLE_TDD_LTE";
     private static final String LTE_DATA_ONLY_KEY = "network_band";
     private static final int LTE_DATA_ONLY_MODE = 2;
+    private static final String SIM_STATE_CHANGE_ACTION =
+            "android.intent.action.SIM_STATE_CHANGED";
 
     /**
      * Whether this activity is currently running (i.e. not paused)
@@ -2388,6 +2390,9 @@ public class ComposeMessageActivity extends Activity
         intentFilter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
         registerReceiver(mAirplaneModeBroadcastReceiver, intentFilter);
 
+        IntentFilter simIntentFilter = new IntentFilter();
+        simIntentFilter.addAction(SIM_STATE_CHANGE_ACTION);
+        registerReceiver(mSimBroadcastReceiver, simIntentFilter);
         if (TRACE) {
             android.os.Debug.startMethodTracing("compose");
         }
@@ -2395,6 +2400,20 @@ public class ComposeMessageActivity extends Activity
             registerRcsReceiver();
         }
     }
+
+    private final BroadcastReceiver mSimBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(SIM_STATE_CHANGE_ACTION)) {
+                boolean mIsMsimIccCardActived = MessageUtils.isMsimIccCardActive();
+                log("mSimBroadcastReceiver mIsMsimIccCardActived"
+                        + mIsMsimIccCardActived);
+                if (mMsgListAdapter != null) {
+                    mMsgListAdapter.setIsMsimIccCardActived(mIsMsimIccCardActived);
+                }
+            }
+        }
+    };
 
     private void showSubjectEditor(boolean show) {
         if (Log.isLoggable(LogTag.APP, Log.VERBOSE)) {
@@ -2975,6 +2994,7 @@ public class ComposeMessageActivity extends Activity
         }
 
         unregisterReceiver(mAirplaneModeBroadcastReceiver);
+        unregisterReceiver(mSimBroadcastReceiver);
         if (mIsRcsEnabled) {
             unregisterRcsReceiver();
         }
@@ -5414,6 +5434,7 @@ public class ComposeMessageActivity extends Activity
 
         // Initialize the list adapter with a null cursor.
         mMsgListAdapter = new MessageListAdapter(this, null, mMsgListView, true, highlight);
+        mMsgListAdapter.setIsMsimIccCardActived(MessageUtils.isMsimIccCardActive());
         mMsgListAdapter.setOnDataSetChangedListener(mDataSetChangedListener);
         mMsgListAdapter.setMsgListItemHandler(mMessageListItemHandler);
         mMsgListView.setAdapter(mMsgListAdapter);
