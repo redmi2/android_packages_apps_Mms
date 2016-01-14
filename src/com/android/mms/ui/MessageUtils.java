@@ -892,7 +892,7 @@ public class MessageUtils {
         if (requringRcsAttachment) {
             long durationLimit = RcsFileController.getRcsTransferFileMaxDuration(
                     RcsUtils.RCS_MSG_TYPE_AUDIO);
-            intent.putExtra(Media.EXTRA_MAX_BYTES, (long)((ARM_BIT / 8) * (durationLimit + 1)));
+            intent.putExtra(Media.DURATION, (int)(durationLimit));
         } else {
             intent.putExtra(android.provider.MediaStore.Audio.Media.EXTRA_MAX_BYTES, sizeLimit);
         }
@@ -1223,7 +1223,8 @@ public class MessageUtils {
         }
 
         final Cursor c = SqliteWrapper.query(context, context.getContentResolver(),
-                        Mms.Inbox.CONTENT_URI, new String[] {Mms._ID, Mms.MESSAGE_ID, "phone_id"/*Mms.PHONE_ID*/},
+                        Mms.Inbox.CONTENT_URI, new String[] {
+                            Mms._ID, Mms.MESSAGE_ID, Mms.SUBSCRIPTION_ID},
                         selectionBuilder.toString(), null, null);
 
         if (c == null) {

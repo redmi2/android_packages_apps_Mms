@@ -203,7 +203,7 @@ public class MessageListAdapter extends CursorAdapter {
         Mms.LOCKED,
         Mms.STATUS,
         Mms.TEXT_ONLY,
-        Mms.PHONE_ID,
+        Mms.SUBSCRIPTION_ID,
         Threads.RECIPIENT_IDS,  // add for obtaining address of MMS
         RcsColumns.SmsRcsColumns.RCS_FILENAME,
         RcsColumns.SmsRcsColumns.RCS_THUMB_PATH,

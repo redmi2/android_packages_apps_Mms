@@ -90,7 +90,7 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
         if (sDefaultContactImage == null) {
             sDefaultContactImage = context.getResources().getDrawable(R.drawable.ic_contact_picture);
         }
-        if (MmsConfig.isRcsEnabled() && sDefaultGroupChatImage == null) {
+        if (MmsConfig.isRcsVersion() && sDefaultGroupChatImage == null) {
             sDefaultGroupChatImage = context.getResources().getDrawable(
                     R.drawable.rcs_ic_group_chat_photo);
         }
@@ -124,7 +124,7 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
     private CharSequence formatMessage() {
         final int color = android.R.styleable.Theme_textColorSecondary;
         String from;
-        if (MmsConfig.isRcsEnabled()&&mConversation.isGroupChat()) {
+        if (MmsConfig.isRcsVersion() && mConversation.isGroupChat()) {
             GroupChat groupChat = mConversation.getGroupChat();
             if (groupChat != null) {
                 from = RcsUtils.getDisplayName(groupChat);
@@ -225,7 +225,7 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
     }
 
     private void updateAvatarView() {
-        if (MmsConfig.isRcsEnabled() && mConversation.isGroupChat()) {
+        if (MmsConfig.isRcsVersion() && mConversation.isGroupChat()) {
             mAvatarView.assignContactUri(null);
             mAvatarView.setImageDrawable(sDefaultGroupChatImage);
             mAvatarView.setVisibility(View.VISIBLE);
@@ -309,7 +309,7 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
             Log.v(TAG, "bind: contacts.addListeners " + this);
         }
         Contact.addListener(this);
-        if (MmsConfig.isRcsEnabled()) {
+        if (MmsConfig.isRcsVersion()) {
             int messageID = conversation.getRcsLastMsgId();
             if (isBurnMsg(messageID)) {
                 mSubjectView.setText(R.string.msg_type_burnMessage);

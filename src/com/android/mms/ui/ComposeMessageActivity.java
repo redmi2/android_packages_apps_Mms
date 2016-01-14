@@ -1224,7 +1224,7 @@ public class ComposeMessageActivity extends Activity
                 }
             }
             smsBtns[i].setText(displayName);
-            if (mIsRcsEnabled&&mConversation.isGroupChat()) {
+            if (mIsRcsEnabled && mConversation.isGroupChat()) {
                 int rcsOnlineSlot = RcsDualSimMananger.getCurrentRcsOnlineSlot();
                 if (rcsOnlineSlot != i) {
                     smsBtns[i].setEnabled(false);
@@ -2209,7 +2209,7 @@ public class ComposeMessageActivity extends Activity
     private void updateTitle(ContactList list) {
         String title = null;
         String subTitle = null;
-        if (mIsRcsEnabled&&mConversation.isGroupChat()) {
+        if (MmsConfig.isRcsVersion() && mConversation.isGroupChat()) {
             GroupChat groupChat = mConversation.getGroupChat();
             if (groupChat != null) {
                 title = RcsUtils.getDisplayName(groupChat);
@@ -2469,7 +2469,7 @@ public class ComposeMessageActivity extends Activity
         initActivityState(savedInstanceState);
 
         // Init the RCS components.
-        if (mIsRcsEnabled) {
+        if (MmsConfig.isRcsVersion()) {
             initRcsComponents();
         }
 
@@ -2544,9 +2544,11 @@ public class ComposeMessageActivity extends Activity
         }
 
         mMsgListAdapter.setIsGroupConversation(mConversation.getRecipients().size() > 1);
-        GroupChat groupChat = mConversation.getGroupChat();
-        if (groupChat != null) {
-            mMsgListAdapter.setRcsGroupId(groupChat.getId());
+        if (MmsConfig.isRcsVersion()) {
+            GroupChat groupChat = mConversation.getGroupChat();
+            if (groupChat != null) {
+                mMsgListAdapter.setRcsGroupId(groupChat.getId());
+            }
         }
     }
 
@@ -2884,7 +2886,7 @@ public class ComposeMessageActivity extends Activity
             public void run() {
                 ContactList recipients = isRecipientsEditorVisible() ?
                         mRecipientsEditor.constructContactsFromInput(false) : getRecipients();
-                if (mIsRcsEnabled && mConversation.isGroupChat()) {
+                if (MmsConfig.isRcsVersion() && mConversation.isGroupChat()) {
                     try {
                         if (mConversation.getGroupChat() != null) {
                             long groupId = mConversation.getGroupChat().getId();
@@ -3488,7 +3490,11 @@ public class ComposeMessageActivity extends Activity
         } else if (mIsSmsEnabled) {
             menu.add(0, MENU_DISCARD, 0, R.string.discard).setIcon(android.R.drawable.ic_menu_delete);
         }
-        if (!mConversation.isGroupChat()) {
+        if (MmsConfig.isRcsVersion()) {
+            if (!mConversation.isGroupChat()) {
+                buildAddAddressToContactMenuItem(menu);
+            }
+        } else {
             buildAddAddressToContactMenuItem(menu);
         }
         // ADD firewall menu
@@ -5051,7 +5057,13 @@ public class ComposeMessageActivity extends Activity
                             toast(R.string.rcs_offline_unable_to_send);
                             return;
                         }
-                        confirmSendMessageIfNeeded();
+                        if (mIsBurnMessage) {
+                            toast(R.string.rcs_not_online_can_not_send_burn_message);
+                            mIsBurnMessage = false;
+                            return;
+                        } else {
+                            confirmSendMessageIfNeeded();
+                        }
                     }
                 } else {
                     confirmSendMessageIfNeeded();
@@ -5542,9 +5554,8 @@ public class ComposeMessageActivity extends Activity
 
         int recipientCount = recipientCount();
         if (mIsRcsEnabled && mConversation.isGroupChat()) {
-            return (!mSentMessage && mConversation.getGroupChat() == null && recipientCount > 0
-                    && (mWorkingMessage.hasAttachment() || mWorkingMessage.hasText()
-                    || mWorkingMessage.hasSubject())) || mConversation.isGroupChatActive();
+            return (recipientCount > 0 && (mWorkingMessage.hasRcsAttach()
+                    || mWorkingMessage.hasText())) && mConversation.isGroupChatActive();
         }
 
         if (recipientCount > 0 && mIsRcsEnabled && mWorkingMessage.getCacheRcsMessage()) {
@@ -8178,9 +8189,10 @@ public class ComposeMessageActivity extends Activity
         IntentFilter emotionFilter = new IntentFilter();
         emotionFilter.addAction(Actions.MessageAction.ACTION_MESSAGE_DOWNLOAD_EMOTICON_RESULT);
         registerReceiver(mEmotionDownloadReceiver, emotionFilter);
-        IntentFilter photoUpdateFilter = new IntentFilter(
+        IntentFilter rcsStatusUpdateFilter = new IntentFilter(
                 RcsContactsUtils.NOTIFY_CONTACT_PHOTO_CHANGE);
-        registerReceiver(mPhotoUpdateReceiver, photoUpdateFilter);
+        rcsStatusUpdateFilter.addAction(Actions.RegisterAction.ACTION_REGISTER_STATUS_CHANGED);
+        registerReceiver(mRcsStatusUpdateReceiver, rcsStatusUpdateFilter);
     }
 
     private void unregisterRcsReceiver() {
@@ -8189,7 +8201,7 @@ public class ComposeMessageActivity extends Activity
             unregisterReceiver(mGroupReceiver);
             unregisterReceiver(mCloudFileReceiver);
             unregisterReceiver(mEmotionDownloadReceiver);
-            unregisterReceiver(mPhotoUpdateReceiver);
+            unregisterReceiver(mRcsStatusUpdateReceiver);
         } catch (Exception e) {
             RcsLog.w(e);
         }
@@ -8830,10 +8842,33 @@ public class ComposeMessageActivity extends Activity
         }
     }
 
-    private BroadcastReceiver mPhotoUpdateReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver mRcsStatusUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            mMsgListAdapter.notifyDataSetChanged();
+            String action = intent.getAction();
+            if ((Actions.RegisterAction.ACTION_REGISTER_STATUS_CHANGED).equals(action)) {
+                int registerCode = intent.getIntExtra(Parameter.EXTRA_CODE, -1);
+                RcsLog.i("mRegisterStatusReceiver action=" + action + ",registerCode="
+                        + registerCode);
+                if (registerCode == Constants.RegisterConstants.CONST_ONLINE) {
+                    if (mConversation.getGroupChat() != null) {
+                        final long groupId = mConversation.getGroupChat().getId();
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    mGroupChatApi.rejoin(groupId);
+                                } catch (Exception e) {
+                                    RcsLog.w(e);
+                                }
+                            }
+                        }).start();
+                        RcsLog.i("mRegisterStatusReceiver rejoin groupChatId =" + groupId);
+                    }
+                }
+            } else {
+                mMsgListAdapter.notifyDataSetChanged();
+            }
         }
     };
 

@@ -598,7 +598,7 @@ public class WorkingMessage {
         }
 
         // If is RCS message, it actually contains anything to save.
-        if(hasRcsAttach()){
+        if (MmsConfig.isRcsVersion() && hasRcsAttach()) {
            return true;
         }
         // When saveAsMms() has been called, we set FORCE_MMS to represent
@@ -1348,7 +1348,7 @@ public class WorkingMessage {
         // We need the recipient list for both SMS and MMS.
         final Conversation conv = mConversation;
         String msgTxt = mText.toString();
-        if (SupportApi.getInstance().isRcsSupported() && shouldSendMessageWithRcsPolicy()) {
+        if (MmsConfig.isRcsEnabled() && shouldSendMessageWithRcsPolicy()) {
             sendRcsMessage(recipientsInUI);
             return;
         }

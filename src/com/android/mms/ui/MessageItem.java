@@ -724,6 +724,11 @@ public class MessageItem {
     public void setCountDown(int countDown) {
         this.mCountDown = countDown;
     }
+
+    public boolean isFailedRcsTextMessage() {
+        return getRcsMsgState() == RcsUtils.MESSAGE_FAIL
+                && getRcsMsgType() == RcsUtils.RCS_MSG_TYPE_TEXT;
+    }
     /* End add for RCS */
 
 }

@@ -278,7 +278,7 @@ public class MmsWidgetService extends RemoteViewsService {
                     from.setSpan(ConversationListItem.STYLE_BOLD, 0, from.length(),
                             Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
                 }
-               if (MmsConfig.isRcsEnabled()&&conv.isGroupChat()) {
+               if (MmsConfig.isRcsVersion() && conv.isGroupChat()) {
                     GroupChat groupChat = conv.getGroupChat();
                     if (groupChat != null) {
                         from.clear();
@@ -291,7 +291,7 @@ public class MmsWidgetService extends RemoteViewsService {
 
                 // Subject
                 String snippet = conv.getSnippet();
-                if (MmsConfig.isRcsEnabled()) {
+                if (MmsConfig.isRcsVersion()) {
                     if (conv.isGroupChat()) {
                         snippet = RcsUtils.getStringOfNotificationBody(mContext, snippet);
                     } else {

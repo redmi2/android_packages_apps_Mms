@@ -862,12 +862,20 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         if (mIsRcsEnabled) {
             if (!isConvsertionSelect) {
                 if (mIsRcsEnabled) {
-                    GroupChat groupChat = conv.getGroupChat();
+                    final GroupChat groupChat = conv.getGroupChat();
                     if (groupChat != null) {
                         try {
                             if (groupChat.isGroupChatValid()) {
-                                GroupChatApi.getInstance().rejoin(groupChat.getId());
-                                RcsLog.i("rejoin groupChatId =" + groupChat.getId());
+                                new Thread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            GroupChatApi.getInstance().rejoin(groupChat.getId());
+                                        } catch (Exception e) {
+                                            RcsLog.w(e);
+                                        }
+                                    }
+                                }).start();
                             }
                         } catch (Exception e) {
                             RcsLog.w(e);

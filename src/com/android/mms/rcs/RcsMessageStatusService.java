@@ -105,9 +105,10 @@ public class RcsMessageStatusService extends IntentService {
             long id = intent.getLongExtra(Parameter.EXTRA_THREAD_ID, DEFAULT_THREAD_ID);
             int status = intent.getIntExtra(Parameter.EXTRA_STATUS, DEFAULT_STATUS);
             if (status == RcsUtils.MESSAGE_FAIL) {
-                RcsNotifyManager.sendMessageFailNotif(MmsApp.getApplication(), status, id, true);
-                if (MessagingNotification.getCurrentlyDisplayedThreadId() != id){
-                    RcsUtils.updateFaildMessageType(MmsApp.getApplication(), dataId);
+                RcsUtils.updateFaildMessageType(MmsApp.getApplication(), dataId);
+                if (MessagingNotification.getCurrentlyDisplayedThreadId() != id) {
+                    RcsNotifyManager
+                            .sendMessageFailNotif(MmsApp.getApplication(), status, id, true);
                 }
             }
         } else if (Actions.MessageAction.ACTION_MESSAGE_SMS_POLICY_NOT_SET.equals(action)) {

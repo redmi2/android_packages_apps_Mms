@@ -1011,7 +1011,7 @@ public class Conversation {
             conv.mRecipients = recipients;
         }
 
-        if (conv.isGroupChat()) {
+        if (MmsConfig.isRcsVersion() && conv.isGroupChat()) {
             try {
                 conv.mGroupChat = GroupChatApi.getInstance().getGroupChatByThreadId(conv.mThreadId);
             } catch (Exception e) {
