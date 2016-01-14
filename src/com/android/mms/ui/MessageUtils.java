@@ -221,6 +221,8 @@ public class MessageUtils {
      */
     private static boolean isLayoutRtl = false;
 
+    private static boolean sErrorDialogIsShown;
+
     private static final String EXIT_AFTER_RECORD = "exit_after_record";
 
     // Cache of both groups of space-separated ids to their full
@@ -1029,20 +1031,29 @@ public class MessageUtils {
         if (activity.isFinishing()) {
             return;
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        if (!sErrorDialogIsShown) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(activity);
 
-        builder.setIcon(R.drawable.ic_sms_mms_not_delivered);
-        builder.setTitle(title);
-        builder.setMessage(message);
-        builder.setPositiveButton(android.R.string.ok, new OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                if (which == DialogInterface.BUTTON_POSITIVE) {
-                    dialog.dismiss();
+            builder.setIcon(R.drawable.ic_sms_mms_not_delivered);
+            builder.setTitle(title);
+            builder.setMessage(message);
+            builder.setPositiveButton(android.R.string.ok, new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    if (which == DialogInterface.BUTTON_POSITIVE) {
+                        dialog.dismiss();
+                    }
                 }
-            }
-        });
-        builder.show();
+            });
+            builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    sErrorDialogIsShown = false;
+                }
+            });
+            builder.show();
+            sErrorDialogIsShown = true;
+        }
     }
 
     /**
