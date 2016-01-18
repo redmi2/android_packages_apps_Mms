@@ -1514,7 +1514,35 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 return;
             }
             final int checkedCount = listView.getCheckedItemCount();
-
+            Menu menu = mode.getMenu();
+            MenuItem topItem = menu.findItem(R.id.topConversation);
+            MenuItem unTopItem = menu.findItem(R.id.cancelTopConversation);
+            MenuItem addBlackItem = menu.findItem(R.id.addBlackList);
+            if (mIsRcsEnabled ) {
+                if (checkedCount == 1) {
+                    if (mIsTopConversation) {
+                        unTopItem.setVisible(true);
+                        topItem.setVisible(false);
+                    } else {
+                        topItem.setVisible(true);
+                        unTopItem.setVisible(false);
+                    }
+                    if (mConversation != null && RcsUtils.showFirewallMenu(ConversationList.this,
+                        mConversation.getRecipients(), true) && !mConversation.isGroupChat()) {
+                        addBlackItem.setVisible(true);
+                    } else {
+                        addBlackItem.setVisible(false);
+                    }
+                } else {
+                    topItem.setVisible(false);
+                    unTopItem.setVisible(false);
+                    addBlackItem.setVisible(false);
+                }
+            } else {
+                topItem.setVisible(false);
+                unTopItem.setVisible(false);
+                addBlackItem.setVisible(false);
+            }
             mSelectionMenu.setTitle(getApplicationContext().getString(R.string.selected_count,
                     checkedCount));
             if (getListView().getCount() == checkedCount) {
