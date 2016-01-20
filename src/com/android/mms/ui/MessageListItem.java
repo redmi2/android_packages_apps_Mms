@@ -158,6 +158,7 @@ public class MessageListItem extends LinearLayout implements
     private int mPosition;      // for debugging
     private ImageLoadedCallback mImageLoadedCallback;
     private boolean mMultiRecipients;
+    private boolean mIsMsimIccCardActived = false;
     private int mManageMode;
 
     /* Begin add for RCS */
@@ -188,6 +189,10 @@ public class MessageListItem extends LinearLayout implements
             sRcsBurnMessageHasBurnImage = res.getDrawable(
                     R.drawable.rcs_burnmessage_has_burn);
         }
+    }
+
+    public void setIsMsimIccCardActived(boolean isActived){
+        mIsMsimIccCardActived = isActived;
     }
 
     public MessageListItem(Context context, AttributeSet attrs) {
@@ -470,7 +475,7 @@ public class MessageListItem extends LinearLayout implements
     }
 
     private void updateSimIndicatorView(int subscription) {
-        if (MessageUtils.isMsimIccCardActive() && subscription >= 0) {
+        if (mIsMsimIccCardActived && subscription >= 0) {
             Drawable mSimIndicatorIcon = MessageUtils.getMultiSimIcon(mContext,
                     subscription);
             mSimIndicatorView.setImageDrawable(mSimIndicatorIcon);

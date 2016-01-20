@@ -311,6 +311,7 @@ public class MessageListAdapter extends CursorAdapter {
     private Context mContext;
     private boolean mIsGroupConversation;
     private boolean mMultiChoiceMode = false;
+    private boolean mIsMsimIccCardActived = false;
     // for multi delete sim messages or forward merged message
     private int mMultiManageMode = MessageUtils.INVALID_MODE;
 
@@ -358,6 +359,10 @@ public class MessageListAdapter extends CursorAdapter {
         });
     }
 
+    public void setIsMsimIccCardActived(boolean isActived) {
+        mIsMsimIccCardActived = isActived;
+    }
+
     @Override
     public void bindView(View view, Context context, Cursor cursor) {
         if (view instanceof MessageListItem) {
@@ -378,6 +383,7 @@ public class MessageListAdapter extends CursorAdapter {
                 if (mMultiManageMode != MessageUtils.INVALID_MODE) {
                     mli.setManageSelectMode(mMultiManageMode);
                 }
+                mli.setIsMsimIccCardActived(mIsMsimIccCardActived);
                 mli.bind(msgItem, mIsGroupConversation, position, mGroupId);
                 mli.setMsgListItemHandler(mMsgListItemHandler);
             }
