@@ -396,6 +396,13 @@ public class RecipientsEditor extends RecipientEditTextView {
     }
 
     @Override
+    public void onLongPress(MotionEvent event) {
+        // Override parent's onLongPress but do nothing.
+        // To avoid calling parent's showCopyDialog().
+        // But keep copy function in dialog poped by Mms side.
+    }
+
+    @Override
     protected ContextMenuInfo getContextMenuInfo() {
         if ((mLongPressedPosition >= 0)) {
             Spanned text = getText();
