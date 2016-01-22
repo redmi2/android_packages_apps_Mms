@@ -316,8 +316,9 @@ public class ComposeMessageActivity extends Activity
     // Context menu ID
     private static final int MENU_VIEW_CONTACT          = 12;
     private static final int MENU_ADD_TO_CONTACTS       = 13;
+    private static final int MENU_COPY_PHONENUMBER      = 14;
 
-    private static final int MENU_EDIT_MESSAGE          = 14;
+    private static final int MENU_EDIT_MESSAGE          = 15;
     private static final int MENU_VIEW_SLIDESHOW        = 16;
     private static final int MENU_VIEW_MESSAGE_DETAILS  = 17;
     private static final int MENU_DELETE_MESSAGE        = 18;
@@ -1578,6 +1579,8 @@ public class ComposeMessageActivity extends Activity
                     menu.add(0, MENU_ADD_TO_CONTACTS, 0, R.string.menu_add_to_contacts)
                             .setOnMenuItemClickListener(l);
                 }
+                menu.add(0, MENU_COPY_PHONENUMBER, 1, R.string.copy_number)
+                         .setOnMenuItemClickListener(l);
             }
         }
     };
@@ -1609,6 +1612,10 @@ public class ComposeMessageActivity extends Activity
                             mRecipient.getNumber());
                     ComposeMessageActivity.this.startActivityForResult(mAddContactIntent,
                             REQUEST_CODE_ADD_CONTACT);
+                    return true;
+                }
+                case MENU_COPY_PHONENUMBER: {
+                    copyToClipboard(mRecipient.getNumber());
                     return true;
                 }
             }
