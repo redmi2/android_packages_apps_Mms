@@ -5529,8 +5529,7 @@ public class ComposeMessageActivity extends Activity
         if ((!mWaitingForSubActivity &&
                 !mWorkingMessage.isWorthSaving() &&
                 (!isRecipientsEditorVisible() || recipientCount() == 0)) ||
-                (mWorkingMessage.requiresMms() ? MessageUtils.checkIsPhoneMemoryFull(this)
-                        : MessageUtils.checkIsPhoneMessageFull(this))) {
+                MessageUtils.checkIsPhoneMemoryFull(this)) {
             if (LogTag.VERBOSE || Log.isLoggable(LogTag.APP, Log.VERBOSE)) {
                 log("not worth saving, discard WorkingMessage and bail");
             }
