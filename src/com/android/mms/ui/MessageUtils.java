@@ -2336,7 +2336,7 @@ public class MessageUtils {
     }
 
     public static int getSmsMessageCount(Context context) {
-        int msgCount = -1;
+        int msgCount = 0;
 
         Cursor cursor = SqliteWrapper.query(context, context.getContentResolver(),
                 MESSAGES_COUNT_URI, null, null, null, null);
