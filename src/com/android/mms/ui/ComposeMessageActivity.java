@@ -6496,7 +6496,10 @@ public class ComposeMessageActivity extends Activity
                 }
                 String path = getAttachFilePath(context, uri);
                 Log.i(TAG, "File path is " + path);
-                File f = new File(path);
+                File f = null;
+                if (!TextUtils.isEmpty(path)) {
+                    f = new File(path);
+                }
                 if (f == null || !f.exists()) {
                     Log.i(TAG, "set attachment null");
                     Toast.makeText(ComposeMessageActivity.this,
