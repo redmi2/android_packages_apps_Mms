@@ -357,6 +357,7 @@ public class MessageUtils {
     private static final int SELECT_LOCAL = 2;
     public static final String EXTRA_KEY_NEW_MESSAGE_UNREAD = "unread";
     private static final long ARM_BIT = 12791;
+    private static final int MILLISECOND_SIZE = 1000;
     /* End add for RCS */
 
     private MessageUtils() {
@@ -892,7 +893,7 @@ public class MessageUtils {
         if (requringRcsAttachment) {
             long durationLimit = RcsFileController.getRcsTransferFileMaxDuration(
                     RcsUtils.RCS_MSG_TYPE_AUDIO);
-            intent.putExtra(Media.DURATION, (int)(durationLimit));
+            intent.putExtra(Media.DURATION, (int)(durationLimit) * MILLISECOND_SIZE);
         } else {
             intent.putExtra(android.provider.MediaStore.Audio.Media.EXTRA_MAX_BYTES, sizeLimit);
         }
