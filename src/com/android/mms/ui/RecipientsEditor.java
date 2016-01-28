@@ -62,6 +62,7 @@ public class RecipientsEditor extends RecipientEditTextView {
     private Runnable mOnSelectChipRunnable;
     private final AddressValidator mInternalValidator;
     private Context mContext;
+    private boolean mLongPressed;
 
     /** A noop validator that does not munge invalid texts and claims any address is valid */
     private class AddressValidator implements Validator {
@@ -384,6 +385,12 @@ public class RecipientsEditor extends RecipientEditTextView {
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
+        if (mLongPressed) {
+            // Do not handle touch event when in long press state
+            mLongPressed = false;
+            return true;
+        }
+
         final int action = ev.getAction();
         final int x = (int) ev.getX();
         final int y = (int) ev.getY();
@@ -400,6 +407,7 @@ public class RecipientsEditor extends RecipientEditTextView {
         // Override parent's onLongPress but do nothing.
         // To avoid calling parent's showCopyDialog().
         // But keep copy function in dialog poped by Mms side.
+        mLongPressed = true;
     }
 
     @Override
