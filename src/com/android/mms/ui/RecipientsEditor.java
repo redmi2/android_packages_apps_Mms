@@ -63,6 +63,7 @@ public class RecipientsEditor extends RecipientEditTextView {
     private final AddressValidator mInternalValidator;
     private Context mContext;
     private boolean mLongPressed;
+    private int mRecipientsCount = -1;
 
     /** A noop validator that does not munge invalid texts and claims any address is valid */
     private class AddressValidator implements Validator {
@@ -174,7 +175,11 @@ public class RecipientsEditor extends RecipientEditTextView {
     }
 
     public int getRecipientCount() {
-        return mTokenizer.getNumbers().size();
+        if (mRecipientsCount == -1) {
+            return mTokenizer.getNumbers().size();
+        } else {
+            return mRecipientsCount;
+        }
     }
 
     public List<String> getNumbers() {
@@ -590,6 +595,7 @@ public class RecipientsEditor extends RecipientEditTextView {
                     i++;
                 }
             }
+            mRecipientsCount = list.size();
 
             return list;
         }
