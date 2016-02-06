@@ -294,7 +294,7 @@ public class ComposeMessageActivity extends Activity
 
     private static final String EXIT_ECM_RESULT = "exit_ecm_result";
 
-    private static final String INTENT_MULTI_PICK_ACTION = "com.android.contacts.action.MULTI_PICK";
+    private static final String INTENT_MULTI_PICK = "com.android.contacts.action.MULTI_PICK";
 
     private static String FILE_PATH_COLUMN = "_data";
     private static String BROADCAST_DATA_SCHEME = "file";
@@ -2087,6 +2087,7 @@ public class ComposeMessageActivity extends Activity
             mRecipientsPickerGroups.setVisibility(View.VISIBLE);
         }
         mRecipientsPicker.setOnClickListener(this);
+        mRecipientsPicker.setVisibility(View.GONE);
         mRecipientsPickerGroups.setOnClickListener(this);
         mRecipientsPickerGroups.setVisibility(View.GONE);
         mRecipientsEditor.addTextChangedListener(mRecipientsWatcher);
@@ -4495,8 +4496,8 @@ public class ComposeMessageActivity extends Activity
         } else if ((v == mSendButtonSmsViewSec || v == mSendButtonMmsViewSec) &&
                 mShowTwoButtons && isPreparedForSending()) {
             confirmSendMessageIfNeeded(SubscriptionManager.getSubId(PhoneConstants.SUB2)[0]);
-        } else if (v == mRecipientsPicker) {
-            launchMultiplePhonePicker();
+        /*} else if (v == mRecipientsSelector) {
+            pickContacts(SelectRecipientsList.MODE_DEFAULT, REQUEST_CODE_ADD_RECIPIENTS);*/
         } else if ((v == mAddAttachmentButton)) {
             if (mAttachmentSelector.getVisibility() == View.VISIBLE && !mIsReplaceAttachment) {
                 mAttachmentSelector.setVisibility(View.GONE);
@@ -4507,19 +4508,6 @@ public class ComposeMessageActivity extends Activity
                             .show();
                 }
             }
-        }
-    }
-
-    private void launchMultiplePhonePicker() {
-        Intent intent = new Intent(INTENT_MULTI_PICK_ACTION, Contacts.CONTENT_URI);
-        String exsitNumbers = mRecipientsEditor.getExsitNumbers();
-        if (!TextUtils.isEmpty(exsitNumbers)) {
-            intent.putExtra(Intents.EXTRA_PHONE_URIS, exsitNumbers);
-        }
-        try {
-            startActivityForResult(intent, REQUEST_CODE_PICK);
-        } catch (ActivityNotFoundException ex) {
-            Toast.makeText(this, R.string.contact_app_not_found, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -4925,7 +4913,7 @@ public class ComposeMessageActivity extends Activity
     }
 
     private boolean isPreparedForSending() {
-        if (mIsAirplaneModeOn && !TelephonyManager.getDefault().isImsRegistered()) {
+        if (mIsAirplaneModeOn) {
             return false;
         }
 

@@ -96,8 +96,7 @@ public class SmsMessageSender implements MessageSender {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
         boolean requestDeliveryReport = false;
         if (TelephonyManager.getDefault().isMultiSimEnabled()) {
-            int slotId = SubscriptionManager.getSlotId(mSubId);
-            requestDeliveryReport = prefs.getBoolean((slotId == 0) ?
+            requestDeliveryReport = prefs.getBoolean((mSubId == 0) ?
                     MessagingPreferenceActivity.SMS_DELIVERY_REPORT_SUB1 :
                     MessagingPreferenceActivity.SMS_DELIVERY_REPORT_SUB2,
                     DEFAULT_DELIVERY_REPORT_MODE);

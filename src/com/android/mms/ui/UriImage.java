@@ -195,9 +195,6 @@ public class UriImage {
             BitmapFactory.decodeStream(input, null, opt);
             mWidth = opt.outWidth;
             mHeight = opt.outHeight;
-            if (TextUtils.isEmpty(mContentType) && mUri.getScheme().equals("file")) {
-                mContentType = opt.outMimeType;
-            }
         } catch (FileNotFoundException e) {
             // Ignore
             Log.e(TAG, "IOException caught while opening stream", e);
