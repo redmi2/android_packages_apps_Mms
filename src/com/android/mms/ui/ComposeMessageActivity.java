@@ -117,6 +117,7 @@ import android.provider.Settings;
 import android.provider.Settings.SettingNotFoundException;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.Sms;
+import android.provider.Telephony.Sms.Conversations;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.telephony.PhoneNumberUtils;
@@ -709,6 +710,7 @@ public class ComposeMessageActivity extends Activity
     private ProgressDialog mProgressDialog;
 
     private static int FAVOURITE_MSG = 1;
+    private int mRcsBurnAfterReadMessageCount = 0;
     /* End add for RCS */
 
     @SuppressWarnings("unused")
@@ -6740,6 +6742,9 @@ public class ComposeMessageActivity extends Activity
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
             logMultiChoice("onCreateActionMode");
             // reset statics
+            if (MmsConfig.isRcsVersion()) {
+                mRcsBurnAfterReadMessageCount = getBurnAfterReadMessageCount();
+            }
             mMmsSelected = 0;
             mRcsSelected = 0;
             mRcsMediaSelected = 0;
@@ -6761,7 +6766,7 @@ public class ComposeMessageActivity extends Activity
                         public boolean onPopupItemClick(int itemId) {
                             if (itemId == SelectionMenu.SELECT_OR_DESELECT) {
                                 boolean selectAll = getListView().getCheckedItemCount() <
-                                        getListView().getCount() ? true : false;
+                                        getMsgCount() ? true : false;
                                 checkAll(selectAll);
                                 mSelectionMenu.updateSelectAllMode(selectAll);
                             }
@@ -6770,6 +6775,7 @@ public class ComposeMessageActivity extends Activity
                     });
             return true;
         }
+
 
         @Override
         public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
@@ -7001,6 +7007,14 @@ public class ComposeMessageActivity extends Activity
                 }
             }
             return body.toString();
+        }
+
+        private int getMsgCount() {
+            int msgcount = getListView().getCount();
+            if (MmsConfig.isRcsVersion()) {
+                msgcount -= mRcsBurnAfterReadMessageCount;
+            }
+            return msgcount;
         }
 
         private class ComplainMessageListener implements OnClickListener{
@@ -7609,7 +7623,7 @@ public class ComposeMessageActivity extends Activity
             customMenuVisibility(mode, mCheckedCount, position, checked);
             mSelectionMenu.setTitle(getApplicationContext().getString(
                     R.string.selected_count, mCheckedCount));
-            mSelectionMenu.updateSelectAllMode(getListView().getCount() == mCheckedCount);
+            mSelectionMenu.updateSelectAllMode(getMsgCount() == mCheckedCount);
         }
 
         private void confirmDeleteDialog(final DeleteMessagesListener listener,
@@ -9056,6 +9070,22 @@ public class ComposeMessageActivity extends Activity
         }
     }
 
+    private int getBurnAfterReadMessageCount() {
+        Cursor cursor = null;
+        String where = Conversations.THREAD_ID + " = " + mConversation.getThreadId() + " and "
+                + RcsColumns.SmsRcsColumns.RCS_BURN + "!= -1";
+        cursor = getContentResolver().query(Sms.CONTENT_URI, new String[] {
+                RcsColumns.SmsRcsColumns.RCS_BURN}, where, null, null);
+        int burnCount = 0;
+        if (cursor != null) {
+            try {
+                burnCount = cursor.getCount();
+            } finally {
+                cursor.close();
+            }
+        }
+        return burnCount;
+    }
 /* End add for RCS */
 
 }
