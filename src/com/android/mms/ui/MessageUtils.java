@@ -277,8 +277,6 @@ public class MessageUtils {
     private static final String REPLACE_QUOTES_1 = "'";
     private static final String REPLACE_QUOTES_2 = "''";
 
-    public static final String EXTRA_KEY_NEW_MESSAGE_NEED_RELOAD = "reload";
-
     public static final String KEY_SMS_FONTSIZE = "smsfontsize";
     public static final int DELAY_TIME = 200;
     public static final float FONT_SIZE_DEFAULT = 30f;
@@ -2555,7 +2553,6 @@ public class MessageUtils {
                     case DIALOG_ITEM_SMS:
                         Intent smsIntent = new Intent(Intent.ACTION_SENDTO,
                                 Uri.parse("smsto:" + extractNumber));
-                        smsIntent.putExtra(EXTRA_KEY_NEW_MESSAGE_NEED_RELOAD, true);
                         localContext.startActivity(smsIntent);
                         break;
                     case DIALOG_ITEM_ADD_CONTACTS:
