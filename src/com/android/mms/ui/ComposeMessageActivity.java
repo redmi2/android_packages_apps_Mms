@@ -2626,8 +2626,6 @@ public class ComposeMessageActivity extends Activity
         long originalThreadId = mConversation.getThreadId();
         long threadId = intent.getLongExtra(THREAD_ID, 0);
         Uri intentUri = intent.getData();
-        boolean needReload = intent.getBooleanExtra(MessageUtils.EXTRA_KEY_NEW_MESSAGE_NEED_RELOAD,
-                false);
         boolean sameThread = false;
         if (threadId > 0) {
             conversation = Conversation.get(this, threadId, false);
@@ -2650,10 +2648,8 @@ public class ComposeMessageActivity extends Activity
             conversation = Conversation.get(this, intentUri, false);
         }
 
-        if (LogTag.VERBOSE || Log.isLoggable(LogTag.APP, Log.VERBOSE)) {
-            log("onNewIntent: data=" + intentUri + ", thread_id extra is " + threadId +
-                    ", new conversation=" + conversation + ", mConversation=" + mConversation);
-        }
+        LogTag.debugD("onNewIntent: data=" + intentUri + ", thread_id extra is " + threadId +
+                ", new conversation=" + conversation + ", mConversation=" + mConversation);
 
         // this is probably paranoid to compare both thread_ids and recipient lists,
         // but we want to make double sure because this is a last minute fix for Froyo
@@ -2663,25 +2659,20 @@ public class ComposeMessageActivity extends Activity
         // even though the recipient lists are different)
         sameThread = (conversation.getThreadId() == mConversation.getThreadId()
                 && mConversation.getThreadId() != 0 && conversation.equals(mConversation));
+        LogTag.debugD("sameThread:" + sameThread);
 
         if (!sameThread) {
+            LogTag.debugD("onNewIntent: different conversation");
+            mMessagesAndDraftLoaded = false;
             if (mConversation.getThreadId() == 0 || conversation.getThreadId() == 0) {
                 mConversation = conversation;
                 mWorkingMessage.setConversation(mConversation);
                 updateThreadIdIfRunning();
                 invalidateOptionsMenu();
-                mMessagesAndDraftLoaded = false;
                 if (mMsgListAdapter != null) {
                     mMsgListAdapter.changeCursor(null);
                     mMsgListAdapter.cancelBackgroundLoading();
                 }
-            }
-
-            if (LogTag.VERBOSE || Log.isLoggable(LogTag.APP, Log.VERBOSE)) {
-                log("onNewIntent: different conversation");
-            }
-            if (needReload) {
-                mMessagesAndDraftLoaded = false;
             }
             mIsBurnMessage = false;
             saveDraft(false);    // if we've got a draft, save it first
