@@ -86,7 +86,7 @@
         <activity android:name=".ui.ConversationList"
                   android:label="@string/app_label"
                   android:configChanges="orientation|screenSize|keyboardHidden"
-                  android:theme="@style/MmsHoloTheme"
+                  android:theme="@style/MmsNewStyleTheme"
                   android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="com.suntek.rcs.action.ACTION_PICK_CONVERSATION" />
@@ -129,7 +129,7 @@
         <activity android:name=".ui.ComposeMessageActivity"
                   android:configChanges="orientation|screenSize|keyboardHidden"
                   android:windowSoftInputMode="stateHidden|adjustResize"
-                  android:theme="@style/MmsHoloTheme"
+                  android:theme="@style/NoActionBar"
                   android:parentActivityName=".ui.ConversationList"
                   android:launchMode="singleTop" >
             <intent-filter>

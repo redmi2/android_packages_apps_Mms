@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  * Copyright (C) 2014 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +16,16 @@
  * limitations under the License.
  */
 
-package com.android.contacts.common.util;
+package com.android.mms.util;
 
-import com.android.contacts.common.R;
+import com.android.mms.R;
+import com.android.mms.data.Contact;
+import com.android.mms.ui.LetterTileDrawable;
 
+import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.Trace;
@@ -29,10 +35,8 @@ public class MaterialColorMapUtils {
     private final TypedArray sSecondaryColors;
 
     public MaterialColorMapUtils(Resources resources) {
-        sPrimaryColors = resources.obtainTypedArray(
-                com.android.contacts.common.R.array.letter_tile_colors);
-        sSecondaryColors = resources.obtainTypedArray(
-                com.android.contacts.common.R.array.letter_tile_colors_dark);
+        sPrimaryColors = resources.obtainTypedArray(R.array.letter_tile_colors);
+        sSecondaryColors = resources.obtainTypedArray(R.array.letter_tile_colors_dark);
     }
 
     public static class MaterialPalette implements Parcelable {
@@ -176,5 +180,33 @@ public class MaterialColorMapUtils {
         }
 
         return H;
+    }
+
+    public static Drawable getLetterTitleDraw(Context mContext, Contact contact) {
+        final Resources res = mContext.getResources();
+        final LetterTileDrawable drawable = new LetterTileDrawable(mContext, res);
+
+        String mAvatarName = null;
+        String lookup = null;
+        if (contact != null) {
+            mAvatarName = contact.getNameForAvatar();
+            lookup = contact.getLookup();
+        }
+
+        if(mAvatarName != null && lookup != null) {
+            drawable.setContactDetails(mAvatarName, lookup);
+        } else {
+            drawable.setContactDetails(null,null);
+        }
+
+        int mColor = drawable.getColor();
+
+        if (contact != null) {
+            contact.setContactColor(mColor);
+        }
+        drawable.setContactType(LetterTileDrawable.TYPE_DEFAULT);
+        drawable.setScale(1.0f);
+        drawable.setIsCircular(true);
+        return drawable;
     }
 }
