@@ -444,7 +444,8 @@
                 <action android:name="android.intent.action.DEVICE_STORAGE_NOT_FULL" />
             </intent-filter>
         </receiver>
-        <!-- Widget -->
+
+        <!-- Widget
         <receiver android:name=".widget.MmsWidgetProvider"  android:label="@string/app_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -461,6 +462,7 @@
         <service android:name=".widget.MmsWidgetService"
                  android:permission="android.permission.BIND_REMOTEVIEWS"
                  android:exported="false" />
+        -->
 
         <activity android:name=".ui.MultiPickContactsActivity"
                   android:windowSoftInputMode="stateHidden|adjustResize"
