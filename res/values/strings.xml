@@ -78,11 +78,9 @@
     <!-- Context menu item on an individual message for deleting only that message -->
     <string name="delete_message">Delete</string>
     <!-- Time and date a message was sent -->
-    <string name="sent_on">"Sent: <xliff:g id="date">%s</xliff:g>"</string>
+    <string name="sent_on">"<xliff:g id="date">%s</xliff:g>"</string>
     <!-- Time and date a message is due to expire -->
-    <string name="expire_on">"Expires: <xliff:g id="date">%s</xliff:g>"</string>
-    <!-- Time and date a message was received -->
-    <string name="received_on">"Received: <xliff:g id="date">%s</xliff:g>"</string>
+    <string name="expire_on">"expiration: <xliff:g id="date">%s</xliff:g>"</string>
     <!-- Abbreviation for "kilobyte" -->
     <string name="kilobyte">KB</string>
 
@@ -104,7 +102,18 @@
     <string name="download">Download</string>
     <!-- Message displayed in place of the "download message" button once it has been pressed,
          indicating that the download is in progress -->
-    <string name="downloading">Downloading</string>
+    <string name="downloading">Downloading...</string>
+    <!-- Dispaly downloading when download Mms -->
+    <string name="new_message_download">New message to download</string>
+    <!-- Dispaly New message to download  when income Mms  -->
+    <string name="touch_to_download">Touch to download</string>
+    <!-- Inform user can Touch to download Mms   -->
+    <string name="touch_to_try_again">Touch to try again</string>
+    <!-- Dispaly Touch to try again when download failed -->
+    <string name="could_not_downloading">Couldn\'t download...</string>
+    <!-- Display Couldn't download...if download failed -->
+    <string name="new_mms_message">New MMS message</string>
+    <!-- Dispaly New MMS message when downloading -->
     <string name="cancel_downloading">Cancel</string>
     <string name="confirm_cancel_downloading">Do you want to cancel downloading mms?</string>
     <!-- Formatting for subject displayed inline, prepended to MMS message text -->
@@ -349,17 +358,24 @@
     <!-- Settings screen menu item for restoring all settings to default -->
     <string name="restore_default">"Restore default settings"</string>
 
+    <!-- Settings SIM1 -->
+    <string name="settings_pre_sim1">"SIM1"</string>
+    <!-- Settings SIM2 -->
+    <string name="settings_pre_sim2">"SIM2"</string>
+
     <!-- Settings screen, section heading for notifications -->
     <string name="pref_notification_settings_title">Notifications</string>
     <!-- Settings screen, section heading for MMS-specific settings -->
-    <string name="pref_mms_settings_title">"Multimedia (MMS) messages"</string>
+    <string name="pref_mms_settings_title">"Multimedia (MMS) messages settings"</string>
     <!-- Settings screen, section heading for SMS-specific settings -->
-    <string name="pref_sms_settings_title">"Text (SMS) messages"</string>
+    <string name="pref_sms_settings_title">"Text (SMS) messages settings"</string>
     <!-- Settings screen, section heading for storage-specific settings -->
     <string name="pref_sms_storage_title">Storage</string>
 
     <!-- Title for SMS Disabled -->
     <string name="pref_title_sms_disabled">SMS Disabled</string>
+    <!-- Title for Default message app-->
+    <string name="pref_title_default_app">Default message app</string>
     <!-- Summary for SMS Disabled -->
     <string name="pref_summary_sms_disabled">Touch to make Messaging your default SMS app</string>
     <!-- Title for SMS Enabled -->
@@ -367,6 +383,8 @@
     <!-- Summary for SMS Enabled -->
     <string name="pref_summary_sms_enabled">Touch to change your default SMS app</string>
 
+    <!-- Title for PreferenceScreen  -->
+    <string name="pref_title_display">Display</string>
     <!-- Settings item description for entering SIM card message screen -->
     <string name="pref_summary_manage_sim_messages">Manage messages stored on your SIM card</string>
     <string name="pref_summary_manage_sim_messages_slot">Manage messages stored on your SIM card <xliff:g id="NUMBER">%s</xliff:g></string>
@@ -378,20 +396,41 @@
     <string name="pref_summary_sms_delivery_reports">Request a delivery report for each message you send</string>
     <!-- Settings item description for boolean auto-delete messages setting -->
     <string name="pref_summary_auto_delete">Delete old messages as limits are reached</string>
+    <!-- Settings item description for enable gesture setting -->
+    <string name="pref_summary_enable_gesture">Allow user to adjust font size by pinching open or close</string>
+    <!-- Settings item description for group notification setting -->
+    <string name="pref_summary_group_notification">Auto combine notification into one group</string>
     <!-- Settings item description for integer auto-delete sms message limit -->
     <string name="pref_summary_delete_limit"><xliff:g id="count">%1$s</xliff:g> messages per conversation</string>
     <!-- Settings item description for boolean MMS enable group MMS setting -->
     <string name="pref_summary_mms_group_mms">Use MMS to send a single message when there are multiple recipients</string>
     <!-- Settings item for entering SIM card message screen -->
     <string name="pref_title_manage_sim_messages">Manage SIM card messages</string>
+    <string name="pref_title_center_number">Message center number</string>
     <string name="pref_title_manage_sim_messages_slot1">Manage SIM1 card messages</string>
     <string name="pref_title_manage_sim_messages_slot2">Manage SIM2 card messages</string>
+    <!-- Settings item description for group notification setting -->
+    <string name="pref_title_group_notification">Group notification message</string>
     <!-- Settings item for boolean option to enable/disable MMS delivery reports -->
     <string name="pref_title_mms_delivery_reports">Delivery reports</string>
+    <!-- Settings item for enable gesture -->
+    <string name="pref_title_enable_gesture">Enable gesture</string>
+    <!-- Settings item for other settings -->
+    <string name="pref_title_other_settings">Other settings</string>
+    <!-- Settings item for boolean option to enable/disable MMS delivery reports for sim1-->
+    <string name="pref_title_mms_delivery_reports_slot1">Delivery reports for SIM1</string>
+    <!-- Settings item for boolean option to enable/disable MMS delivery reports for sim2-->
+    <string name="pref_title_mms_delivery_reports_slot2">Delivery reports for SIM2</string>
     <!-- Settings item for boolean option to enable/disable MMS group messages -->
     <string name="pref_title_mms_group_mms">Group messaging</string>
+    <!-- Settings item for manage sim card message  -->
+    <string name="pref_title_sms_manage_sim">Manage SIM card message</string>
     <!-- Settings item for boolean option to enable/disable MMS read reports -->
     <string name="pref_title_mms_read_reports">Read reports</string>
+    <!-- Settings item for boolean option to enable/disable MMS read reports for SIM1 -->
+    <string name="pref_title_mms_read_reports_slot1">Read reports for SIM1</string>
+    <!-- Settings item for boolean option to enable/disable MMS read reports for SIM2 -->
+    <string name="pref_title_mms_read_reports_slot2">Read reports for SIM2</string>
     <!-- Settings item for boolean option to enable/disable SMS delivery reports -->
     <string name="pref_title_sms_delivery_reports">Delivery reports</string>
     <string name="pref_title_sms_delivery_reports_slot1">Delivery reports for SIM1</string>
@@ -492,6 +531,7 @@
     <!-- Label in "Message details" dialog -->
     <string name="message_size_label">Message size:\u0020</string>
     <!-- Label in "Message details" dialog -->
+    <string name="mms_size_label">size:\u0020</string>
     <string name="priority_label">Priority:\u0020</string>
     <!-- "Priority" value in "Message details" dialog -->
     <string name="priority_high">High</string>
@@ -608,7 +648,8 @@
 
     <!-- Mobile data is turned off dialog text. -->
     <string name="mobile_data_disable">Mobile data is turned off, do you still want to send MMS? If yes, it will generate mobile data traffic.</string>
-    <string name="inform_data_off">Mobile data is turned off, turn it on in the system setting and try again.</string>
+
+    <string name="inform_data_off">Cellular data is turned off,check your settings.</string>
     <!-- Mms size is too large dialog text. -->
     <string name="mms_too_large">The message is too large to download.</string>
 
@@ -883,7 +924,8 @@
     <!-- SMSC -->
     <string name="pref_smsc_title">SMSC Setings</string>
     <string name="pref_one_smcs">"Set the smsc number"</string>
-    <string name="pref_more_smcs">"Set the SIM"<xliff:g id="slot_number">%d</xliff:g>"'s smsc number"</string>
+    <string name="pref_more_smcs">"Message center number"</string>
+    <string name="pref_more_message_smcs">"SIM"<xliff:g id="slot_number">%d</xliff:g>""</string>
     <string name="set_smsc_error">Set the smsc number error</string>
     <string name="set_smsc_success">Set the smsc number success</string>
     <string name="set_smsc_confirm_message">Change the smsc may lead to the SMS sending failure, to confirm the change?</string>
@@ -1041,6 +1083,8 @@
     <string name="pref_title_sms_store_card2">Preferred storage for SIM2</string>
     <string name="pref_sms_store_phone">Phone</string>
     <string name="pref_sms_store_card">SIM card</string>
+    <string name="pref_sms_store_sim1">SIM1</string>
+    <string name="pref_sms_store_sim2">SIM2</string>
     <string name="pref_sms_store_card_unknown_fail">Failure to receive new messages, the SIM card can\'t be read correctly</string>
     <string name="mms_size_indicator"><xliff:g id="mms_size">%1$s</xliff:g>K/<xliff:g id="all_size">%2$s</xliff:g>K</string>
     <string name="forward_size_over">Forbid forwarding, new message size over 300K.</string>

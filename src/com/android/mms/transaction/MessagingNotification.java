@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2014, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2010-2014, 2016, The Linux Foundation. All rights reserved.
  * Not a Contribution.
  * Copyright (C) 2008 Esmertec AG.
  * Copyright (C) 2008 The Android Open Source Project
@@ -83,6 +83,7 @@ import com.android.mms.model.SlideModel;
 import com.android.mms.model.SlideshowModel;
 import com.android.mms.ui.ComposeMessageActivity;
 import com.android.mms.ui.ConversationList;
+import com.android.mms.ui.LetterTileDrawable;
 import com.android.mms.ui.MailBoxMessageContent;
 import com.android.mms.ui.MailBoxMessageList;
 import com.android.mms.ui.ManageSimMessages;
@@ -91,6 +92,7 @@ import com.android.mms.ui.MessagingPreferenceActivity;
 import com.android.mms.ui.MobilePaperShowActivity;
 import com.android.mms.util.AddressUtils;
 import com.android.mms.util.DownloadManager;
+import com.android.mms.util.MaterialColorMapUtils;
 import com.android.mms.widget.MmsWidgetProvider;
 
 import com.google.android.mms.MmsException;
@@ -1149,15 +1151,17 @@ public class MessagingNotification {
             title = mostRecentNotification.mTitle;
             BitmapDrawable contactDrawable = (BitmapDrawable)mostRecentNotification.mSender
                     .getAvatar(context, null);
+
+            final int idealIconHeight =
+                res.getDimensionPixelSize(android.R.dimen.notification_large_icon_height);
+            final int idealIconWidth =
+                 res.getDimensionPixelSize(android.R.dimen.notification_large_icon_width);
+
             if (contactDrawable != null) {
                 // Show the sender's avatar as the big icon. Contact bitmaps are 96x96 so we
                 // have to scale 'em up to 128x128 to fill the whole notification large icon.
                 avatar = contactDrawable.getBitmap();
                 if (avatar != null) {
-                    final int idealIconHeight =
-                        res.getDimensionPixelSize(android.R.dimen.notification_large_icon_height);
-                    final int idealIconWidth =
-                         res.getDimensionPixelSize(android.R.dimen.notification_large_icon_width);
                     if (avatar.getHeight() < idealIconHeight) {
                         // Scale this image to fit the intended size
                         avatar = Bitmap.createScaledBitmap(
@@ -1167,11 +1171,21 @@ public class MessagingNotification {
                         noti.setLargeIcon(avatar);
                     }
                 }
+            } else if (LetterTileDrawable.isEnglishLetterString(mostRecentNotification.mSender.
+                    getNameForAvatar())) {
+                Bitmap newAvatar = MaterialColorMapUtils.getLetterTitleDraw(context,
+                        mostRecentNotification.mSender, idealIconWidth);
+                Bitmap roundBitmap = MaterialColorMapUtils.getCircularBitmap(context, newAvatar);
+                noti.setLargeIcon(roundBitmap);
             }
 
             pendingIntent = PendingIntent.getActivity(context, 0,
                     mostRecentNotification.mClickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         }
+
+        Intent mActivityIntent = getMultiThreadsViewIntent(context);
+        PendingIntent mPendingIntent = PendingIntent.getActivity(context, 0,
+                mActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         // Always have to set the small icon or the notification is ignored
         noti.setSmallIcon(R.drawable.stat_notify_sms);
 
@@ -1182,7 +1196,7 @@ public class MessagingNotification {
         noti.setContentTitle(title)
             .setContentIntent(pendingIntent)
             .setCategory(Notification.CATEGORY_MESSAGE)
-            .setPriority(Notification.PRIORITY_DEFAULT);     // TODO: set based on contact coming
+            .setPriority(Notification.PRIORITY_HIGH);     // TODO: set based on contact coming
                                                              // from a favorite.
 
         // Tag notification with all senders.
@@ -1250,8 +1264,10 @@ public class MessagingNotification {
             if (mostRecentNotification.mAttachmentBitmap != null) {
                 // The message has a picture, show that
 
+                noti.setLargeIcon(mostRecentNotification.mAttachmentBitmap);
                 notification = new Notification.BigPictureStyle(noti)
                     .bigPicture(mostRecentNotification.mAttachmentBitmap)
+                    .bigLargeIcon(avatar)
                     // This sets the text for the expanded picture form:
                     .setSummaryText(mostRecentNotification.formatPictureMessage(context))
                     .build();

@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  * Copyright (C) 2008 Esmertec AG.
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -32,10 +34,13 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.database.sqlite.SqliteWrapper;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Paint.FontMetricsInt;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.LayerDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
@@ -92,6 +97,7 @@ import com.android.mms.transaction.TransactionService;
 import com.android.mms.ui.WwwContextMenuActivity;
 import com.android.mms.util.DownloadManager;
 import com.android.mms.util.ItemLoadedCallback;
+import com.android.mms.util.MaterialColorMapUtils;
 import com.android.mms.util.ThumbnailManager.ImageLoaded;
 
 import com.google.android.mms.ContentType;
@@ -143,6 +149,8 @@ public class MessageListItem extends LinearLayout implements
     private TextView mBodyTextView;
     private TextView mBodyButtomTextView;
     private TextView mBodyTopTextView;
+    private TextView mDownloadingTitle;
+    private TextView mDownloadMessage;
     private Button mDownloadButton;
     private View mDownloading;
     private LinearLayout mMmsLayout;
@@ -160,6 +168,7 @@ public class MessageListItem extends LinearLayout implements
     private boolean mMultiRecipients;
     private boolean mIsMsimIccCardActived = false;
     private int mManageMode;
+    private int mBackgroundColor;
 
     /* Begin add for RCS */
     private static final int MEDIA_IS_DOWNING = 2;
@@ -180,7 +189,7 @@ public class MessageListItem extends LinearLayout implements
         mDefaultCountryIso = MmsApp.getApplication().getCurrentCountryIso();
 
         if (sDefaultContactImage == null) {
-            sDefaultContactImage = context.getResources().getDrawable(R.drawable.ic_contact_picture);
+            sDefaultContactImage = context.getResources().getDrawable(R.drawable.stranger);
         }
         if (sRcsBurnFlagImage == null) {
             sRcsBurnFlagImage = res.getDrawable(R.drawable.rcs_burn_flag);
@@ -203,7 +212,7 @@ public class MessageListItem extends LinearLayout implements
         mDefaultCountryIso = MmsApp.getApplication().getCurrentCountryIso();
         Resources res = context.getResources();
         if (sDefaultContactImage == null) {
-            sDefaultContactImage = context.getResources().getDrawable(R.drawable.ic_contact_picture);
+            sDefaultContactImage = context.getResources().getDrawable(R.drawable.stranger);
         }
         if (sRcsBurnFlagImage == null) {
             sRcsBurnFlagImage = res.getDrawable(R.drawable.rcs_burn_flag);
@@ -233,6 +242,7 @@ public class MessageListItem extends LinearLayout implements
         mMmsLayout = (LinearLayout) findViewById(R.id.mms_layout_view_parent);
         mChecked = (CheckBox) findViewById(R.id.selected_check);
         mNameView = (TextView) findViewById(R.id.name_view);
+        mAvatar.setOverlay(null);
     }
 
     // add for setting the background according to whether the item is selected
@@ -241,14 +251,10 @@ public class MessageListItem extends LinearLayout implements
             if (mChecked != null) {
                 mChecked.setChecked(selected);
             }
-            mMessageBlock.getBackground().setAlpha(ALPHA_TRANSPARENT);
-            mMmsLayout.setBackgroundResource(R.drawable.list_selected_holo_light);
         } else {
             if (mChecked != null) {
                 mChecked.setChecked(selected);
             }
-            mMessageBlock.setBackgroundResource(R.drawable.listitem_background);
-            mMmsLayout.setBackgroundResource(R.drawable.listitem_background);
         }
     }
 
@@ -346,6 +352,7 @@ public class MessageListItem extends LinearLayout implements
     private void bindNotifInd() {
         showMmsView(false);
 
+        mBodyButtomTextView.setVisibility(View.GONE);
         if (mMessageItem.mMessageSize == 0
                 && TextUtils.isEmpty(mMessageItem.mTimestamp)) {
             mMessageItem.setOnPduLoaded(new MessageItem.PduLoadedCallback() {
@@ -368,7 +375,7 @@ public class MessageListItem extends LinearLayout implements
                 }
             });
         } else {
-            String msgSizeText = mContext.getString(R.string.message_size_label)
+            String msgSizeText = mContext.getString(R.string.mms_size_label)
                     + String.valueOf(getFormatSize(mMessageItem.mMessageSize))
                     + mContext.getString(R.string.kilobyte);
 
@@ -376,7 +383,7 @@ public class MessageListItem extends LinearLayout implements
                     mMessageItem.mSubId, mMessageItem.mSubject,
                     mMessageItem.mHighlight, mMessageItem.mTextContentType));
 
-            mDateView.setText(buildTimestampLine(msgSizeText + " "
+            mDateView.setText(buildTimestampLine(msgSizeText + ", "
                     + mMessageItem.mTimestamp));
         }
 
@@ -397,73 +404,31 @@ public class MessageListItem extends LinearLayout implements
                 // If we're going to automatically start downloading the mms attachment, then
                 // don't bother showing the download button for an instant before the actual
                 // download begins. Instead, show downloading as taking place.
-                if (autoDownload && !dataSuspended) {
-                    showDownloadingAttachment();
+                if (!dataSuspended) {
+                    if (autoDownload) {
+                        showDownloadingAttachment();
+                    } else {
+                        inflateDownloadControls();
+                        mDownloadingTitle.setVisibility(View.VISIBLE);
+                        mDownloadingTitle.setText(R.string.new_message_download);
+                        mDownloading.setVisibility(View.GONE);
+                        mDownloadMessage.setVisibility(View.VISIBLE);
+                        mDownloadMessage.setText(R.string.touch_to_download);
+                        mDownloadMessage.setTextColor(Color.BLACK);
+                    }
+
                     break;
                 }
             case DownloadManager.STATE_TRANSIENT_FAILURE:
             case DownloadManager.STATE_PERMANENT_FAILURE:
             default:
                 inflateDownloadControls();
+                mDownloadingTitle.setVisibility(View.VISIBLE);
+                mDownloadingTitle.setText(R.string.could_not_downloading);
                 mDownloading.setVisibility(View.GONE);
-                mDownloadButton.setVisibility(View.VISIBLE);
-                mDownloadButton.setOnClickListener(new OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        try {
-                            NotificationInd nInd = (NotificationInd) PduPersister.getPduPersister(
-                                    mContext).load(mMessageItem.mMessageUri);
-                            Log.d(TAG, "Download notify Uri = " + mMessageItem.mMessageUri);
-                            AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-                            builder.setTitle(R.string.download);
-                            builder.setCancelable(true);
-                            // Judge notification weather is expired
-                            if (nInd.getExpiry() < System.currentTimeMillis() / 1000L) {
-                                // builder.setIcon(R.drawable.ic_dialog_alert_holo_light);
-                                builder.setMessage(mContext
-                                        .getString(R.string.service_message_not_found));
-                                builder.show();
-                                SqliteWrapper.delete(mContext, mContext.getContentResolver(),
-                                        mMessageItem.mMessageUri, null, null);
-                                return;
-                            }
-                            // Judge whether memory is full
-                            else if (MessageUtils.isMmsMemoryFull()) {
-                                builder.setMessage(mContext.getString(R.string.sms_full_body));
-                                builder.show();
-                                return;
-                            }
-                            // Judge whether message size is too large
-                            else if ((int) nInd.getMessageSize() >
-                                      MmsConfig.getMaxMessageSize()) {
-                                builder.setMessage(mContext.getString(R.string.mms_too_large));
-                                builder.show();
-                                return;
-                            }
-                            // If mobile data is turned off, inform user start data and try again.
-                            else if (MessageUtils.isMobileDataDisabled(mContext)) {
-                                builder.setMessage(mContext.getString(R.string.inform_data_off));
-                                builder.show();
-                                return;
-                            }
-                        } catch (MmsException e) {
-                            Log.e(TAG, e.getMessage(), e);
-                            return;
-                        }
-                        mDownloadButton.setVisibility(View.GONE);
-                        mDownloading.setVisibility(View.VISIBLE);
-                        Intent intent = new Intent(mContext, TransactionService.class);
-                        intent.putExtra(TransactionBundle.URI, mMessageItem.mMessageUri.toString());
-                        intent.putExtra(TransactionBundle.TRANSACTION_TYPE,
-                                Transaction.RETRIEVE_TRANSACTION);
-                        intent.putExtra("sub_id", mMessageItem.mSubId);
-
-                        mContext.startService(intent);
-
-                        DownloadManager.getInstance().markState(
-                                 mMessageItem.mMessageUri, DownloadManager.STATE_PRE_DOWNLOADING);
-                    }
-                });
+                mDownloadMessage.setVisibility(View.VISIBLE);
+                mDownloadMessage.setText(R.string.touch_to_try_again);
+                mDownloadMessage.setTextColor(Color.RED);
                 break;
         }
 
@@ -479,7 +444,8 @@ public class MessageListItem extends LinearLayout implements
     }
 
     private void updateSimIndicatorView(int subscription) {
-        if (mIsMsimIccCardActived && subscription >= 0) {
+        boolean simVisible = !mMessageItem.getCanClusterWithNextMessage();
+        if (MessageUtils.isMsimIccCardActive() && subscription >= 0 && simVisible) {
             Drawable mSimIndicatorIcon = MessageUtils.getMultiSimIcon(mContext,
                     subscription);
             mSimIndicatorView.setImageDrawable(mSimIndicatorIcon);
@@ -499,56 +465,101 @@ public class MessageListItem extends LinearLayout implements
 
     private void showDownloadingAttachment() {
         inflateDownloadControls();
+        mDownloadingTitle.setVisibility(View.VISIBLE);
+        mDownloadingTitle.setText(R.string.new_mms_message);
         mDownloading.setVisibility(View.VISIBLE);
-        mDownloadButton.setVisibility(View.GONE);
+        mDownloadMessage.setVisibility(View.GONE);
     }
 
     private void updateAvatarView(String addr, boolean isSelf) {
+        mAvatar.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        boolean avatarVisible = !mMessageItem.getCanClusterWithPreviousMessage();
+        Drawable backgroundDrawable = null;
         Drawable avatarDrawable;
+
+        Contact contact = isSelf ? Contact.getMe(false) : Contact.get(addr, false);
+        avatarDrawable = contact.getAvatar(mContext, sDefaultContactImage);
+
         if (isSelf || !TextUtils.isEmpty(addr)) {
-            Contact contact = isSelf ? Contact.getMe(false) : Contact.get(addr, false);
-            avatarDrawable = contact.getAvatar(mContext, sDefaultContactImage);
-            if (isSelf) {
-                mAvatar.assignContactUri(Profile.CONTENT_URI);
-                if (MmsConfig.isRcsVersion() && avatarDrawable.equals(sDefaultContactImage)) {
-                    Bitmap bitmap = RcsMyProfileCache.getInstance(mAvatar).getMyHeadPic();
-                    if (bitmap != null) {
-                        avatarDrawable = new BitmapDrawable(bitmap);
-                    }
-                }
+            if (isChecked()) {
+                avatarDrawable = mContext.getResources().getDrawable(R.drawable.selected);
+                backgroundDrawable = mContext.getResources().getDrawable(
+                        R.drawable.selected_icon_background);
             } else {
-                if (contact.existsInDatabase()) {
-                    mAvatar.assignContactUri(contact.getUri());
-                    if (MmsConfig.isRcsVersion() && avatarDrawable.equals(sDefaultContactImage)
-                            && mRcsGroupId != RcsUtils.SMS_DEFAULT_RCS_GROUP_ID) {
+                if (isSelf) {
+                    mAvatar.assignContactUri(Profile.CONTENT_URI);
+                    if (MmsConfig.isRcsVersion() && avatarDrawable.equals(sDefaultContactImage)) {
+                        Bitmap bitmap = RcsMyProfileCache.getInstance(mAvatar).getMyHeadPic();
+                        if (bitmap != null) {
+                            avatarDrawable = new BitmapDrawable(bitmap);
+                        }
+                    }
+
+                    if (avatarDrawable.equals(sDefaultContactImage)) {
+                        avatarDrawable = mContext.getResources().getDrawable(R.drawable.stranger);
+                        backgroundDrawable = mContext.getResources().getDrawable(
+                                R.drawable.default_avatar_background);
+                    }
+                    mBackgroundColor = mContext.getResources().getColor(R.color.white);
+                } else {
+                    if (contact.existsInDatabase()) {
+                        mAvatar.assignContactUri(contact.getUri());
+                        if (MmsConfig.isRcsVersion() && avatarDrawable.equals(sDefaultContactImage)
+                                && mRcsGroupId != RcsUtils.SMS_DEFAULT_RCS_GROUP_ID) {
+                            GroupMemberPhotoCache.getInstance().loadGroupMemberPhoto(mRcsGroupId,
+                                    addr, mAvatar, sDefaultContactImage);
+                            Bitmap bitmap = GroupMemberPhotoCache.getInstance().getBitmapByNumber(
+                                    addr);
+                            if (bitmap != null) {
+                                avatarDrawable = new BitmapDrawable(bitmap);
+                            }
+                        }
+
+                        if (avatarDrawable.equals(sDefaultContactImage)) {
+                            String name = contact.getNameForAvatar();
+                            if (LetterTileDrawable.isEnglishLetterString(name)) {
+                                avatarDrawable = MaterialColorMapUtils.getLetterTitleDraw(mContext,
+                                        contact);
+                            } else {
+                                backgroundDrawable = MaterialColorMapUtils.getLetterTitleDraw(
+                                        mContext, contact);
+                            }
+                        } else {
+                            mAvatar.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                        }
+                    } else if (MessageUtils.isWapPushNumber(contact.getNumber())) {
+                        mAvatar.assignContactFromPhone(
+                                MessageUtils.getWapPushNumber(contact.getNumber()), true);
+                    } else if (MmsConfig.isRcsVersion() && mRcsGroupId !=
+                            RcsUtils.SMS_DEFAULT_RCS_GROUP_ID) {
                         GroupMemberPhotoCache.getInstance().loadGroupMemberPhoto(mRcsGroupId,
                                 addr, mAvatar, sDefaultContactImage);
                         Bitmap bitmap = GroupMemberPhotoCache.getInstance().getBitmapByNumber(addr);
                         if (bitmap != null) {
                             avatarDrawable = new BitmapDrawable(bitmap);
                         }
+                        mAvatar.assignContactFromPhone(
+                                MessageUtils.getWapPushNumber(contact.getNumber()), true);
+                    } else {
+                        mAvatar.assignContactFromPhone(contact.getNumber(), true);
+                        backgroundDrawable = MaterialColorMapUtils.getLetterTitleDraw(mContext,
+                                contact);
                     }
-                } else if (MessageUtils.isWapPushNumber(contact.getNumber())) {
-                    mAvatar.assignContactFromPhone(
-                            MessageUtils.getWapPushNumber(contact.getNumber()), true);
-                } else if (MmsConfig.isRcsVersion() && mRcsGroupId !=
-                                RcsUtils.SMS_DEFAULT_RCS_GROUP_ID) {
-                    GroupMemberPhotoCache.getInstance().loadGroupMemberPhoto(mRcsGroupId,
-                            addr, mAvatar, sDefaultContactImage);
-                    Bitmap bitmap = GroupMemberPhotoCache.getInstance().getBitmapByNumber(addr);
-                    if (bitmap != null) {
-                        avatarDrawable = new BitmapDrawable(bitmap);
-                    }
-                    mAvatar.assignContactFromPhone(
-                            MessageUtils.getWapPushNumber(contact.getNumber()), true);
-                } else {
-                    mAvatar.assignContactFromPhone(contact.getNumber(), true);
+                    mBackgroundColor = contact.getContactColor();
+                    mMessageBlock.getBackground().setTint(mBackgroundColor);
                 }
             }
         } else {
-            avatarDrawable = sDefaultContactImage;
+            mAvatar.setVisibility(View.INVISIBLE);
         }
-        mAvatar.setImageDrawable(avatarDrawable);
+
+        if (avatarVisible) {
+            mAvatar.setImageDrawable(avatarDrawable);
+            mAvatar.setBackgroundDrawable(backgroundDrawable);
+            mAvatar.setVisibility(View.VISIBLE);
+        } else {
+            mAvatar.setVisibility(View.INVISIBLE);
+        }
     }
 
     public TextView getBodyTextView() {
@@ -556,9 +567,10 @@ public class MessageListItem extends LinearLayout implements
     }
 
     private void bindCommonMessage(final boolean sameItem) {
-        if (mDownloadButton != null) {
-            mDownloadButton.setVisibility(View.GONE);
+        if (mDownloadMessage != null) {
+            mDownloadMessage.setVisibility(View.GONE);
             mDownloading.setVisibility(View.GONE);
+            mDownloadingTitle.setVisibility(View.GONE);
         }
 
         //layout type may be changed after reload pdu, so update textView here.
@@ -663,7 +675,8 @@ public class MessageListItem extends LinearLayout implements
 
         // If we're in the process of sending a message (i.e. pending), then we show a "SENDING..."
         // string in place of the timestamp.
-        if (!sameItem || haveLoadedPdu) {
+        boolean timelineVisible = !mMessageItem.getCanClusterWithNextMessage();
+        if ((!sameItem || haveLoadedPdu) && timelineVisible || mMessageItem.isSending()) {
             if (MmsConfig.isRcsVersion()) {
                 int rcsMsgType = mMessageItem.getRcsMsgType();
                 if (rcsMsgType != RcsUtils.RCS_MSG_TYPE_IMAGE
@@ -678,7 +691,11 @@ public class MessageListItem extends LinearLayout implements
                         .getResources().getString(R.string.sending_message)
                         : mMessageItem.mTimestamp));
             }
+            mDateView.setVisibility(View.VISIBLE);
+        } else {
+            mDateView.setVisibility(View.INVISIBLE);
         }
+
         if (MmsConfig.isRcsVersion() && isRcsMessage()) {
             bindCommonRcsMessage();
         }
@@ -841,10 +858,11 @@ public class MessageListItem extends LinearLayout implements
     }
 
     private void inflateDownloadControls() {
-        if (mDownloadButton == null) {
+        if (mDownloadMessage == null) {
             //inflate the download controls
             findViewById(R.id.mms_downloading_view_stub).setVisibility(VISIBLE);
-            mDownloadButton = (Button) findViewById(R.id.btn_download_msg);
+            mDownloadingTitle = (TextView) findViewById(R.id.downloading_title);
+            mDownloadMessage = (TextView) findViewById(R.id.download_msg);
             if (getResources().getBoolean(R.bool.config_mms_cancelable)) {
                 mDownloading = (Button) findViewById(R.id.btn_cancel_download);
                 mDownloading.setOnClickListener(new OnClickListener() {
@@ -862,6 +880,7 @@ public class MessageListItem extends LinearLayout implements
                 });
             } else {
                 mDownloading = (TextView) findViewById(R.id.label_downloading);
+                mDownloadingTitle = (TextView) findViewById(R.id.downloading_title);
             }
         }
     }
@@ -894,8 +913,6 @@ public class MessageListItem extends LinearLayout implements
                     (sir != null) ? sir.getDisplayName().toString() : "";
 
             Log.d(TAG, "subId: " + subId + " displayName " + displayName);
-            buf.append(displayName);
-            buf.append("\n");
         }
 
         boolean hasSubject = !TextUtils.isEmpty(subject);
@@ -986,6 +1003,13 @@ public class MessageListItem extends LinearLayout implements
         // Check for links. If none, do nothing; if 1, open it; if >1, ask user to pick one
         final URLSpan[] spans = mBodyTextView.getUrls();
         if (spans.length == 0) {
+            if (mMessageItem.mMessageType == PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND) {
+                if (mMessageItem.getMmsDownloadStatus() != DownloadManager.STATE_PRE_DOWNLOADING &&
+                        mMessageItem.getMmsDownloadStatus() != DownloadManager.STATE_DOWNLOADING) {
+                    downloadAttachment();
+                    return;
+                }
+            }
             sendMessage(mMessageItem, MSG_LIST_DETAILS);
         } else {
             MessageUtils.onMessageContentClick(mContext, mBodyTextView);
@@ -1169,13 +1193,14 @@ public class MessageListItem extends LinearLayout implements
     @Override
     public void setChecked(boolean arg0) {
         mIsCheck = arg0;
+        boolean isSelf = Sms.isOutgoingFolder(mMessageItem.mBoxId);
+        String addr = isSelf ? null : mMessageItem.mAddress;
+        updateAvatarView(addr, isSelf);
         if (mIsCheck) {
-            mMessageBlock.getBackground().setAlpha(ALPHA_TRANSPARENT);
-            mMmsLayout
-                    .setBackgroundResource(R.drawable.list_selected_holo_light);
+            mMessageBlock.getBackground().setTint(mContext.getResources().
+                    getColor(R.color.compose_item_selected_background));
         } else {
-            mMessageBlock.setBackgroundResource(R.drawable.listitem_background);
-            mMmsLayout.setBackgroundResource(R.drawable.listitem_background);
+            mMessageBlock.getBackground().setTint(mBackgroundColor);
         }
     }
 
@@ -1489,4 +1514,60 @@ public class MessageListItem extends LinearLayout implements
     }
     /* End add for RCS */
 
+    public void downloadAttachment() {
+        inflateDownloadControls();
+        try {
+            NotificationInd nInd = (NotificationInd) PduPersister.getPduPersister(mContext)
+                   .load(mMessageItem.mMessageUri);
+            Log.d(TAG, "Download notify Uri = " + mMessageItem.mMessageUri);
+            AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+            builder.setTitle(R.string.download);
+            builder.setCancelable(true);
+            // Judge notification weather is expired
+            if (nInd.getExpiry() < System.currentTimeMillis() / 1000L) {
+                // builder.setIcon(R.drawable.ic_dialog_alert_holo_light);
+                builder.setMessage(mContext
+                       .getString(R.string.service_message_not_found));
+                       builder.show();
+                SqliteWrapper.delete(mContext, mContext.getContentResolver(),
+                        mMessageItem.mMessageUri, null, null);
+                return;
+            }
+            // Judge whether memory is full
+            else if (MessageUtils.isMmsMemoryFull()) {
+                builder.setMessage(mContext.getString(R.string.sms_full_body));
+                builder.show();
+                return;
+            }
+            // Judge whether message size is too large
+            else if ((int) nInd.getMessageSize() > MmsConfig.getMaxMessageSize()) {
+                builder.setMessage(mContext.getString(R.string.mms_too_large));
+                builder.show();
+                return;
+            }
+            // If mobile data is turned off, inform user start data and try again.
+            else if (MessageUtils.isMobileDataDisabled(mContext)) {
+                Toast.makeText(mContext, mContext.getString(R.string.inform_data_off),
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+        } catch (MmsException e) {
+           Log.e(TAG, e.getMessage(), e);
+           return;
+        }
+        mDownloadMessage.setVisibility(View.GONE);
+        mDownloading.setVisibility(View.VISIBLE);
+        mDownloadingTitle.setVisibility(View.VISIBLE);
+        mDownloadingTitle.setText(R.string.new_mms_message);
+        Intent intent = new Intent(mContext, TransactionService.class);
+        intent.putExtra(TransactionBundle.URI, mMessageItem.mMessageUri.toString());
+        intent.putExtra(TransactionBundle.TRANSACTION_TYPE,
+                Transaction.RETRIEVE_TRANSACTION);
+        intent.putExtra("sub_id", mMessageItem.mSubId);
+
+        mContext.startService(intent);
+
+        DownloadManager.getInstance().markState(
+                 mMessageItem.mMessageUri, DownloadManager.STATE_PRE_DOWNLOADING);
+    }
 }

@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  * Copyright (C) 2008 Esmertec AG.
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -72,11 +74,21 @@ import com.suntek.mway.rcs.client.aidl.constant.Constants;
 public class MessageItem {
     private static String TAG = LogTag.TAG;
 
+    private static final String SMS = "sms";
+
+    private static final String MMS = "mms";
+
     public enum DeliveryStatus  { NONE, INFO, FAILED, PENDING, RECEIVED }
 
     public static int ATTACHMENT_TYPE_NOT_LOADED = -1;
 
+    private static int DEFAULT_SUB_ID = -1;
+
     private final static int CDMA_STATUS_SHIFT = 16;
+
+    private final static long DATE_DELTA_MILLIS_LIMIT = 1000 * 60;
+
+    private final static long DATE_MILLIS = 1000L;
 
     final Context mContext;
     final String mType;
@@ -91,6 +103,7 @@ public class MessageItem {
     String mAddress;
     String mContact;
     String mBody; // Body of SMS, first text of MMS.
+    long mDateDelta;
     int mSubId;   // Holds current mms/sms sub Id value.
     String mTextContentType; // ContentType of text of MMS.
     Pattern mHighlight; // portion of message to highlight (from search)
@@ -125,6 +138,8 @@ public class MessageItem {
     boolean mIsForwardable = true;
     boolean mHasAttachmentToSave = false;
     boolean mIsDrmRingtoneWithRights = false;
+    private boolean mCanClusterWithPreviousMessage;
+    private boolean mCanClusterWithNextMessage;
 
     /* Begin add for RCS */
     int mCountDown = 0;
@@ -149,7 +164,7 @@ public class MessageItem {
         mType = type;
         mColumnsMap = columnsMap;
 
-        if ("sms".equals(type)) {
+        if (SMS.equals(type)) {
             mReadReport = false; // No read reports in sms
 
             long status = cursor.getLong(columnsMap.mColumnSmsStatus);
@@ -225,7 +240,7 @@ public class MessageItem {
 
             mLocked = cursor.getInt(columnsMap.mColumnSmsLocked) != 0;
             mErrorCode = cursor.getInt(columnsMap.mColumnSmsErrorCode);
-        } else if ("mms".equals(type)) {
+        } else if (MMS.equals(type)) {
             mMessageUri = ContentUris.withAppendedId(Mms.CONTENT_URI, mMsgId);
             mBoxId = cursor.getInt(columnsMap.mColumnMmsMessageBox);
             mMessageType = cursor.getInt(columnsMap.mColumnMmsMessageType);
@@ -293,18 +308,83 @@ public class MessageItem {
                 }
             }
 
+            if (mBoxId == Mms.MESSAGE_BOX_SENT) {
+                // Set "sent" time stamp
+                mDate = cursor.getLong(columnsMap.mColumnMmsDate) * DATE_MILLIS;
+            } else {
+                // Set "received" time stamp
+                mDate = cursor.getLong(context.getResources().getBoolean(
+                        R.bool.config_display_sent_time) ? columnsMap.mColumnMmsDateSent
+                        : columnsMap.mColumnMmsDate) * DATE_MILLIS;
+            }
         } else {
             throw new MmsException("Unknown type of the message: " + type);
         }
+
+        if (!cursor.isFirst() && cursor.moveToPrevious()) {
+            mCanClusterWithPreviousMessage = canClusterWithMessage(cursor);
+            cursor.moveToNext();
+        } else {
+            mCanClusterWithPreviousMessage = false;
+        }
+        if (!cursor.isLast() && cursor.moveToNext()) {
+            mCanClusterWithNextMessage = canClusterWithMessage(cursor);
+            cursor.moveToPrevious();
+        } else {
+            mCanClusterWithNextMessage = false;
+        }
     }
+
+    private boolean canClusterWithMessage(Cursor cursor) {
+        String type = cursor.getString(mColumnsMap.mColumnMsgType);
+        if (!type.equals(mType)) {
+            return false;
+        }
+        int otherSubId = 0;
+        int otherBoxId = 0;
+        long otherDate = 0L;
+        if (SMS.equals(mType)) {
+            otherSubId = cursor.getInt(mColumnsMap.mColumnSubId);
+            otherBoxId = cursor.getInt(mColumnsMap.mColumnSmsType);
+            otherDate = cursor.getLong(mColumnsMap.mColumnSmsDate);
+        } else if (MMS.equals(mType)) {
+            otherSubId = cursor.getInt(mColumnsMap.mColumnMmsSubId);
+            otherBoxId = cursor.getInt(mColumnsMap.mColumnMmsMessageBox);
+            otherDate = cursor.getLong(mColumnsMap.mColumnMmsDate) * DATE_MILLIS;
+        }
+
+        if (isSameSub(otherSubId) && isSameBox(otherBoxId)
+                && isInDateDelta(otherDate)) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isSameSub(int otherSubId) {
+        int currentSubId = mSubId == DEFAULT_SUB_ID ? SubscriptionManager.getDefaultSubId() : mSubId;
+        return otherSubId == currentSubId;
+    }
+
+    private boolean isSameBox(int otherBoxId) {
+        boolean otherIsMe = isMe(otherBoxId);
+        boolean currentIsMe = isMe();
+        return currentIsMe == otherIsMe;
+    }
+    private boolean isInDateDelta(long otherDate) {
+        long currentDate = mDate == 0 ? System.currentTimeMillis() : mDate;
+        long dateDeltaMillis = Math.abs(currentDate - otherDate);
+        if (dateDeltaMillis > DATE_DELTA_MILLIS_LIMIT) {
+            return false;
+        }
+        return true;
+     }
 
     private String formatTimeStamp(Context context, boolean isSent, long timestamp) {
         if (context.getResources().getBoolean(R.bool.config_display_sent_time)) {
             return MessageUtils.formatTimeStampString(context, timestamp);
         } else {
-            return String.format(context.getString(isSent ? R.string.sent_on
-                    : R.string.received_on), MessageUtils.formatTimeStampString(context,
-                    timestamp));
+            return String.format(context.getString(R.string.sent_on),
+                    MessageUtils.formatTimeStampString(context, timestamp));
         }
     }
 
@@ -335,27 +415,33 @@ public class MessageItem {
     }
 
     public boolean isMms() {
-        return mType.equals("mms");
+        return mType.equals(MMS);
     }
 
     public boolean isSms() {
-        return mType.equals("sms");
+        return mType.equals(SMS);
     }
 
     public boolean isDownloaded() {
         return (mMessageType != PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND);
     }
 
+
     public boolean isMe() {
+        return isMe(mBoxId);
+    }
+
+    private boolean isMe(int boxId) {
+
         // Logic matches MessageListAdapter.getItemViewType which is used to decide which
         // type of MessageListItem to create: a left or right justified item depending on whether
         // the message is incoming or outgoing.
         boolean isIncomingMms = isMms()
-                                    && (mBoxId == Mms.MESSAGE_BOX_INBOX
-                                            || mBoxId == Mms.MESSAGE_BOX_ALL);
+                                    && (boxId == Mms.MESSAGE_BOX_INBOX
+                                            || boxId == Mms.MESSAGE_BOX_ALL);
         boolean isIncomingSms = isSms()
-                                    && (mBoxId == Sms.MESSAGE_TYPE_INBOX
-                                            || mBoxId == Sms.MESSAGE_TYPE_ALL);
+                                    && (boxId == Sms.MESSAGE_TYPE_INBOX
+                                            || boxId == Sms.MESSAGE_TYPE_ALL);
         return !(isIncomingMms || isIncomingSms);
     }
 
@@ -493,7 +579,7 @@ public class MessageItem {
                 // Borrow the mBody to hold the URL of the message.
                 mBody = new String(notifInd.getContentLocation());
                 mMessageSize = (int) notifInd.getMessageSize();
-                timestamp = notifInd.getExpiry() * 1000L;
+                timestamp = notifInd.getExpiry() * DATE_MILLIS;
             } else {
                 MultimediaMessagePdu msg = (MultimediaMessagePdu)pduLoaded.mPdu;
                 mSlideshow = pduLoaded.mSlideshow;
@@ -508,13 +594,13 @@ public class MessageItem {
                     } else {
                         RetrieveConf retrieveConf = (RetrieveConf) msg;
                         interpretFrom(retrieveConf.getFrom(), mMessageUri);
-                        timestamp = retrieveConf.getDate() * 1000L;
+                        timestamp = retrieveConf.getDate() * DATE_MILLIS;
                     }
                 } else {
                     // Use constant string for outgoing messages
                     mContact = mAddress =
                             mContext.getString(R.string.messagelist_sender_self);
-                    timestamp = msg == null ? 0 : ((SendReq) msg).getDate() * 1000L;
+                    timestamp = msg == null ? 0 : ((SendReq) msg).getDate() * DATE_MILLIS;
                 }
 
                 SlideModel slide = mSlideshow == null ? null : mSlideshow.get(0);
@@ -726,5 +812,13 @@ public class MessageItem {
                 && getRcsMsgType() == RcsUtils.RCS_MSG_TYPE_TEXT;
     }
     /* End add for RCS */
+
+    public boolean getCanClusterWithPreviousMessage() {
+        return mCanClusterWithPreviousMessage;
+    }
+
+    public boolean getCanClusterWithNextMessage() {
+        return mCanClusterWithNextMessage;
+    }
 
 }

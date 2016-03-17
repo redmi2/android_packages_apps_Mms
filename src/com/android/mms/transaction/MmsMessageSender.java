@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  * Copyright (C) 2008 Esmertec AG.
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -27,13 +29,20 @@ import android.preference.PreferenceManager;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.MmsSms;
 import android.provider.Telephony.MmsSms.PendingMessages;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.android.mms.LogTag;
 import com.android.mms.ui.ComposeMessageActivity;
 import com.android.mms.ui.MessagingPreferenceActivity;
+import com.android.mms.ui.MessagingReportsPreferenceActivity;
+import com.android.mms.ui.MessagingReportsPreferenceActivity;
+import com.android.mms.ui.MmsPreferenceActivity;
+import com.android.mms.ui.MessagingExpiryPreferenceActivity;
+import com.android.mms.ui.MessageUtils;
 import com.android.mms.util.SendingProgressTokenManager;
+import com.android.internal.telephony.PhoneConstants;
 import com.google.android.mms.InvalidHeaderValueException;
 import com.google.android.mms.MmsException;
 import com.google.android.mms.pdu.EncodedStringValue;
@@ -149,26 +158,53 @@ public class MmsMessageSender implements MessageSender {
         sendReq.setPriority(prefs.getInt(MessagingPreferenceActivity.PRIORITY, DEFAULT_PRIORITY));
 
         // Delivery report.
-        boolean dr = prefs.getBoolean(MessagingPreferenceActivity.MMS_DELIVERY_REPORT_MODE,
-                DEFAULT_DELIVERY_REPORT_MODE);
-        sendReq.setDeliveryReport(dr?PduHeaders.VALUE_YES:PduHeaders.VALUE_NO);
-
+        int slotId = SubscriptionManager.getSlotId(mSubId);
+        boolean dr = false;
+        if (MessageUtils.isMsimIccCardActive()) {
+            dr = prefs.getBoolean((slotId == PhoneConstants.SUB1) ?
+                    MessagingReportsPreferenceActivity.MMS_DELIVERY_REPORT_SUB1 :
+                    MessagingReportsPreferenceActivity.MMS_DELIVERY_REPORT_SUB2,
+                    DEFAULT_DELIVERY_REPORT_MODE);
+        } else {
+            dr = prefs.getBoolean((slotId == PhoneConstants.SUB1) ?
+                    MmsPreferenceActivity.MMS_DELIVERY_REPORT_SUB1 :
+                    MmsPreferenceActivity.MMS_DELIVERY_REPORT_SUB2,
+                    DEFAULT_DELIVERY_REPORT_MODE);
+        }
+        sendReq.setDeliveryReport(dr ? PduHeaders.VALUE_YES : PduHeaders.VALUE_NO);
         // Read report.
-        boolean rr = prefs.getBoolean(MessagingPreferenceActivity.READ_REPORT_MODE,
-                DEFAULT_READ_REPORT_MODE);
-        sendReq.setReadReport(rr?PduHeaders.VALUE_YES:PduHeaders.VALUE_NO);
+        boolean rr = false;
+        if (MessageUtils.isMsimIccCardActive()) {
+            rr = prefs.getBoolean((slotId == PhoneConstants.SUB1) ?
+                    MessagingReportsPreferenceActivity.MMS_READ_REPORT_SUB1 :
+                    MessagingReportsPreferenceActivity.MMS_READ_REPORT_SUB2,
+                    DEFAULT_READ_REPORT_MODE);
+        } else {
+            rr = prefs.getBoolean((slotId == PhoneConstants.SUB1) ?
+                    MmsPreferenceActivity.MMS_READ_REPORT_SUB1 :
+                    MmsPreferenceActivity.MMS_READ_REPORT_SUB2,
+                    DEFAULT_READ_REPORT_MODE);
+        }
+        sendReq.setReadReport(rr ? PduHeaders.VALUE_YES : PduHeaders.VALUE_NO);
     }
 
     private long getExpiryTime(SharedPreferences prefs) {
         long expiryTime = 0;
+        if (MessageUtils.isMsimIccCardActive()) {
+            expiryTime = Long.parseLong(
+                    prefs.getString((mSubId == PhoneConstants.SUB1) ?
+                            MessagingExpiryPreferenceActivity.MMS_VALIDITY_FOR_SIM1 :
+                            MessagingExpiryPreferenceActivity.MMS_VALIDITY_FOR_SIM2, "0"));
+            return expiryTime;
+        }
         if (TelephonyManager.getDefault().isMultiSimEnabled()) {
             expiryTime = Long.parseLong(
-                    prefs.getString((mSubId == 0) ?
-                            MessagingPreferenceActivity.EXPIRY_TIME_SLOT1:
-                            MessagingPreferenceActivity.EXPIRY_TIME_SLOT2, "0"));
+                    prefs.getString((mSubId == PhoneConstants.SUB1) ?
+                            MmsPreferenceActivity.MMS_VALIDITY_SIM1:
+                            MmsPreferenceActivity.MMS_VALIDITY_SIM2, "0"));
         } else {
             expiryTime = Long.parseLong(
-                    prefs.getString(MessagingPreferenceActivity.EXPIRY_TIME, "0"));
+                    prefs.getString(MmsPreferenceActivity.MMS_VALIDITY_PERIOD_NO_MULTI, "0"));
         }
         return expiryTime;
     }

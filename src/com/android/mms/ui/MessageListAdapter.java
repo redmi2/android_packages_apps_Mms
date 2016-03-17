@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2014, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2010-2014, 2016, The Linux Foundation. All rights reserved.
  * Not a Contribution.
  * Copyright (C) 2008 Esmertec AG.
  * Copyright (C) 2008 The Android Open Source Project
@@ -653,6 +653,8 @@ public class MessageListAdapter extends CursorAdapter {
             mColumnSmsLocked          = COLUMN_SMS_LOCKED;
             mColumnSmsErrorCode       = COLUMN_SMS_ERROR_CODE;
             mColumnMmsSubject         = COLUMN_MMS_SUBJECT;
+            mColumnMmsDate            = COLUMN_MMS_DATE;
+            mColumnMmsDateSent        = COLUMN_MMS_DATE_SENT;
             mColumnMmsSubjectCharset  = COLUMN_MMS_SUBJECT_CHARSET;
             mColumnMmsMessageType     = COLUMN_MMS_MESSAGE_TYPE;
             mColumnMmsMessageBox      = COLUMN_MMS_MESSAGE_BOX;
@@ -832,6 +834,18 @@ public class MessageListAdapter extends CursorAdapter {
 
             try {
                 mColumnMmsSubjectCharset = cursor.getColumnIndexOrThrow(Mms.SUBJECT_CHARSET);
+            } catch (IllegalArgumentException e) {
+                Log.w("colsMap", e.getMessage());
+            }
+
+            try {
+                mColumnMmsDate = cursor.getColumnIndexOrThrow(Mms.DATE);
+            } catch (IllegalArgumentException e) {
+                Log.w("colsMap", e.getMessage());
+            }
+
+            try {
+                mColumnMmsDateSent = cursor.getColumnIndexOrThrow(Mms.DATE_SENT);
             } catch (IllegalArgumentException e) {
                 Log.w("colsMap", e.getMessage());
             }

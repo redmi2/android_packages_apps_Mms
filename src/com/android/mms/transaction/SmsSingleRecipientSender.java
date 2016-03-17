@@ -26,6 +26,7 @@ import com.android.mms.MmsConfig;
 import com.android.mms.R;
 import com.android.mms.data.Conversation;
 import com.android.mms.ui.MessageUtils;
+import com.android.mms.ui.MessagingPreferenceActivity;
 import com.google.android.mms.MmsException;
 
 public class SmsSingleRecipientSender extends SmsMessageSender {
@@ -230,16 +231,32 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
             int phoneId = SubscriptionManager.getPhoneId(subscription);
             switch (phoneId) {
                 case MessageUtils.SUB1:
-                    valitidyPeriod = prefs.getString("pref_key_sms_validity_period_slot1", null);
+                    if (MessageUtils.isMsimIccCardActive()) {
+                        valitidyPeriod = prefs.getString(
+                                MessagingPreferenceActivity.SMS_VALIDITY_FOR_SIM1,
+                                null);
+                    }
+                    else {
+                        valitidyPeriod = prefs.getString(
+                                MessagingPreferenceActivity.SMS_VALIDITY_SIM1, null);
+                    }
                     break;
                 case MessageUtils.SUB2:
-                    valitidyPeriod = prefs.getString("pref_key_sms_validity_period_slot2", null);
-                    break;
+                    if (MessageUtils.isMsimIccCardActive()) {
+                        valitidyPeriod = prefs.getString(
+                                MessagingPreferenceActivity.SMS_VALIDITY_FOR_SIM2,
+                                null);
+                    }
+                    else {
+                        valitidyPeriod = prefs.getString(
+                                MessagingPreferenceActivity.SMS_VALIDITY_SIM2, null);
+                        break;
+                    }
                 default:
                     break;
             }
         } else {
-            valitidyPeriod = prefs.getString("pref_key_sms_validity_period", null);
+            valitidyPeriod = prefs.getString(MessagingPreferenceActivity.SMS_VALIDITY_NO_MULTI, null);
         }
         return (valitidyPeriod == null) ? -1 : Integer.parseInt(valitidyPeriod);
     }

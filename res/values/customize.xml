@@ -68,6 +68,12 @@
     <!-- mms delivery reports enabled.default is true to on,false to off -->
     <bool name="def_mms_delivery_reports">false</bool>
 
+    <!-- mms delivery reports enabled.default is true to on,false to off -->
+    <bool name="def_mms_delivery_reports_slot1">false</bool>
+
+    <!-- mms delivery reports enabled.default is true to on,false to off -->
+    <bool name="def_mms_delivery_reports_slot2">false</bool>
+
     <!-- mms automatically retrieve messages enabled. default is true to on,false to off -->
     <bool name="def_sms_auto_retrieval">true</bool>
 

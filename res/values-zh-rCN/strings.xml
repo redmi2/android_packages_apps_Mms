@@ -185,6 +185,7 @@
     <string name="pref_sms_settings_title" msgid="5173078369851066881">"短信 (SMS)"</string>
     <string name="pref_sms_storage_title" msgid="9001233319190616445">"存储"</string>
     <string name="pref_title_sms_disabled" msgid="1441894740130104326">"短信功能已关闭"</string>
+    <string name="pref_title_default_app">默认短信应用</string>
     <string name="pref_summary_sms_disabled" msgid="8975773722051230744">"触摸即可将“短信”设为您的默认短信应用"</string>
     <string name="pref_title_sms_enabled" msgid="1857849790200375277">"短信功能已开启"</string>
     <string name="pref_summary_sms_enabled" msgid="2106125420361911250">"触摸即可更改您的默认短信应用"</string>
@@ -194,11 +195,15 @@
     <string name="pref_summary_mms_read_reports" msgid="2748323864008907440">"要求每次发送信息后都返回已读回执"</string>
     <string name="pref_summary_sms_delivery_reports" msgid="5852207702358546129">"要求每次发送信息后都返回发送报告"</string>
     <string name="pref_summary_auto_delete" msgid="7719538116486177613">"达到数量上限时删除旧信息"</string>
+    <string name="pref_summary_enable_gesture">允许用户通过双指张开或合拢对消息字体进行调节</string>
+    <string name="pref_summary_group_notification">自动将运营商,银行等消息合并入同一分组</string>
     <string name="pref_summary_delete_limit" msgid="597128041393045216">"每个会话限存储 <xliff:g id="COUNT">%1$s</xliff:g> 条信息"</string>
     <string name="pref_summary_mms_group_mms" msgid="2266928687440696745">"使用彩信将单条信息发送给多个收件人"</string>
     <string name="pref_title_manage_sim_messages" msgid="7820895261757881177">"管理SIM卡中的信息"</string>
     <string name="pref_title_manage_sim_messages_slot1" msgid="7820895261757881177">"管理SIM1卡中的信息"</string>
     <string name="pref_title_manage_sim_messages_slot2" msgid="7820895261757881177">"管理SIM2卡中的信息"</string>
+    <string name="pref_title_group_notification">通知类消息</string>
+    <string name="pref_title_enable_gesture">允许手势</string>
     <string name="pref_title_mms_delivery_reports" msgid="6666857926679451910">"发送报告"</string>
     <string name="pref_title_mms_group_mms" msgid="1251698526583908432">"群发信息"</string>
     <string name="pref_title_mms_read_reports" msgid="4882179829495828541">"已读报告"</string>
@@ -510,7 +515,7 @@
     <!-- SMSC -->
     <string name="pref_smsc_title">短消息中心设置</string>
     <string name="pref_one_smcs">"设置短消息中心号码"</string>
-    <string name="pref_more_smcs">"设置SIM卡"<xliff:g id="slot_number">%d</xliff:g>"的短消息中心号码"</string>
+    <string name="pref_more_smcs">"设置SIM卡的短消息中心号码"</string>
     <string name="set_smsc_error">设置短消息中心号码失败</string>
     <string name="set_smsc_success">设置短消息中心号码成功</string>
     <string name="set_smsc_confirm_message">修改短消息中心号码可能导致短信发送失败，确认修改吗？</string>
@@ -573,4 +578,11 @@
 
     <string name="menu_more">"更多"</string>
     <string name="contact_list_send_to_text">"发送到<xliff:g id="DESTINATION">%s</xliff:g>"</string>
+
+    <string name="new_message_download">下载新彩信</string>
+    <string name="touch_to_download">点击下载</string>
+    <string name="touch_to_try_again">再次点击下载</string>
+    <string name="could_not_downloading">没能成功下载</string>
+    <string name="new_mms_message">新彩信</string>
+    <string name="mms_size_label">"大小： "</string>
 </resources>

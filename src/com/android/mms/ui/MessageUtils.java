@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2014, 2016, The Linux Foundation. All rights reserved.
  * Not a Contribution.
  *
  * Copyright (C) 2008 Esmertec AG.
@@ -146,8 +146,6 @@ import com.google.android.mms.pdu.PduPart;
 import com.google.android.mms.pdu.PduPersister;
 import com.google.android.mms.pdu.RetrieveConf;
 import com.google.android.mms.pdu.SendReq;
-
-
 import com.suntek.mway.rcs.client.aidl.common.RcsColumns;
 import com.suntek.mway.rcs.client.api.basic.BasicApi;
 import com.suntek.mway.rcs.client.api.support.SupportApi;
@@ -1726,6 +1724,12 @@ public class MessageUtils {
         int simState = tm.getSimState(subscription);
         return (simState != TelephonyManager.SIM_STATE_ABSENT)
                     && (simState != TelephonyManager.SIM_STATE_UNKNOWN);
+    }
+
+    public static boolean hasActivatedIccCard(int subscription) {
+        return TelephonyManager.getDefault().isMultiSimEnabled() ?
+                isIccCardActivated(subscription) :
+                isIccCardActivated(SubscriptionManager.getDefaultSubId());
     }
 
     public static Drawable getMultiSimIcon(Context context, int subscription) {
