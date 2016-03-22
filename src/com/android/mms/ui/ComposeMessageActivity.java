@@ -137,6 +137,7 @@ import android.text.TextWatcher;
 import android.text.method.TextKeyListener;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
+import android.util.Base64;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.ActionMode;
@@ -225,6 +226,7 @@ import com.suntek.mway.rcs.client.aidl.constant.Constants;
 import com.suntek.mway.rcs.client.aidl.constant.Parameter;
 import com.suntek.mway.rcs.client.aidl.common.RcsColumns;
 import com.suntek.mway.rcs.client.aidl.plugin.entity.emoticon.EmoticonBO;
+import com.suntek.mway.rcs.client.aidl.plugin.entity.profile.Avatar;
 import com.suntek.mway.rcs.client.aidl.plugin.entity.profile.Profile;
 import com.suntek.mway.rcs.client.api.capability.CapabiltyListener;
 import com.suntek.mway.rcs.client.aidl.service.entity.GroupChat;
@@ -237,12 +239,14 @@ import com.suntek.mway.rcs.client.api.capability.CapabiltyListener;
 import com.suntek.mway.rcs.client.api.emoticon.EmoticonApi;
 import com.suntek.mway.rcs.client.api.exception.ServiceDisconnectedException;
 import com.suntek.mway.rcs.client.api.groupchat.GroupChatApi;
+import com.suntek.mway.rcs.client.api.groupchat.GroupChatCallback;
 import com.suntek.mway.rcs.client.api.message.MessageApi;
 import com.suntek.mway.rcs.client.api.profile.ProfileApi;
 import com.suntek.mway.rcs.client.api.specialnumber.SpecialServiceNumApi;
 import com.suntek.mway.rcs.client.api.support.SupportApi;
 import com.suntek.rcs.ui.common.mms.GroupChatManagerReceiver;
 import com.suntek.rcs.ui.common.mms.GroupChatManagerReceiver.GroupChatNotifyCallback;
+import com.suntek.rcs.ui.common.mms.GroupMemberPhotoCache;
 import com.suntek.rcs.ui.common.mms.RcsContactsUtils;
 import com.suntek.rcs.ui.common.RcsEmojiInitialize;
 import com.suntek.rcs.ui.common.RcsEmojiInitialize.EmojiResources;
@@ -619,6 +623,7 @@ public class ComposeMessageActivity extends Activity
             "com.suntek.mway.rcs.ACTION_LUNCHER_BACKUP_MANY_MESSAGE_ACTIVITY";
     private static final String BACKUP_MESSAGE_IDS = "ids";
     private static final String BACKUP_MESSAGE_LIST = "msgList";
+    private static final String GROUP_PROFILE_CHANGE_NUMBER = "CHANGE_NUMBER";
 
     private static final int OPERATE_SUCCESS       = 0;
     private static final int OPERATE_FAILURE       = 1;
@@ -3545,7 +3550,7 @@ public class ComposeMessageActivity extends Activity
             }
         }
         if (mIsRcsEnabled && mSupportApi.isPluginInstalled(this)) {
-            menu.add(0, MENU_RCS_MCLOUD_SHARE, 0, R.string.rcs_mcloud_share_file).setVisible(false);
+            menu.add(0, MENU_RCS_MCLOUD_SHARE, 0, R.string.rcs_mcloud_share_file);
         }
 
         return true;
@@ -8163,7 +8168,7 @@ public class ComposeMessageActivity extends Activity
         mProfileApi = ProfileApi.getInstance();
         mGroupChatApi = GroupChatApi.getInstance();
         if (mButtonEmoj != null) {
-            mButtonEmoj.setVisibility(View.GONE);
+            mButtonEmoj.setVisibility(mIsRcsEnabled ? View.VISIBLE : View.GONE);
         }
         if (mIsRcsEnabled) {
             if (mConversation.isGroupChat()) {
@@ -8897,6 +8902,10 @@ public class ComposeMessageActivity extends Activity
                     }
                 }
             } else {
+                if (mConversation.isGroupChat()) {
+                    String number = intent.getStringExtra(GROUP_PROFILE_CHANGE_NUMBER);
+                    GroupMemberPhotoCache.getInstance().removeCache(number);
+                }
                 mMsgListAdapter.notifyDataSetChanged();
             }
         }
