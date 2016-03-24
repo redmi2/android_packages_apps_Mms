@@ -330,9 +330,6 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
         Contact.addListener(this);
         if (MmsConfig.isRcsVersion()) {
             int messageID = conversation.getRcsLastMsgId();
-            if (isBurnMsg(messageID)) {
-                mSubjectView.setText(R.string.msg_type_burnMessage);
-            } else {
                 // Date
                 mDateView.setText(MessageUtils.formatTimeStampString(context,
                         conversation.getDate()));
@@ -350,7 +347,6 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
                 } else {
                     mSubjectView.setText(snippet);
                 }
-            }
         } else {
             mSubjectView.setText(conversation.getSnippet());
         }
