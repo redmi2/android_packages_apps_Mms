@@ -152,7 +152,7 @@ public class NotificationQuickReplyActivity extends Activity {
 
     private void sendSms(String msgText, String address, long threadId) {
         String[] dests = TextUtils.split(address, ";");
-        int subId = SubscriptionManager.getDefaultSmsSubId();
+        int subId = SubscriptionManager.getDefaultSmsSubscriptionId();
         SmsMessageSender sender = new SmsMessageSender(this, dests, msgText, threadId, subId);
         try {
             sender.sendMessage(threadId);

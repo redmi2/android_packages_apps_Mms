@@ -361,7 +361,7 @@ public class MailBoxMessageList extends ListActivity implements
                 Transaction.RETRIEVE_TRANSACTION);
         intent.putExtra(Mms.SUBSCRIPTION_ID, subId); //destination subId
         intent.putExtra(ORIGIN_SUB_ID,
-                SubscriptionManager.getDefaultDataSubId());
+                SubscriptionManager.getDefaultDataSubscriptionId());
         startService(intent);
 
         DownloadManager.getInstance().markState(uri, DownloadManager.STATE_PRE_DOWNLOADING);

@@ -360,7 +360,7 @@ public class TransactionService extends Service implements Observer {
     }
 
     private int getSubIdFromDb(Uri uri) {
-        int subId = SubscriptionManager.getDefaultSmsSubId();
+        int subId = SubscriptionManager.getDefaultSmsSubscriptionId();
         Cursor c = getApplicationContext().getContentResolver().query(uri,
                 null, null, null, null);
         Log.d(TAG, "Cursor= " + DatabaseUtils.dumpCursorToString(c));
@@ -535,7 +535,7 @@ public class TransactionService extends Service implements Observer {
                                 Log.d(TAG, "destination Sub Id = " + subId);
                                 if (subId < 0) {
                                     Log.d(TAG, "Subscriptions are not yet ready.");
-                                    int defSmsSubId = getDefaultSmsSubId();
+                                    int defSmsSubId = getDefaultSmsSubscriptionId();
                                     // We dont have enough info about subId. We dont know if the
                                     // subId as persent in DB actually would match the subId of
                                     // defaultSmsSubId. We can not also ignore this transaction
@@ -594,7 +594,7 @@ public class TransactionService extends Service implements Observer {
             int subId = getSubIdFromDb(uri);
             Log.d(TAG, "destination Sub Id = " + subId);
             if (subId < 0) {
-               int defSmsSubId = getDefaultSmsSubId();
+               int defSmsSubId = getDefaultSmsSubscriptionId();
                 Log.d(TAG, "Override with default Sms subId = " + defSmsSubId);
                 subId = defSmsSubId;
             }
@@ -619,8 +619,8 @@ public class TransactionService extends Service implements Observer {
         }
     }
 
-    private int getDefaultSmsSubId() {
-        return SubscriptionManager.getDefaultSmsSubId();
+    private int getDefaultSmsSubscriptionId() {
+        return SubscriptionManager.getDefaultSmsSubscriptionId();
     }
 
     private void stopSelfIfIdle(int startId) {
@@ -1162,7 +1162,7 @@ public class TransactionService extends Service implements Observer {
 
                     if (!mPending.isEmpty()) {
                         try {
-                            beginMmsConnectivity(SubscriptionManager.getDefaultDataSubId());
+                            beginMmsConnectivity(SubscriptionManager.getDefaultDataSubscriptionId());
                         } catch (IOException e) {
                             Log.w(TAG, "Attempt to use of MMS connectivity failed");
                             return;

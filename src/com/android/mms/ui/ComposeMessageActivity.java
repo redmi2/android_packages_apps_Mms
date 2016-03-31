@@ -186,7 +186,7 @@ import android.widget.Toast;
 import android.widget.Toolbar;
 import android.widget.Button;
 
-import com.android.internal.telephony.ConfigResourceUtil;
+//import com.android.internal.telephony.ConfigResourceUtil;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.RILConstants;
 import com.android.internal.telephony.TelephonyIntents;
@@ -1300,7 +1300,7 @@ public class ComposeMessageActivity extends Activity
             LogTag.debugD("sendMsimMessage isSMSPromptEnabled: True");
             LaunchMsimDialog(bCheckEcmMode);
         } else {
-            int subId = SubscriptionManager.getDefaultSmsSubId();
+            int subId = SubscriptionManager.getDefaultSmsSubscriptionId();
             LogTag.debugD("sendMsimMessage with default SmsSubId :" + subId);
             mWorkingMessage.setWorkingMessageSub(subId);
             sendMessage(bCheckEcmMode);
@@ -2520,9 +2520,11 @@ public class ComposeMessageActivity extends Activity
         // Create a new empty working message.
         mWorkingMessage = WorkingMessage.createEmpty(this);
 
-        ConfigResourceUtil configResUtil = new ConfigResourceUtil();
-        mSendMmsMobileDataOff = configResUtil.getBooleanValue(this,
-                "config_enable_mms_with_mobile_data_off");
+        // FIXME: Comment this framework dependency at bring up stage, will restore
+        //        back later.
+        //ConfigResourceUtil configResUtil = new ConfigResourceUtil();
+        mSendMmsMobileDataOff = false;//configResUtil.getBooleanValue(this,
+               // "config_enable_mms_with_mobile_data_off");
 
         mSendMmsSupportViaWiFi = getResources().getBoolean(R.bool.support_send_mms_over_wifi);
 

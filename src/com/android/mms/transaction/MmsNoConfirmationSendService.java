@@ -219,7 +219,7 @@ public class MmsNoConfirmationSendService extends NoConfirmationSendService {
                     MessagingPreferenceActivity.getIsGroupMmsEnabled(context),
                     null);
             ContentValues values = new ContentValues();
-            values.put(Mms.SUBSCRIPTION_ID, SubscriptionManager.getDefaultDataSubId());
+            values.put(Mms.SUBSCRIPTION_ID, SubscriptionManager.getDefaultDataSubscriptionId());
             SqliteWrapper.update(context, context.getContentResolver(), mmsuri,
                     values, null, null);
             MessageSender msgSender = new MmsMessageSender(context, mmsuri,

@@ -31,7 +31,7 @@ import android.util.Base64;
 import android.telephony.SubscriptionManager;
 
 import com.android.mms.ui.MessagingPreferenceActivity;
-import com.android.internal.telephony.IExtTelephony;
+//import com.android.internal.telephony.IExtTelephony;
 
 import com.suntek.mway.rcs.client.api.support.SupportApi;
 import com.suntek.rcs.ui.common.RcsLog;
@@ -69,19 +69,21 @@ public class RcsDualSimMananger {
      * 2 SMS prompt enalbed.
      */
     private static int getSendingDefaultSim() {
-        IExtTelephony mExtTelephony = IExtTelephony.Stub.asInterface(ServiceManager
-                .getService("extphone"));
+        // FIXME: Comment this framework dependency at bring up stage, will restore
+        //        back later.
+        //IExtTelephony mExtTelephony = IExtTelephony.Stub.asInterface(ServiceManager
+         //       .getService("extphone"));
         try {
-            if (mExtTelephony.isSMSPromptEnabled()) {
+            if (false/*mExtTelephony.isSMSPromptEnabled()*/) {
                 return SMS_PROMPT_ENABLED;
             } else {
-                int subId = SubscriptionManager.getDefaultSmsSubId();
+                int subId = SubscriptionManager.getDefaultSmsSubscriptionId();
                 int phoneId = SubscriptionManager.getPhoneId(subId);
                 return phoneId;
             }
         } catch (NullPointerException ex) {
-        } catch (RemoteException ex) {
-        }
+        }/* catch (RemoteException ex) {
+        }*/
         return 0;
     }
 

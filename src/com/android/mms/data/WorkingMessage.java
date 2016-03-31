@@ -1605,7 +1605,8 @@ public class WorkingMessage {
                 if ((TelephonyManager.getDefault().getPhoneCount()) > 1) {
                     values.put(Mms.SUBSCRIPTION_ID, mCurrentConvSubId);
                 } else {
-                    values.put(Mms.SUBSCRIPTION_ID, SubscriptionManager.getDefaultDataSubId());
+                    values.put(Mms.SUBSCRIPTION_ID,
+                            SubscriptionManager.getDefaultDataSubscriptionId());
                 }
                 mmsUri = SqliteWrapper.insert(mActivity, mContentResolver, Mms.Outbox.CONTENT_URI,
                         values);
@@ -1675,7 +1676,7 @@ public class WorkingMessage {
         if ((TelephonyManager.getDefault().getPhoneCount()) > 1) {
             values.put(Mms.SUBSCRIPTION_ID, mCurrentConvSubId);
         } else {
-            values.put(Mms.SUBSCRIPTION_ID, SubscriptionManager.getDefaultDataSubId());
+            values.put(Mms.SUBSCRIPTION_ID, SubscriptionManager.getDefaultDataSubscriptionId());
         }
         SqliteWrapper.update(mActivity, mContentResolver, mmsUri, values, null, null);
 

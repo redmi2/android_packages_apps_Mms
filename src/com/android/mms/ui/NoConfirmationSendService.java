@@ -66,7 +66,7 @@ public class NoConfirmationSendService extends IntentService {
             return;
         }
         int sub = extras.getInt(PhoneConstants.SUBSCRIPTION_KEY, SubscriptionManager
-                .getDefaultSubId());
+                .getDefaultSubscriptionId());
 
         String message = extras.getString(Intent.EXTRA_TEXT);
 

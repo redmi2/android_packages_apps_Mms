@@ -139,7 +139,7 @@ public class ManageSimMessages extends Activity
                 Log.d(TAG, "receive broadcast ACTION_SIM_STATE_CHANGED");
                 if (MessageUtils.isMultiSimEnabledMms()) {
                     int subId = intent.getIntExtra(PhoneConstants.SUBSCRIPTION_KEY,
-                            SubscriptionManager.getDefaultSubId());
+                            SubscriptionManager.getDefaultSubscriptionId());
                     int currentSubId = SubscriptionManager.getSubId(mSlotId)[0];
                     Log.d(TAG, "subId: " + subId + " currentSubId: "+currentSubId);
                     if (subId != currentSubId) {
@@ -520,10 +520,12 @@ public class ManageSimMessages extends Activity
         int iccCapacityAll = -1;
         if (MessageUtils.isMultiSimEnabledMms()) {
             int[] subId = SubscriptionManager.getSubId(mSlotId);
-            iccCapacityAll = SmsManager.getSmsManagerForSubscriptionId(subId[0])
-                    .getSmsCapacityOnIcc();
+            // FIXME: Comment this framework dependency at bring up stage, will restore
+            //        back later.
+            iccCapacityAll = 0;//SmsManager.getSmsManagerForSubscriptionId(subId[0])
+                    //.getSmsCapacityOnIcc();
         } else {
-            iccCapacityAll = SmsManager.getDefault().getSmsCapacityOnIcc();
+            iccCapacityAll = 0;//SmsManager.getDefault().getSmsCapacityOnIcc();
         }
 
         capacityMessage.append(" " + iccCapacityAll);

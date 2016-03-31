@@ -1303,12 +1303,12 @@ public class MessageUtils {
     }
 
     public static String getLocalNumber() {
-        return getLocalNumber(SubscriptionManager.getDefaultDataSubId());
+        return getLocalNumber(SubscriptionManager.getDefaultDataSubscriptionId());
     }
 
     public static String getLocalNumber(int subId) {
         sLocalNumber = MmsApp.getApplication().getTelephonyManager()
-            .getLine1NumberForSubscriber(subId);
+            .getLine1Number(subId);
         return sLocalNumber;
     }
 
@@ -1831,7 +1831,7 @@ public class MessageUtils {
         if (isMultiSimEnabledMms()) {
             hasCard = telephonyManager.hasIccCard(subscription);
         } else {
-            if (subscription == SubscriptionManager.getDefaultSubId()) {
+            if (subscription == SubscriptionManager.getDefaultSubscriptionId()) {
                 hasCard = telephonyManager.hasIccCard();
             }
         }
@@ -1895,7 +1895,7 @@ public class MessageUtils {
     public static boolean hasActivatedIccCard(int subscription) {
         return TelephonyManager.getDefault().isMultiSimEnabled() ?
                 isIccCardActivated(subscription) :
-                isIccCardActivated(SubscriptionManager.getDefaultSubId());
+                isIccCardActivated(SubscriptionManager.getDefaultSubscriptionId());
     }
 
     public static Drawable getMultiSimIcon(Context context, int subscription) {

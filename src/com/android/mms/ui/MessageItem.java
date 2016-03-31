@@ -358,7 +358,8 @@ public class MessageItem {
     }
 
     private boolean isSameSub(int otherSubId) {
-        int currentSubId = mSubId == DEFAULT_SUB_ID ? SubscriptionManager.getDefaultSubId() : mSubId;
+        int currentSubId = mSubId == DEFAULT_SUB_ID ?
+                SubscriptionManager.getDefaultSubscriptionId() : mSubId;
         return otherSubId == currentSubId;
     }
 

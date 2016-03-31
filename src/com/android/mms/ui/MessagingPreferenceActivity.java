@@ -90,7 +90,7 @@ import android.widget.Toast;
 import android.util.Log;
 
 import com.android.internal.telephony.IccCardConstants;
-import com.android.internal.telephony.OperatorSimInfo;
+//import com.android.internal.telephony.OperatorSimInfo;
 import com.android.internal.telephony.TelephonyIntents;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.SmsApplication;
@@ -473,17 +473,19 @@ public class MessagingPreferenceActivity extends PreferenceActivity
                 mSmsPrefCategory.removePreference(mSmsDeliveryReportPref);
                 if (!MessageUtils.isIccCardActivated(MessageUtils.SUB1)) {
                     mSmsDeliveryReportPrefSub1.setEnabled(false);
-                    displaySimLabel(false, PREFERENCE_TYPE_DELIVERY_REPORT, MessageUtils.SUB1);
+                    // FIXME: Comment this framework dependency at bring up stage, will restore
+                    //        back later.
+                    //displaySimLabel(false, PREFERENCE_TYPE_DELIVERY_REPORT, MessageUtils.SUB1);
                 }
                 if (!MessageUtils.isIccCardActivated(MessageUtils.SUB2)) {
                     mSmsDeliveryReportPrefSub2.setEnabled(false);
-                     displaySimLabel(false, PREFERENCE_TYPE_DELIVERY_REPORT, MessageUtils.SUB2);
+                    //displaySimLabel(false, PREFERENCE_TYPE_DELIVERY_REPORT, MessageUtils.SUB2);
                 }
                 if (MessageUtils.isIccCardActivated(MessageUtils.SUB1)) {
-                    displaySimLabel(true, PREFERENCE_TYPE_DELIVERY_REPORT, MessageUtils.SUB1);
+                    //displaySimLabel(true, PREFERENCE_TYPE_DELIVERY_REPORT, MessageUtils.SUB1);
                 }
                 if (MessageUtils.isIccCardActivated(MessageUtils.SUB2)) {
-                    displaySimLabel(true, PREFERENCE_TYPE_DELIVERY_REPORT, MessageUtils.SUB2);
+                    //displaySimLabel(true, PREFERENCE_TYPE_DELIVERY_REPORT, MessageUtils.SUB2);
                 }
             } else {
                 mSmsPrefCategory.removePreference(mSmsDeliveryReportPrefSub1);
@@ -585,17 +587,19 @@ public class MessagingPreferenceActivity extends PreferenceActivity
                 storageOptions.removePreference(mSmsValidityPref);
                 if (!MessageUtils.isIccCardActivated(MessageUtils.SUB1)) {
                     mSmsValidityCard1Pref.setEnabled(false);
-                     displaySimLabel(false, PREFERENCE_TYPE_SMS_VALIDITY, MessageUtils.SUB1);
+                    // FIXME: Comment this framework dependency at bring up stage, will restore
+                    //        back later.
+                    //displaySimLabel(false, PREFERENCE_TYPE_SMS_VALIDITY, MessageUtils.SUB1);
                 } else {
                     setSmsPreferValiditySummary(MessageUtils.SUB1);
-                    displaySimLabel(true, PREFERENCE_TYPE_SMS_VALIDITY, MessageUtils.SUB1);
+                    //displaySimLabel(true, PREFERENCE_TYPE_SMS_VALIDITY, MessageUtils.SUB1);
                 }
                 if (!MessageUtils.isIccCardActivated(MessageUtils.SUB2)) {
                     mSmsValidityCard2Pref.setEnabled(false);
-                     displaySimLabel(false, PREFERENCE_TYPE_SMS_VALIDITY, MessageUtils.SUB2);
+                    // displaySimLabel(false, PREFERENCE_TYPE_SMS_VALIDITY, MessageUtils.SUB2);
                 } else {
                     setSmsPreferValiditySummary(MessageUtils.SUB2);
-                    displaySimLabel(true, PREFERENCE_TYPE_SMS_VALIDITY, MessageUtils.SUB2);
+                    //displaySimLabel(true, PREFERENCE_TYPE_SMS_VALIDITY, MessageUtils.SUB2);
                 }
             } else {
                 storageOptions.removePreference(mSmsValidityCard1Pref);
@@ -648,17 +652,19 @@ public class MessagingPreferenceActivity extends PreferenceActivity
         if (MessageUtils.isMultiSimEnabledMms()) {
             if (!MessageUtils.isIccCardActivated(MessageUtils.SUB1)) {
                 mSmsPrefCategory.removePreference(mManageSim1Pref);
-                displaySimLabel(false, PREFERENCE_TYPE_MANAGE_SIM_CARD, MessageUtils.SUB1);
+                // FIXME: Comment this framework dependency at bring up stage, will restore
+                //        back later.
+                //displaySimLabel(false, PREFERENCE_TYPE_MANAGE_SIM_CARD, MessageUtils.SUB1);
             } else {
                 mSmsPrefCategory.addPreference(mManageSim1Pref);
-                displaySimLabel(true, PREFERENCE_TYPE_MANAGE_SIM_CARD, MessageUtils.SUB1);
+                //displaySimLabel(true, PREFERENCE_TYPE_MANAGE_SIM_CARD, MessageUtils.SUB1);
             }
             if (!MessageUtils.isIccCardActivated(MessageUtils.SUB2)) {
                 mSmsPrefCategory.removePreference(mManageSim2Pref);
-                displaySimLabel(false, PREFERENCE_TYPE_MANAGE_SIM_CARD, MessageUtils.SUB2);
+                //displaySimLabel(false, PREFERENCE_TYPE_MANAGE_SIM_CARD, MessageUtils.SUB2);
             } else {
                 mSmsPrefCategory.addPreference(mManageSim2Pref);
-                displaySimLabel(true, PREFERENCE_TYPE_MANAGE_SIM_CARD, MessageUtils.SUB2);
+                //displaySimLabel(true, PREFERENCE_TYPE_MANAGE_SIM_CARD, MessageUtils.SUB2);
             }
             mSmsPrefCategory.removePreference(mManageSimPref);
         } else {
@@ -682,7 +688,7 @@ public class MessagingPreferenceActivity extends PreferenceActivity
                 ? getString(R.string.pref_more_smcs, index + 1)
                 : getString(R.string.pref_one_smcs);
         // check for operator custom label feature
-        if (TelephonyManager.getDefault().isMultiSimEnabled()) {
+        /*if (TelephonyManager.getDefault().isMultiSimEnabled()) {
             OperatorSimInfo operatorSimInfo = new OperatorSimInfo(getApplicationContext());
             if (operatorSimInfo.isOperatorFeatureEnabled()) {
                 String simCustomLabel = checkForOperatorCustomLabel(index);
@@ -692,7 +698,7 @@ public class MessagingPreferenceActivity extends PreferenceActivity
                 title = getResources().getString(
                             R.string.pref_more_smcs, simCustomLabel);
             }
-        }
+        }*/
         return title;
     }
 
@@ -768,17 +774,19 @@ public class MessagingPreferenceActivity extends PreferenceActivity
                 mmsSettings.removePreference(mMmsExpiryPref);
                 if (!MessageUtils.isIccCardActivated(MessageUtils.SUB1)) {
                     mMmsExpiryCard1Pref.setEnabled(false);
-                    displaySimLabel(false, PREFERENCE_TYPE_MMS_VALIDITY, MessageUtils.SUB1);
+                    // FIXME: Comment this framework dependency at bring up stage, will restore
+                    //        back later.
+                    //displaySimLabel(false, PREFERENCE_TYPE_MMS_VALIDITY, MessageUtils.SUB1);
                 } else {
                     setMmsExpirySummary(PhoneConstants.SUB1);
-                    displaySimLabel(true, PREFERENCE_TYPE_MMS_VALIDITY, MessageUtils.SUB1);
+                    //displaySimLabel(true, PREFERENCE_TYPE_MMS_VALIDITY, MessageUtils.SUB1);
                 }
                 if (!MessageUtils.isIccCardActivated(MessageUtils.SUB2)) {
                     mMmsExpiryCard2Pref.setEnabled(false);
-                    displaySimLabel(false, PREFERENCE_TYPE_MMS_VALIDITY, MessageUtils.SUB2);
+                    //displaySimLabel(false, PREFERENCE_TYPE_MMS_VALIDITY, MessageUtils.SUB2);
                 } else {
                     setMmsExpirySummary(PhoneConstants.SUB2);
-                    displaySimLabel(true, PREFERENCE_TYPE_MMS_VALIDITY, MessageUtils.SUB2);
+                    //displaySimLabel(true, PREFERENCE_TYPE_MMS_VALIDITY, MessageUtils.SUB2);
                 }
             } else {
                 mmsSettings.removePreference(mMmsExpiryCard1Pref);
@@ -1593,7 +1601,9 @@ public class MessagingPreferenceActivity extends PreferenceActivity
     }
     /* End add for RCS */
 
-    private String checkForOperatorCustomLabel(int slotIndex) {
+    // FIXME: Comment this framework dependency at bring up stage, will restore
+    //        back later.
+    /*private String checkForOperatorCustomLabel(int slotIndex) {
         String simLabel = null;
         OperatorSimInfo operatorSimInfo = new OperatorSimInfo(getApplicationContext());
         boolean isCustomSimFeatureEnabled = operatorSimInfo.isOperatorFeatureEnabled();
@@ -1609,11 +1619,13 @@ public class MessagingPreferenceActivity extends PreferenceActivity
             }
         }
         return simLabel;
-    }
+    }*/
 
     /* If SIM1/SIM2 is absent, then show base SIM label
        else display custom SIM label.*/
-    private void displaySimLabel(boolean isSIMEnabled, int preferenceType, int slot) {
+    // FIXME: Comment this framework dependency at bring up stage, will restore
+    //        back later.
+    /* private void displaySimLabel(boolean isSIMEnabled, int preferenceType, int slot) {
         OperatorSimInfo operatorSimInfo = new OperatorSimInfo(getApplicationContext());
         boolean isCustomSimFeatureEnabled = operatorSimInfo.isOperatorFeatureEnabled();
         if (isCustomSimFeatureEnabled) {
@@ -1685,5 +1697,5 @@ public class MessagingPreferenceActivity extends PreferenceActivity
                 break;
         }
         return label;
-    }
+    }*/
 }

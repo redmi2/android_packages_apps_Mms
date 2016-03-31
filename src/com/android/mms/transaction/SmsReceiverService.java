@@ -102,14 +102,16 @@ public class SmsReceiverService extends Service {
             "com.android.mms.transaction.SEND_INACTIVE_MESSAGE";
 
     // This must match the column IDs below.
+    // FIXME: Comment this framework dependency at bring up stage, will restore
+    //        back later.
     private static final String[] SEND_PROJECTION = new String[] {
         Sms._ID,        //0
         Sms.THREAD_ID,  //1
         Sms.ADDRESS,    //2
         Sms.BODY,       //3
         Sms.STATUS,     //4
-        Sms.SUBSCRIPTION_ID,   //5
-        SMS_PRIORITY,   //6
+        Sms.SUBSCRIPTION_ID//,   //5
+        //SMS_PRIORITY,   //6
     };
 
     static final String CB_AREA_INFO_RECEIVED_ACTION =
@@ -267,7 +269,7 @@ public class SmsReceiverService extends Service {
 
     private void handleSendMessage(Intent intent) {
         int subId = intent.getIntExtra(PhoneConstants.SUBSCRIPTION_KEY,
-                SubscriptionManager.getDefaultSmsSubId());
+                SubscriptionManager.getDefaultSmsSubscriptionId());
         if (mSending.get(subId) == null) {
            mSending.put(subId, false);
         }
@@ -321,7 +323,9 @@ public class SmsReceiverService extends Service {
 
                     int msgId = c.getInt(SEND_COLUMN_ID);
                     int subId = c.getInt(SEND_COLUMN_SUB_ID);
-                    int priority = c.getInt(SEND_COLUMN_PRIORITY);
+                    // FIXME: Comment this framework dependency at bring up stage, will restore
+                    //        back later.
+                    int priority = -1;//c.getInt(SEND_COLUMN_PRIORITY);
                     Uri msgUri = ContentUris.withAppendedId(Sms.CONTENT_URI, msgId);
                     // Get the information of is there any messages are pending to process.
                     // If yes, send this inforamtion to framework to control the link and send all
@@ -382,7 +386,7 @@ public class SmsReceiverService extends Service {
         int resultCode = intent.getIntExtra("result", 0);
         boolean sendNextMsg = intent.getBooleanExtra(EXTRA_MESSAGE_SENT_SEND_NEXT, false);
         int subId = intent.getIntExtra(PhoneConstants.SUBSCRIPTION_KEY,
-                SubscriptionManager.getDefaultSmsSubId());
+                SubscriptionManager.getDefaultSmsSubscriptionId());
         mSending.put(subId, false);
         LogTag.debugD("handleSmsSent uri: " + uri + " sendNextMsg: " + sendNextMsg +
                 " resultCode: " + resultCode +
