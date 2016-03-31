@@ -33,46 +33,28 @@ import com.android.mms.MmsConfig;
 import com.android.mms.R;
 import com.android.mms.ui.MessageUtils;
 import com.android.mms.util.Recycler;
+
 import com.google.android.mms.pdu.PduHeaders;
 
 import android.app.ActionBar;
 import android.app.Activity;
-import android.app.Dialog;
-import android.content.Context;
+
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.database.Cursor;
-import android.net.Uri;
-import android.os.AsyncTask;
+
 import android.os.Bundle;
-import android.preference.DialogPreference;
-import android.preference.EditTextPreference;
-import android.preference.ListPreference;
-import android.preference.Preference;
-import android.preference.PreferenceActivity;
-import android.preference.PreferenceCategory;
-import android.preference.PreferenceManager;
-import android.preference.Preference.OnPreferenceClickListener;
-import android.preference.PreferenceScreen;
-import android.provider.Telephony;
-import android.provider.Telephony.Sms;
-import android.telephony.SmsManager;
-import android.telephony.TelephonyManager;
+import android.os.HandlerThread;
+import android.os.Message;
+import android.os.Handler;
+
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.util.Log;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
+
 import android.widget.EditText;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.Toast;
-import android.text.InputFilter;
-import android.text.InputFilter.LengthFilter;
+
 import android.text.TextUtils;
+
 
 /**
  * This activity provides extend search mode by content ,number and name in mailbox mode.
@@ -83,10 +65,89 @@ public class SearchActivityExtend extends Activity {
     private EditText mSearchStringEdit;
     private Spinner  mSpinSearchMode;
 
+    private static final int START_SEARCH = 0;
+    private static final int STOP_SEARCH = 1;
+
+    private HandlerThread mSearchThread = new HandlerThread("Search Thread");
+
+    private Handler mSearchThreadHandler;
+
+    private Intent getSearchIntent() {
+        String keyStr = mSearchStringEdit.getText().toString();
+        String displayStr = keyStr;
+        if (TextUtils.isEmpty(keyStr)) {
+            return null;
+        }
+
+        int modePosition = mSpinSearchMode.getSelectedItemPosition();
+        int matchWhole = MessageUtils.MATCH_BY_ADDRESS;
+
+        if (modePosition == MessageUtils.SEARCH_MODE_NAME) {
+            keyStr = MessageUtils.getAddressByName(this, keyStr);
+            if (TextUtils.isEmpty(keyStr)) {
+                return null;
+            }
+            modePosition = MessageUtils.SEARCH_MODE_NUMBER;
+            matchWhole = MessageUtils.MATCH_BY_THREAD_ID;
+        }
+
+        Intent intent = new Intent(this, MailBoxMessageList.class);
+        intent.putExtra(MessageUtils.SEARCH_KEY, true);
+        intent.putExtra(MessageUtils.SEARCH_KEY_TITLE, getString(R.string.search_title));
+        intent.putExtra(MessageUtils.SEARCH_KEY_MODE_POSITION, modePosition);
+        intent.putExtra(MessageUtils.SEARCH_KEY_KEY_STRING, keyStr);
+        intent.putExtra(MessageUtils.SEARCH_KEY_DISPLAY_STRING, displayStr);
+        intent.putExtra(MessageUtils.SEARCH_KEY_MATCH_WHOLE, matchWhole);
+
+        return intent;
+    }
+
+    /**
+     * Stop work and kill thread, regardless of how many messages in the queue, this means
+     * the rest of the message which in the quque will not be processed.
+     * @param handler
+     */
+    public void stopSearchAndKillThread(Handler handler) {
+        if(!handler.getLooper().getThread().isInterrupted()) {
+            handler.getLooper().getThread().interrupt();
+
+            // don't use quitSafely(), we need quit immediately.
+            handler.getLooper().quit();
+        }
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.search_dialog);
+
+        mSearchThread.start();
+
+        mSearchThreadHandler = new Handler(mSearchThread.getLooper()){
+            @Override
+            public void handleMessage(Message msg) {
+                switch (msg.what){
+                    case START_SEARCH: {
+                        Intent intent = getSearchIntent();
+                        if(intent == null) {
+                            Toast.makeText(SearchActivityExtend.this,
+                                    getString(R.string.invalid_name_toast),
+                                    Toast.LENGTH_LONG)
+                                    .show();
+                            break;
+                        } else {// else didn't need break, thread must die after search successed.
+                            startActivity(intent);
+                            finish();
+                        }
+                    }
+                    case STOP_SEARCH: {
+                        stopSearchAndKillThread(this);
+                        break;
+                    }
+                    default:break;
+                }
+            }
+        };
 
         initUi();
     }
@@ -103,17 +164,23 @@ public class SearchActivityExtend extends Activity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
-        case MENU_SEARCH:
-            new SearchThread().execute();
-            break;
-        case android.R.id.home:
-            finish();
-            break;
-        default:
-            return true;
+            case MENU_SEARCH:
+                mSearchThreadHandler.sendEmptyMessage(START_SEARCH);
+                break;
+            case android.R.id.home:
+                finish();
+                break;
+            default:
+                return true;
         }
 
         return true;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopSearchAndKillThread(mSearchThreadHandler);
     }
 
     @Override
@@ -125,51 +192,4 @@ public class SearchActivityExtend extends Activity {
         return true;
     }
 
-    private boolean doSearch() {
-        String keyStr = mSearchStringEdit.getText().toString();
-        String displayStr = keyStr;
-        if (TextUtils.isEmpty(keyStr)) {
-            return true;
-        }
-
-        int modePosition = mSpinSearchMode.getSelectedItemPosition();
-        int matchWhole = MessageUtils.MATCH_BY_ADDRESS;
-
-        if (modePosition == MessageUtils.SEARCH_MODE_NAME) {
-            keyStr = MessageUtils.getAddressByName(this, keyStr);
-            if (TextUtils.isEmpty(keyStr)) {
-                return false;
-            }
-            modePosition = MessageUtils.SEARCH_MODE_NUMBER;
-            matchWhole = MessageUtils.MATCH_BY_THREAD_ID;
-        }
-
-        Intent i = new Intent(this, MailBoxMessageList.class);
-        i.putExtra(MessageUtils.SEARCH_KEY, true);
-        i.putExtra(MessageUtils.SEARCH_KEY_TITLE, getString(R.string.search_title));
-        i.putExtra(MessageUtils.SEARCH_KEY_MODE_POSITION, modePosition);
-        i.putExtra(MessageUtils.SEARCH_KEY_KEY_STRING, keyStr);
-        i.putExtra(MessageUtils.SEARCH_KEY_DISPLAY_STRING, displayStr);
-        i.putExtra(MessageUtils.SEARCH_KEY_MATCH_WHOLE, matchWhole);
-        startActivity(i);
-
-        finish();
-        return true;
-    }
-
-    private class SearchThread extends AsyncTask<Void, Void, Boolean> {
-
-        @Override
-        protected Boolean doInBackground(Void... voids) {
-            return doSearch();
-        }
-
-        @Override
-        protected void onPostExecute(Boolean result) {
-            if(!result){
-                Toast.makeText(SearchActivityExtend.this, getString(R.string.invalid_name_toast),
-                        Toast.LENGTH_LONG).show();
-            }
-        }
-    }
 }
