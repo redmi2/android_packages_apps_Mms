@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  * Copyright (C) 2007-2008 Esmertec AG.
  * Copyright (C) 2007-2008 The Android Open Source Project
  *
@@ -30,6 +32,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
@@ -59,9 +62,13 @@ import android.preference.PreferenceCategory;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.preference.RingtonePreference;
+import android.preference.SwitchPreference;
 import android.provider.MediaStore;
 import android.provider.SearchRecentSuggestions;
 import android.provider.Settings;
+import android.provider.Telephony;
+import android.provider.Telephony.Mms;
+import android.provider.Telephony.Threads;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
@@ -86,12 +93,15 @@ import com.android.internal.telephony.IccCardConstants;
 import com.android.internal.telephony.OperatorSimInfo;
 import com.android.internal.telephony.TelephonyIntents;
 import com.android.internal.telephony.PhoneConstants;
+import com.android.internal.telephony.SmsApplication;
+import com.android.internal.telephony.SmsApplication.SmsApplicationData;
 import com.android.mms.MmsApp;
 import com.android.mms.MmsConfig;
 import com.android.mms.R;
 import com.android.mms.rcs.RcsUtils;
 import com.android.mms.transaction.TransactionService;
 import com.android.mms.util.Recycler;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -132,9 +142,12 @@ public class MessagingPreferenceActivity extends PreferenceActivity
     public static final String RETRIEVAL_DURING_ROAMING = "pref_key_mms_retrieval_during_roaming";
     public static final String AUTO_DELETE              = "pref_key_auto_delete";
     public static final String GROUP_MMS_MODE           = "pref_key_mms_group_mms";
-    public static final String SMS_CDMA_PRIORITY        = "pref_key_sms_cdma_priority";
     public static final String SMSC_DEFAULT             = "pref_key_default_smsc";
-
+    public static final String SMS_VALIDITY_FOR_SIM1    = "pref_key_sms_validity_period_for_sim1";
+    public static final String SMS_VALIDITY_SIM1        = "pref_key_sms_validity_period_sim1";
+    public static final String SMS_VALIDITY_FOR_SIM2    = "pref_key_sms_validity_period_for_sim2";
+    public static final String SMS_VALIDITY_SIM2        = "pref_key_sms_validity_period_sim2";
+    public static final String SMS_VALIDITY_NO_MULTI    = "pref_key_sms_validity_period_no_multi";
     // ConfigurationClient
     public static final String OMACP_CONFIGURATION_CATEGORY =
             "pref_key_sms_omacp_configuration";
@@ -185,7 +198,9 @@ public class MessagingPreferenceActivity extends PreferenceActivity
     private Preference mClearHistoryPref;
     private Preference mConfigurationmessage;
     private Preference mMmsSizeLimit;
-    private CheckBoxPreference mVibratePref;
+    private Preference mMemoryStatusPref;
+    private Preference mCellBroadcsatsPref;
+    private SwitchPreference mVibratePref;
     private CheckBoxPreference mEnableNotificationsPref;
     private CheckBoxPreference mMmsAutoRetrievialPref;
     private ListPreference mFontSizePref;
@@ -194,9 +209,6 @@ public class MessagingPreferenceActivity extends PreferenceActivity
     private ListPreference mMmsExpiryCard1Pref;
     private ListPreference mMmsExpiryCard2Pref;
     private RingtonePreference mRingtonePref;
-    private ListPreference mSmsStorePref;
-    private ListPreference mSmsStoreCard1Pref;
-    private ListPreference mSmsStoreCard2Pref;
     private ListPreference mSmsValidityPref;
     private ListPreference mSmsValidityCard1Pref;
     private ListPreference mSmsValidityCard2Pref;
@@ -295,19 +307,30 @@ public class MessagingPreferenceActivity extends PreferenceActivity
     private void updateSmsEnabledState() {
         // Show the right pref (SMS Disabled or SMS Enabled)
         PreferenceScreen prefRoot = (PreferenceScreen)findPreference("pref_key_root");
+        final PackageManager packageManager = getPackageManager();
+        final String smsAppPackage = Telephony.Sms.getDefaultSmsPackage(this);
+        ApplicationInfo smsAppInfo = null;
+        String mSmsAppName = "Messaging";
+        try {
+            smsAppInfo = packageManager.getApplicationInfo(smsAppPackage, 0);
+            mSmsAppName = smsAppInfo.loadLabel(packageManager).toString();
+        } catch (NameNotFoundException e) {
+        }
+
         if (!mIsSmsEnabled) {
             prefRoot.addPreference(mSmsDisabledPref);
             prefRoot.removePreference(mSmsEnabledPref);
+            mSmsDisabledPref.setSummary(mSmsAppName);
         } else {
             prefRoot.removePreference(mSmsDisabledPref);
             prefRoot.addPreference(mSmsEnabledPref);
+            mSmsEnabledPref.setSummary(mSmsAppName);
         }
 
         // Enable or Disable the settings as appropriate
         mStoragePrefCategory.setEnabled(mIsSmsEnabled);
         mSmsPrefCategory.setEnabled(mIsSmsEnabled);
         mMmsPrefCategory.setEnabled(mIsSmsEnabled);
-        mNotificationPrefCategory.setEnabled(mIsSmsEnabled);
     }
 
     @Override
@@ -336,6 +359,8 @@ public class MessagingPreferenceActivity extends PreferenceActivity
         mNotificationPrefCategory =
                 (PreferenceCategory)findPreference("pref_key_notification_settings");
 
+        mMemoryStatusPref = findPreference("pref_key_memory_status");
+        mCellBroadcsatsPref = findPreference("pref_key_cell_broadcasts");
         mManageSimPref = findPreference("pref_key_manage_sim_messages");
         mManageSim1Pref = findPreference("pref_key_manage_sim_messages_slot1");
         mManageSim2Pref = findPreference("pref_key_manage_sim_messages_slot2");
@@ -356,17 +381,18 @@ public class MessagingPreferenceActivity extends PreferenceActivity
         mMmsCreationModePref = (ListPreference) findPreference("pref_key_creation_mode");
         mSmsSignaturePref = (CheckBoxPreference) findPreference("pref_key_enable_signature");
         mSmsSignatureEditPref = (EditTextPreference) findPreference("pref_key_edit_signature");
-        mVibratePref = (CheckBoxPreference) findPreference(NOTIFICATION_VIBRATE);
+        mVibratePref = (SwitchPreference) findPreference(NOTIFICATION_VIBRATE);
         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         if (mVibratePref != null && (vibrator == null || !vibrator.hasVibrator())) {
             mNotificationPrefCategory.removePreference(mVibratePref);
             mVibratePref = null;
         }
+        PreferenceScreen prefRoot = (PreferenceScreen) findPreference("pref_key_root");
+        prefRoot.removePreference(mSmsPrefCategory);
+        prefRoot.removePreference(mMmsPrefCategory);
+        mNotificationPrefCategory.removePreference(mEnableNotificationsPref);
         mRingtonePref = (RingtonePreference) findPreference(NOTIFICATION_RINGTONE);
         mSmsTemplate = findPreference("pref_key_message_template");
-        mSmsStorePref = (ListPreference) findPreference("pref_key_sms_store");
-        mSmsStoreCard1Pref = (ListPreference) findPreference("pref_key_sms_store_card1");
-        mSmsStoreCard2Pref = (ListPreference) findPreference("pref_key_sms_store_card2");
         mSmsValidityPref = (ListPreference) findPreference("pref_key_sms_validity_period");
         mSmsValidityCard1Pref
             = (ListPreference) findPreference("pref_key_sms_validity_period_slot1");
@@ -376,7 +402,6 @@ public class MessagingPreferenceActivity extends PreferenceActivity
         if((MmsConfig.isOMACPEnabled(MessagingPreferenceActivity.this))) {
             mConfigurationmessage = findPreference(CONFIGURATION_MESSAGE);
         } else {
-            PreferenceScreen prefRoot = (PreferenceScreen) findPreference("pref_key_root");
             PreferenceCategory OMACPConCategory =
                     (PreferenceCategory) findPreference(OMACP_CONFIGURATION_CATEGORY);
             prefRoot.removePreference(OMACPConCategory);
@@ -427,8 +452,9 @@ public class MessagingPreferenceActivity extends PreferenceActivity
 
         mSmscPrefCate = (PreferenceCategory) findPreference("pref_key_smsc");
         showSmscPref();
-        setMessagePriorityPref();
 
+        PreferenceScreen keyRoot = (PreferenceScreen)findPreference("pref_key_root");
+        keyRoot.removePreference(mSmscPrefCate);
         // Set SIM card SMS management preference
         updateSIMSMSPref();
 
@@ -465,7 +491,6 @@ public class MessagingPreferenceActivity extends PreferenceActivity
         if (!MmsConfig.isRcsEnabled()) {
             enableRcsMessagePloicy(false, this);
             enableFailureChangeToSms(false, this);
-            PreferenceScreen keyRoot = (PreferenceScreen)findPreference("pref_key_root");
             keyRoot.removePreference(findPreference("pref_key_rcs_send_policy_settings"));
         } else {
             mEnableRcsMessagePref.setChecked(getRcsMessagePloicyEnabled(this));
@@ -473,46 +498,8 @@ public class MessagingPreferenceActivity extends PreferenceActivity
             mEnableFailureChangeToSmsPref.setChecked(isFailureEnable);
             setRcsServiceChangeToSmsPolicy(isFailureEnable);
         }
-        setMmsRelatedPref();
 
         setEnabledNotificationsPref();
-
-        if (getResources().getBoolean(R.bool.config_savelocation)) {
-            if (MessageUtils.isMultiSimEnabledMms()) {
-                PreferenceCategory storageOptions =
-                    (PreferenceCategory)findPreference("pref_key_storage_settings");
-                storageOptions.removePreference(mSmsStorePref);
-
-                if (!MessageUtils.isIccCardActivated(MessageUtils.SUB1)) {
-                    mSmsStoreCard1Pref.setEnabled(false);
-                } else {
-                    setSmsPreferStoreSummary(MessageUtils.SUB1);
-                }
-                if (!MessageUtils.isIccCardActivated(MessageUtils.SUB2)) {
-                    mSmsStoreCard2Pref.setEnabled(false);
-                } else {
-                    setSmsPreferStoreSummary(MessageUtils.SUB2);
-                }
-            } else {
-                PreferenceCategory storageOptions =
-                    (PreferenceCategory)findPreference("pref_key_storage_settings");
-                storageOptions.removePreference(mSmsStoreCard1Pref);
-                storageOptions.removePreference(mSmsStoreCard2Pref);
-
-                if (!MessageUtils.hasIccCard()) {
-                    mSmsStorePref.setEnabled(false);
-                } else {
-                    setSmsPreferStoreSummary();
-                }
-            }
-        } else {
-            PreferenceCategory storageOptions =
-                    (PreferenceCategory)findPreference("pref_key_storage_settings");
-            storageOptions.removePreference(mSmsStorePref);
-            storageOptions.removePreference(mSmsStoreCard1Pref);
-            storageOptions.removePreference(mSmsStoreCard2Pref);
-        }
-        setSmsValidityPeriodPref();
 
         // If needed, migrate vibration setting from the previous tri-state setting stored in
         // NOTIFICATION_VIBRATE_WHEN to the boolean setting stored in NOTIFICATION_VIBRATE.
@@ -534,7 +521,6 @@ public class MessagingPreferenceActivity extends PreferenceActivity
         // Fix up the recycler's summary with the correct values
         setSmsDisplayLimit();
         setMmsDisplayLimit();
-        setMmsExpiryPref();
 
         String soundValue = sharedPreferences.getString(NOTIFICATION_RINGTONE, null);
         setRingtoneSummary(soundValue);
@@ -585,14 +571,6 @@ public class MessagingPreferenceActivity extends PreferenceActivity
         } else {
             mMmsPrefCategory.removePreference(mMmsExpiryCard1Pref);
             mMmsPrefCategory.removePreference(mMmsExpiryCard2Pref);
-        }
-    }
-
-    private void setMessagePriorityPref() {
-        if (!getResources().getBoolean(R.bool.support_sms_priority)) {
-            Preference priorotySettings = findPreference(SMS_CDMA_PRIORITY);
-            PreferenceScreen prefSet = getPreferenceScreen();
-            prefSet.removePreference(priorotySettings);
         }
     }
 
@@ -713,47 +691,6 @@ public class MessagingPreferenceActivity extends PreferenceActivity
             }
         }
         return title;
-    }
-
-    private void setSmsPreferStoreSummary() {
-        mSmsStorePref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                final String summary = newValue.toString();
-                int index = mSmsStorePref.findIndexOfValue(summary);
-                mSmsStorePref.setSummary(mSmsStorePref.getEntries()[index]);
-                mSmsStorePref.setValue(summary);
-                return true;
-            }
-        });
-        mSmsStorePref.setSummary(mSmsStorePref.getEntry());
-    }
-
-    private void setSmsPreferStoreSummary(int subscription) {
-        if (MessageUtils.SUB1 == subscription) {
-            mSmsStoreCard1Pref.setOnPreferenceChangeListener(
-                    new Preference.OnPreferenceChangeListener() {
-                public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    final String summary = newValue.toString();
-                    int index = mSmsStoreCard1Pref.findIndexOfValue(summary);
-                    mSmsStoreCard1Pref.setSummary(mSmsStoreCard1Pref.getEntries()[index]);
-                    mSmsStoreCard1Pref.setValue(summary);
-                    return false;
-                }
-            });
-            mSmsStoreCard1Pref.setSummary(mSmsStoreCard1Pref.getEntry());
-        } else {
-            mSmsStoreCard2Pref.setOnPreferenceChangeListener(
-                    new Preference.OnPreferenceChangeListener() {
-                public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    final String summary = newValue.toString();
-                    int index = mSmsStoreCard2Pref.findIndexOfValue(summary);
-                    mSmsStoreCard2Pref.setSummary(mSmsStoreCard2Pref.getEntries()[index]);
-                    mSmsStoreCard2Pref.setValue(summary);
-                    return false;
-                }
-            });
-            mSmsStoreCard2Pref.setSummary(mSmsStoreCard2Pref.getEntry());
-        }
     }
 
     private void setSmsPreferValiditySummary(int subscription) {
@@ -979,6 +916,15 @@ public class MessagingPreferenceActivity extends PreferenceActivity
             } catch (ActivityNotFoundException e) {
                 Log.e(TAG,"Activity not found : "+e);
             }
+        } else if (preference == mMemoryStatusPref) {
+             MessageUtils.showMemoryStatusDialog(this);
+        } else if (preference == mCellBroadcsatsPref) {
+            try {
+                startActivity(MessageUtils.getCellBroadcastIntent());
+            } catch (ActivityNotFoundException e) {
+                Log.e(TAG,
+                        "ActivityNotFoundException for CellBroadcastListActivity");
+            }
         } else if (getResources().getBoolean(
                 R.bool.def_custom_preferences_settings)
                 && preference == mCBsettingPref) {
@@ -992,6 +938,10 @@ public class MessagingPreferenceActivity extends PreferenceActivity
                 R.bool.def_custom_preferences_settings)
                 && preference == mChatWallpaperPref) {
             setChatWallpaper();
+        } else if (preference == findPreference("pref_key_sms_text_settings")) {
+            startActivity(new Intent(this, SmsPreferenceActivity.class));
+        } else if (preference == findPreference("pref_key_mms_text_settings")) {
+            startActivity(new Intent(this, MmsPreferenceActivity.class));
         }
 
         return super.onPreferenceTreeClick(preferenceScreen, preference);
@@ -1146,10 +1096,8 @@ public class MessagingPreferenceActivity extends PreferenceActivity
             if (subId != null && subId.length != 0) {
                 isCDMA = MessageUtils.isCDMAPhone(subId[0]);
             }
-            setSMSCPrefState(i, !isCDMA && !isAirPlaneModeOn() &&
-                    (TelephonyManager.getDefault().isMultiSimEnabled()
-                    ? MessageUtils.isIccCardActivated(i)
-                    : TelephonyManager.getDefault().hasIccCard()));
+            setSMSCPrefState(i, !isCDMA && !isAirPlaneModeOn()
+                    && MessageUtils.hasActivatedIccCard(i));
         }
     }
 

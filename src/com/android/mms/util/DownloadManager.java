@@ -40,7 +40,7 @@ import com.android.internal.telephony.TelephonyProperties;
 import com.android.mms.LogTag;
 import com.android.mms.R;
 import com.android.mms.data.Contact;
-import com.android.mms.ui.MessagingPreferenceActivity;
+import com.android.mms.ui.MmsPreferenceActivity;
 import com.google.android.mms.MmsException;
 import com.google.android.mms.pdu.EncodedStringValue;
 import com.google.android.mms.pdu.NotificationInd;
@@ -69,8 +69,8 @@ public class DownloadManager {
     private final OnSharedPreferenceChangeListener mPreferencesChangeListener =
         new OnSharedPreferenceChangeListener() {
         public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
-            if (MessagingPreferenceActivity.AUTO_RETRIEVAL.equals(key)
-                    || MessagingPreferenceActivity.RETRIEVAL_DURING_ROAMING.equals(key)) {
+            if (MmsPreferenceActivity.AUTO_RETRIEVAL.equals(key)
+                    || MmsPreferenceActivity.RETRIEVAL_DURING_ROAMING.equals(key)) {
                 if (LOCAL_LOGV) {
                     Log.v(TAG, "Preferences updated.");
                 }
@@ -155,7 +155,7 @@ public class DownloadManager {
 
     static boolean getAutoDownloadState(SharedPreferences prefs, boolean roaming) {
         boolean autoDownload = prefs.getBoolean(
-                MessagingPreferenceActivity.AUTO_RETRIEVAL, true);
+                MmsPreferenceActivity.AUTO_RETRIEVAL, true);
 
         if (LOCAL_LOGV) {
             Log.v(TAG, "auto download without roaming -> " + autoDownload);
@@ -163,7 +163,7 @@ public class DownloadManager {
 
         if (autoDownload) {
             boolean alwaysAuto = prefs.getBoolean(
-                    MessagingPreferenceActivity.RETRIEVAL_DURING_ROAMING, false);
+                    MmsPreferenceActivity.RETRIEVAL_DURING_ROAMING, false);
 
             if (LOCAL_LOGV) {
                 Log.v(TAG, "auto download during roaming -> " + alwaysAuto);

@@ -244,11 +244,41 @@
         </activity>
 
         <activity android:name=".ui.MessagingPreferenceActivity"
-            android:theme="@style/MmsHoloTheme"
+            android:theme="@style/MmsNewStyleTheme"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/preferences_title" />
 
-       <activity android:name=".ui.WwwContextMenuActivity"
+        <activity android:name=".ui.SmsPreferenceActivity"
+            android:theme="@style/MmsNewStyleTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/pref_sms_settings_title" />
+
+        <activity android:name=".ui.MmsPreferenceActivity"
+            android:theme="@style/MmsNewStyleTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/pref_mms_settings_title" />
+
+        <activity android:name=".ui.MessagingReportsPreferenceActivity"
+            android:theme="@style/MmsNewStyleTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/pref_mms_settings_title" />
+
+        <activity android:name=".ui.ManageSimSMSPreferenceActivity"
+            android:theme="@style/MmsNewStyleTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/pref_mms_settings_title" />
+
+        <activity android:name=".ui.MessagingExpiryPreferenceActivity"
+            android:theme="@style/MmsNewStyleTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/pref_mms_settings_title" />
+
+         <activity android:name=".ui.SMSCPreferenceActivity"
+            android:theme="@style/MmsNewStyleTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/pref_mms_settings_title" />
+
+        <activity android:name=".ui.WwwContextMenuActivity"
             android:label="@string/message_options"
             android:theme="@android:style/Theme.Holo.Light.Dialog"
             android:excludeFromRecents="true">

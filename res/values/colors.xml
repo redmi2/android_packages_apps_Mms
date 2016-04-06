@@ -119,7 +119,11 @@
     <color name="quickcontact_default_photo_tint_color_dark">#455A64</color>
     <color name="letter_tile_font_color">#ffffff</color>
     <color name="avatar_default_color">#33691E</color>
+    <color name="avatar_background_default_color">#e53935</color>
 
     <color name="compose_item_selected_background">#1789ce</color>
+    <color name="chips_dropdown_background_activated">#4285f4</color>
+    <color name="chips_dropdown_background_pressed">#ededed</color>
+    <color name="message_list_time_color">#8cffffff</color>
 
 </resources>
