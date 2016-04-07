@@ -437,7 +437,7 @@ public class RecipientsEditor extends RecipientEditTextView {
         String number = getFieldAt("number", sp, start, end, context);
         number = PhoneNumberUtils.replaceUnicodeDigits(number);
         if (!TextUtils.isEmpty(number)) {
-            if (!Mms.isPhoneNumber(number)) {
+            if (number != null && number.contains("@")) {
                 number = number.replaceAll(" ", "");
             }
             int pos = number.indexOf('<');
