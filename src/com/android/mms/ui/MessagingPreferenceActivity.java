@@ -148,6 +148,9 @@ public class MessagingPreferenceActivity extends PreferenceActivity
     public static final String SMS_VALIDITY_FOR_SIM2    = "pref_key_sms_validity_period_for_sim2";
     public static final String SMS_VALIDITY_SIM2        = "pref_key_sms_validity_period_sim2";
     public static final String SMS_VALIDITY_NO_MULTI    = "pref_key_sms_validity_period_no_multi";
+    public static final String ZOOM_MESSAGE             = "pref_key_zoom_message";
+    public static final String SEPERATE_NOTIFI_MSG      = "pref_key_seperate_notification_msg";
+    public static final String ENABLE_GESTURE           = "pref_key_enable_gesture";
     // ConfigurationClient
     public static final String OMACP_CONFIGURATION_CATEGORY =
             "pref_key_sms_omacp_configuration";

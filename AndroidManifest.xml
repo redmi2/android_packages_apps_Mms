@@ -107,6 +107,13 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".ui.NotificationConversationList"
+                  android:configChanges="orientation|screenSize|keyboardHidden"
+                  android:theme="@style/MmsNewStyleTheme"
+                  android:uiOptions="splitActionBarWhenNarrow"
+                  android:launchMode="singleTop">
+        </activity>
+
         <activity android:name=".ui.MailBoxMessageList"
             android:label="@string/app_label"
             android:configChanges="orientation|screenSize|keyboardHidden"
@@ -571,11 +578,30 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <activity android:name=".ui.PlayVideoOrPicActivity"
+            android:theme="@style/MmsNewStyleTheme" >
+        </activity>
         <service android:name="com.android.mms.transaction.MmsNoConfirmationSendService">
             <intent-filter>
                 <action android:name="com.android.mms.transaction.MmsNoConfirmationSendService"/>
             </intent-filter>
         </service>
 
+        <receiver
+            android:name=".ui.NotificationMarkAsReadReceiver" >
+            <intent-filter>
+                <action android:name="com.android.mms.MARK_AS_READ" />
+            </intent-filter>
+        </receiver>
+
+        <activity
+            android:name=".ui.NotificationQuickReplyActivity"
+            android:theme="@style/QuickReplyTheme"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|screenSize"
+            android:launchMode="singleTop"
+            android:taskAffinity="" >
+        </activity>
     </application>
 </manifest>

@@ -80,7 +80,7 @@ public class MessageItem {
 
     public enum DeliveryStatus  { NONE, INFO, FAILED, PENDING, RECEIVED }
 
-    public static int ATTACHMENT_TYPE_NOT_LOADED = -1;
+    public static final int ATTACHMENT_TYPE_NOT_LOADED = -1;
 
     private static int DEFAULT_SUB_ID = -1;
 
@@ -275,9 +275,7 @@ public class MessageItem {
                     .getPdu(mMessageUri, loadSlideshow,
                     new PduLoadedMessageItemCallback());
             String report = cursor.getString(mColumnsMap.mColumnMmsDeliveryReport);
-            mAddress = mContext.getString(R.string.messagelist_sender_self);
-            if ((report == null) || !mAddress.equals(mContext.getString(
-                    R.string.messagelist_sender_self))) {
+            if (report == null) {
                 mDeliveryStatus = DeliveryStatus.NONE;
             } else {
                 int reportInt;
@@ -294,8 +292,7 @@ public class MessageItem {
                 }
             }
             report = cursor.getString(mColumnsMap.mColumnMmsReadReport);
-            if ((report == null) || !mAddress.equals(mContext.getString(
-                    R.string.messagelist_sender_self))) {
+            if (report == null) {
                 mReadReport = false;
             } else {
                 int reportInt;
@@ -412,6 +409,10 @@ public class MessageItem {
             mAddress = AddressUtils.getFrom(mContext, messageUri);
         }
         mContact = TextUtils.isEmpty(mAddress) ? "" : Contact.get(mAddress, false).getName();
+        if (!mAddress.equals(mContext.getString(R.string.messagelist_sender_self))) {
+            mDeliveryStatus = DeliveryStatus.NONE;
+            mReadReport = false;
+        }
     }
 
     public boolean isMms() {

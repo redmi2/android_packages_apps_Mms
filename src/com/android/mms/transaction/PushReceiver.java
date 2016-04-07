@@ -43,6 +43,7 @@ import android.util.Log;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.mms.LogTag;
 import com.android.mms.MmsConfig;
+import com.android.mms.ui.MessageUtils;
 import com.android.mms.ui.MessagingPreferenceActivity;
 import com.android.mms.util.Recycler;
 import com.android.mms.widget.MmsWidgetProvider;
@@ -56,7 +57,6 @@ import com.google.android.mms.pdu.PduHeaders;
 import com.google.android.mms.pdu.PduParser;
 import com.google.android.mms.pdu.PduPersister;
 import com.google.android.mms.pdu.ReadOrigInd;
-
 
 import java.lang.Class;
 import java.lang.reflect.Method;
@@ -224,6 +224,10 @@ public class PushReceiver extends BroadcastReceiver {
                                     MessagingPreferenceActivity.getIsGroupMmsEnabled(mContext),
                                     null);
                             SqliteWrapper.update(mContext, cr, uri, values, null, null);
+                            String address = pdu.getFrom().getString();
+                            threadId = MessagingNotification.getThreadId(mContext, uri);
+                            MessageUtils
+                                    .markAsNotificationThreadIfNeed(mContext, threadId, address);
 
                             // Start service to finish the notification transaction.
                             Intent svc = new Intent(mContext, TransactionService.class);

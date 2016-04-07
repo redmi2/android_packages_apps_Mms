@@ -31,10 +31,15 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -88,6 +93,7 @@ import android.provider.MediaStore;
 import android.provider.MediaStore.Audio;
 import android.provider.MediaStore.Audio.Media;
 import android.provider.Settings;
+import android.provider.Telephony;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.Mms.Part;
 import android.provider.Telephony.Sms;
@@ -119,6 +125,7 @@ import com.android.mms.MmsConfig;
 import com.android.mms.R;
 import com.android.mms.TempFileProvider;
 import com.android.mms.data.Contact;
+import com.android.mms.data.Conversation;
 import com.android.mms.data.WorkingMessage;
 import com.android.mms.model.ContentRestriction;
 import com.android.mms.model.ContentRestrictionFactory;
@@ -334,6 +341,13 @@ public class MessageUtils {
         }
     }
 
+    // Filter numbers start with 106575, 1069, and numbers of carrier,
+    // bank and public service such as 12306.
+    private static Pattern sNotificationNumberPattern = Pattern.compile(
+            "^1065(\\d)+$|^1069(\\d)+$|^10086$|^10001$|^10000$|^955(\\d)+$|^12306$");
+
+    private static final String NOTIFICATION_MSG_FLAG = "1";
+
     private static final String MIME_TYPE_3GPP_VIDEO = "video/3gpp";
     private static final String MIME_TYPE_3GPP_AUDIO = "audio/3gpp";
     private static final String MIME_TYPE_3GPP2_VIDEO = "video/3gpp2";
@@ -345,6 +359,7 @@ public class MessageUtils {
 
     public static final String SMS_BOX_ID = "box_id";
     public static final String COPY_SMS_INTO_SIM_SUCCESS = "success";
+    public static final String VCF = ".vcf";
 
     public static final int MESSAGE_REPORT_COLUMN_ID         = 0;
     public static final int MESSAGE_REPORT_COLUMN_MESSAGE_ID = 1;
@@ -787,6 +802,122 @@ public class MessageUtils {
         return MessageItem.ATTACHMENT_TYPE_NOT_LOADED;
     }
 
+    public static String getDisplayTime(int time) {
+        time = time / 1000;
+        int min = time / 60;
+        int sec = time % 60;
+        StringBuilder builder = new StringBuilder();
+        if (min < 10) {
+            builder.append("0");
+        }
+        builder.append(min);
+        builder.append(":");
+        if (sec < 10) {
+            builder.append("0");
+        }
+        builder.append(sec);
+        return builder.toString();
+    }
+
+    public static void markAsNotificationThreadIfNeed(final Context context,
+            final long threadId, final String number) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String stripedNumber = PhoneNumberUtils.stripSeparators(number);
+                boolean needMarkAsNotificationThread = false;
+
+                Matcher matcher = sNotificationNumberPattern.matcher(stripedNumber);
+                if (matcher.matches()) {
+                    needMarkAsNotificationThread = true;
+                }
+
+                if (needMarkAsNotificationThread) {
+                    Uri uri = Conversation.getUri(threadId);
+                    ContentValues values = new ContentValues();
+                    values.put(Threads.NOTIFICATION, NOTIFICATION_MSG_FLAG);
+                    try {
+                        context.getContentResolver().update(uri, values, null, null);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Update Threads.NOTIFICATION Error", e);
+                    }
+                }
+            }
+        }).start();
+    }
+
+    public static String getPath(Context context, MessageItem messageItem) throws IOException {
+        String path = null;
+        Uri partURI = null;
+        if (messageItem == null || messageItem.getSlideshow() == null) {
+            return null;
+        }
+        ListIterator<SlideModel> itera = messageItem.getSlideshow().listIterator();
+        while (itera.hasNext()) {
+            SlideModel sm = itera.next();
+            int type = messageItem.mAttachmentType;
+            if (type == WorkingMessage.AUDIO && sm.getAudio() != null) {
+                partURI = sm.getAudio().getUri();
+                break;
+            } else if (type == WorkingMessage.VIDEO && sm.getVideo() != null) {
+                partURI = sm.getVideo().getUri();
+                break;
+            } else if (type == WorkingMessage.IMAGE && sm.getImage() != null) {
+                partURI = sm.getImage().getUri();
+                break;
+            }
+        }
+        if (partURI == null) {
+            return null;
+        }
+        return partURI.toString();
+    }
+
+    public static void updateThreadAttachType(Context context, long messageId, Uri messageUri) {
+        long threadId = 0L;
+        Cursor cursor = null;
+        try {
+            cursor = SqliteWrapper.query(context, context.getContentResolver(),
+                    messageUri, new String[]{Telephony.BaseMmsColumns.THREAD_ID},
+                    Mms._ID + " = " + messageId, null, null);
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    threadId = cursor.getLong(cursor.getColumnIndexOrThrow(
+                            Telephony.BaseMmsColumns.THREAD_ID));
+                }
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        updateThreadAttachTypeByThreadId(context, threadId);
+    }
+
+    public static void deleteVcardFile(Uri uri) {
+        if (uri != null) {
+            if (uri.toString().endsWith(VCF)) {
+                File file = new File(uri.getPath());
+                if (file.exists()) {
+                    file.delete();
+                }
+            }
+        }
+    }
+
+    public static void updateThreadAttachTypeByThreadId(Context context, long threadId) {
+        String attachmentInfo = Conversation.getAttachmentInfo(context,
+                Conversation.getLatestMessageAttachmentUri(context, threadId));
+        Uri uri = Conversation.getUri(threadId);
+        ContentValues values = new ContentValues();
+        values.put(Telephony.Threads.ATTACHMENT_INFO, attachmentInfo);
+        try {
+            context.getContentResolver().update(uri, values, null, null);
+        } catch (Exception e) {
+            Log.e(TAG, "Update Thread Attachment Type Error", e);
+        }
+    }
+
     public static String formatTimeStampString(Context context, long when) {
         return formatTimeStampString(context, when, false);
     }
@@ -1179,6 +1310,40 @@ public class MessageUtils {
         sLocalNumber = MmsApp.getApplication().getTelephonyManager()
             .getLine1NumberForSubscriber(subId);
         return sLocalNumber;
+    }
+
+    public static void markAsReadForNotificationMessage(Context context) {
+        HashSet<Long> ids = getUnreadNotificationThreadIds(context);
+        Iterator<Long> it = ids.iterator();
+        while (it.hasNext()) {
+            long threadId = it.next();
+            Conversation conv = Conversation.get(context, threadId, true);
+            if (conv != null) {
+                conv.markAsRead();
+            }
+        }
+    }
+
+    public static HashSet<Long> getUnreadNotificationThreadIds(Context context) {
+        HashSet<Long> unreadNotificationThreadIds = new HashSet<Long>();
+        Cursor cursor = null;
+        try {
+            cursor = SqliteWrapper.query(context, context.getContentResolver(),
+                    Conversation.sAllThreadsUri, new String[] {Threads._ID, Threads.READ},
+                    Threads.NOTIFICATION + " = 1 AND " + Threads.READ + " = 0 ", null, null);
+            if (cursor != null && cursor.getCount() != 0) {
+                while (cursor.moveToNext()) {
+                    long threadId = cursor.getLong(cursor.getColumnIndexOrThrow(Threads._ID));
+                    unreadNotificationThreadIds.add(threadId);
+                }
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        return unreadNotificationThreadIds;
     }
 
     public static boolean isLocalNumber(String number) {

@@ -582,9 +582,31 @@
     <string name="contact_list_send_to_text">"发送到<xliff:g id="DESTINATION">%s</xliff:g>"</string>
 
     <string name="new_message_download">下载新彩信</string>
+    <string name="new_mms_download">下载新彩信</string>
     <string name="touch_to_download">点击下载</string>
     <string name="touch_to_try_again">再次点击下载</string>
     <string name="could_not_downloading">没能成功下载</string>
+    <string name="could_not_download">没能成功下载</string>
     <string name="new_mms_message">新彩信</string>
     <string name="mms_size_label">"大小： "</string>
+    <string name="menu_mark_as_read">标记已读</string>
+    <string name="notification_message_label">通知</string>
+    <string name="unread_notification_message_label">通知 (<xliff:g id="count">%s</xliff:g>)</string>
+    <string name="mms_attachment_type_audio">音频</string>
+    <string name="mms_attachment_type_video">视频</string>
+    <string name="mms_attachment_type_picture">图片</string>
+    <string name="mms_attachment_type_vcard">名片</string>
+    <string name="mms_attachment_type_slideshow">幻灯片</string>
+    <string name="group_numbers"><xliff:g id="number">%s</xliff:g>成员</string>
+    <string name="mms_save_title">保存</string>
+    <string name="mms_share_title">分享</string>
+    <string name="mms_photo_attachment_saved_title">图片保存到\"<xliff:g id="albumName">%s</xliff:g>\"相册</string>
+    <string name="mms_video_attachment_saved_title">视频保存到\"<xliff:g id="albumName">%s</xliff:g>\"相册</string>
+    <string name="mms_attachment_saved_fail_title">保存失败</string>
+    <string name="notification_mark_as_read">标记已读</string>
+    <string name="notification_reply">回复</string>
+    <string name="notification_reply_to">回复<xliff:g id="name">%s</xliff:g></string>
+    <string name="notification_view_message_text">查看信息</string>
+
+    <string name="conversation_list_send_fail_text">未发送,点击再试一次</string>
 </resources>

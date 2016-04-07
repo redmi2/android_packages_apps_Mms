@@ -24,8 +24,10 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.preference.PreferenceManager;
+import android.provider.Telephony;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.MmsSms;
 import android.provider.Telephony.MmsSms.PendingMessages;
@@ -33,6 +35,7 @@ import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
+import com.android.mms.data.Conversation;
 import com.android.mms.LogTag;
 import com.android.mms.ui.ComposeMessageActivity;
 import com.android.mms.ui.MessagingPreferenceActivity;
@@ -106,6 +109,7 @@ public class MmsMessageSender implements MessageSender {
         p.updateHeaders(mMessageUri, sendReq);
 
         long messageId = ContentUris.parseId(mMessageUri);
+        MessageUtils.updateThreadAttachType(mContext, messageId, mMessageUri);
 
         // Move the message into MMS Outbox.
         if (!mMessageUri.toString().startsWith(Mms.Draft.CONTENT_URI.toString())) {

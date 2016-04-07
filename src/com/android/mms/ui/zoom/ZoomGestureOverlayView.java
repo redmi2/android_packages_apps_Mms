@@ -17,7 +17,9 @@
 package com.android.mms.ui.zoom;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.gesture.GestureOverlayView;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.FloatMath;
@@ -26,6 +28,8 @@ import android.view.MotionEvent;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import com.android.mms.ui.MessagingPreferenceActivity;
 
 /**
  * ZoomGestureOverlayView
@@ -48,6 +52,7 @@ public class ZoomGestureOverlayView extends GestureOverlayView {
     private static final float THRESHOLD = 30.0f;
     private static final float SCALE_FACTOR_DOWN = 0.95f;
     private static final float SCALE_FACTOR_UP = 1.1f;
+    private static final boolean DEFAULT_GESTURE_MODE  = false;
 
     // Members
     private float mOldDistance = 0.0f; // Stash spot for the 'original distance' or 'last distance'
@@ -56,6 +61,7 @@ public class ZoomGestureOverlayView extends GestureOverlayView {
 
     // Flags
     private boolean mCanZoom = false;
+    private Context mContext;
 
     /**
      * Constructor
@@ -64,6 +70,7 @@ public class ZoomGestureOverlayView extends GestureOverlayView {
      */
     public ZoomGestureOverlayView(Context context) {
         this(context, null);
+        mContext = context;
     }
 
     /**
@@ -74,6 +81,7 @@ public class ZoomGestureOverlayView extends GestureOverlayView {
      */
     public ZoomGestureOverlayView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
+        mContext = context;
     }
 
     /**
@@ -85,6 +93,7 @@ public class ZoomGestureOverlayView extends GestureOverlayView {
      */
     public ZoomGestureOverlayView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        mContext = context;
     }
 
     /**
@@ -99,6 +108,14 @@ public class ZoomGestureOverlayView extends GestureOverlayView {
                 Log.d(TAG, message);
             }
         }
+    }
+
+    private Boolean enableGesture() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+        boolean enableGesture = false;
+        enableGesture = prefs.getBoolean(
+                MessagingPreferenceActivity.ENABLE_GESTURE, DEFAULT_GESTURE_MODE);
+        return enableGesture;
     }
 
     @Override
@@ -123,7 +140,7 @@ public class ZoomGestureOverlayView extends GestureOverlayView {
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (!mCanZoom) {
+                if (!mCanZoom || !enableGesture()) {
                     break;
                 }
                 // Fetch new distance
@@ -132,7 +149,7 @@ public class ZoomGestureOverlayView extends GestureOverlayView {
                 float distanceDifference = newDistance - mOldDistance;
                 // If the absolute value is greater, we want to handle it regardless of whether
                 // it is positive or negative
-                if (Math.abs(distanceDifference) > THRESHOLD) {
+                if (newDistance > 0 && Math.abs(distanceDifference) > THRESHOLD) {
                     logDebug("Absolute threshold satisfied!");
                     // Update old distance
                     mOldDistance = newDistance;

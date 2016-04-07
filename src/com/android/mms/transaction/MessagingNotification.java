@@ -92,6 +92,8 @@ import com.android.mms.ui.ManageSimMessages;
 import com.android.mms.ui.MessageUtils;
 import com.android.mms.ui.MessagingPreferenceActivity;
 import com.android.mms.ui.MobilePaperShowActivity;
+import com.android.mms.ui.NotificationMarkAsReadReceiver;
+import com.android.mms.ui.NotificationQuickReplyActivity;
 import com.android.mms.util.AddressUtils;
 import com.android.mms.util.DownloadManager;
 import com.android.mms.util.MaterialColorMapUtils;
@@ -114,7 +116,7 @@ public class MessagingNotification {
     private static final String TAG = LogTag.APP;
     private static final boolean DEBUG = false;
 
-    private static final int NOTIFICATION_ID = 123;
+    public static final int NOTIFICATION_ID = 123;
     public static final int FULL_NOTIFICATION_ID   = 125;
     private static final int ICC_NOTIFICATION_ID_SLOT1 = 126;
     private static final int ICC_NOTIFICATION_ID_SLOT2 = 127;
@@ -423,7 +425,7 @@ public class MessagingNotification {
         NotificationInfo info = getNewIccMessageNotificationInfo(context, true /* isSms */,
                 address, message, null /* subject */, subId, timeMillis,
                 null /* attachmentBitmap */, contact, WorkingMessage.TEXT);
-        noti.setSmallIcon(R.drawable.stat_notify_sms);
+        noti.setSmallIcon(R.drawable.notification_icon);
         NotificationManager nm = (NotificationManager)
                 context.getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -805,7 +807,8 @@ public class MessagingNotification {
                     continue;
                 }
 
-                String subject = getMmsSubject(
+                String subjectLabel = context.getResources().getString(R.string.subject_label);
+                String subject = subjectLabel + getMmsSubject(
                         cursor.getString(COLUMN_MMS_SUBJECT),
                         cursor.getInt(COLUMN_MMS_SUBJECT_CS));
                 subject = MessageUtils.cleanseMmsSubject(context, subject);
@@ -1190,7 +1193,7 @@ public class MessagingNotification {
         PendingIntent mPendingIntent = PendingIntent.getActivity(context, 0,
                 mActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         // Always have to set the small icon or the notification is ignored
-        noti.setSmallIcon(R.drawable.stat_notify_sms);
+        noti.setSmallIcon(R.drawable.notification_icon);
 
         NotificationManager nm = (NotificationManager)
                 context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -1260,6 +1263,27 @@ public class MessagingNotification {
 
         if (messageCount == 1) {
             // We've got a single message
+
+            // Add "Mark as read" option in notification
+            CharSequence markReadText = context.getText(R.string.notification_mark_as_read);
+            Intent markReadIntent = new Intent(context, NotificationMarkAsReadReceiver.class);
+            markReadIntent.setAction(NotificationMarkAsReadReceiver.ACTION_NOTIFICATION_MARK_READ);
+            markReadIntent.putExtra(NotificationMarkAsReadReceiver.MSG_THREAD_ID,
+                    mostRecentNotification.mThreadId);
+            PendingIntent markReadPendingIntent = PendingIntent.getBroadcast(context, 0,
+                    markReadIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            noti.addAction(R.drawable.mark_as_read, markReadText, markReadPendingIntent);
+
+            // Add "Reply" option in notification
+            CharSequence replyText = context.getText(R.string.notification_reply);
+            Intent replyIntent = new Intent(context, NotificationQuickReplyActivity.class);
+            replyIntent.putExtra(NotificationQuickReplyActivity.MSG_THREAD_ID,
+                    mostRecentNotification.mThreadId);
+            replyIntent.putExtra(NotificationQuickReplyActivity.MSG_SENDER,
+                    mostRecentNotification.mSender.getName());
+            PendingIntent replyPendingIntent = PendingIntent.getActivity(context, 0,
+                    replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            noti.addAction(R.drawable.notification_reply, replyText, replyPendingIntent);
 
             // This sets the text for the collapsed form:
             noti.setContentText(mostRecentNotification.formatBigMessage(context));
@@ -1473,7 +1497,7 @@ public class MessagingNotification {
 
         taskStackBuilder.addNextIntent(failedIntent);
 
-        notification.icon = R.drawable.stat_notify_sms_failed;
+        notification.icon = R.drawable.notification_icon_failed;
 
         notification.tickerText = title;
 
@@ -1913,7 +1937,7 @@ public class MessagingNotification {
                 : R.string.memory_low_body);
         PendingIntent intent = PendingIntent.getActivity(context, 0,  new Intent(), 0);
         Notification notification = new Notification();
-        notification.icon = R.drawable.stat_notify_sms_failed;
+        notification.icon = R.drawable.notification_icon_failed;
         notification.tickerText = title;
         notification.setLatestEventInfo(context, title, description, intent);
         nm.notify(FULL_NOTIFICATION_ID, notification);

@@ -76,18 +76,48 @@
                     android:linksClickable="false"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textColor="#ffffffff"
+                    android:textColorLink="@color/white"
                     android:textSize="16sp"
                     android:visibility="gone"/>
 
-                <ViewStub android:id="@+id/mms_downloading_view_stub"
-                     android:layout="@layout/mms_downloading_view"
-                     android:layout_gravity="bottom"
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"/>
+                <TextView android:id="@+id/mms_subject_text"
+                    android:autoLink="all"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:linksClickable="false"
+                    android:paddingStart="@dimen/message_item_text_padding_left_right"
+                    android:gravity="start"
+                    android:fontFamily="Roboto Medium"
+                    android:textColor="#ffffff"
+                    android:textColorLink="@color/white"
+                    android:textSize="14sp"/>
+
                 <ViewStub android:id="@+id/mms_layout_view_stub"
                     android:layout="@layout/mms_layout_view"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="14dp"
+                    android:layout_marginLeft="12dp"
+                    android:layout_marginRight="12dp"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
+                <ViewStub android:id="@+id/mms_layout_view_audio_play_stub"
+                    android:layout="@layout/mms_layout_view_audio_play"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="14dp"
+                    android:layout_marginLeft="20dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
+                <ViewStub android:id="@+id/mms_layout_view_video_pic_play_stub"
+                    android:layout="@layout/mms_layout_view_video_pic_play"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="14dp"
+                    android:layout_marginLeft="12dp"
+                    android:layout_marginRight="12dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
                 <TextView android:id="@+id/text_view_buttom"
                     android:autoLink="all"
                     android:paddingStart="@dimen/message_item_text_padding_left_right"
@@ -98,6 +128,7 @@
                     android:linksClickable="false"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textColor="#ffffffff"
+                    android:textColorLink="@color/white"
                     android:textSize="16sp"
                     android:visibility="gone" />
                 <TextView android:id="@+id/downloading_title"
@@ -114,6 +145,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="4dip"
                     android:paddingStart="@dimen/message_item_text_padding_left_right"
+                    android:paddingTop="@dimen/message_item_text_padding_top"
                     android:orientation="horizontal" >
 
                     <ImageView
@@ -163,6 +195,12 @@
                         android:visibility="gone" />
                 </LinearLayout>
 
+                <ViewStub
+                    android:id="@+id/mms_downloading_view_stub"
+                    android:layout="@layout/mms_downloading_view"
+                    android:layout_gravity="bottom"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
             </LinearLayout>
         </RelativeLayout>
     </LinearLayout>

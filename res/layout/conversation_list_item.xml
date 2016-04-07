@@ -48,6 +48,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="middle"
             android:singleLine="true"
+            android:fontFamily="Roboto Regular"
             android:textColor="@color/conversation_item_text_color"
             android:textSize="16sp" />
 
@@ -61,13 +62,44 @@
             android:textSize="14sp" />
 
         <TextView
-            android:id="@+id/content"
+            android:id="@+id/attachment_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:visibility="gone"
             android:ellipsize="end"
             android:singleLine="true"
             android:textColor="@color/conversation_item_text_color"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/attachment_sub_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="@color/conversation_item_text_color"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/attachment_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="@color/conversation_item_text_color"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/error_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="@string/conversation_list_send_fail_text"
+            android:textColor="@color/conversation_item_fail_text_color"
             android:textSize="12sp" />
 
         <TextView

@@ -64,7 +64,7 @@
         android:title="@string/pref_title_display" >
         <SwitchPreference
             android:defaultValue="true"
-            android:key="pref_key_group_notification_message"
+            android:key="pref_key_seperate_notification_msg"
             android:summary="@string/pref_summary_group_notification"
             android:title="@string/pref_title_group_notification" />
         <SwitchPreference

@@ -1,4 +1,6 @@
 /*
+* Copyright (c) 2016, The Linux Foundation. All rights reserved.
+* Not a Contribution.
 * Copyright (C) 2014 The CyanogenMod Project
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,14 +19,21 @@
 package com.android.mms.ui.zoom;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import com.android.mms.ui.MessageListItem;
+import com.android.mms.ui.MessagingPreferenceActivity;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * ZoomMessageListItem
@@ -38,13 +47,16 @@ public class ZoomMessageListItem extends LinearLayout {
 
     // Log tag
     private static final String TAG = ZoomMessageListItem.class.getSimpleName();
+    private Context sContext;
+    private static float mCurrentTextSize;
 
     // "Zooming" constants
     private static final int MIN_FONT_SIZE = 14;  //sp
-    private static final int MAX_FONT_SIZE = 72;  //sp
+    private static final int MAX_FONT_SIZE = 24;  //sp
 
     // Members
     private final List<TextView> mZoomableTextViewList = new ArrayList<TextView>();
+    private final Map<TextView, Float> mOriginalTextSizes = new HashMap<>();
 
     /**
      * Constructor
@@ -53,6 +65,7 @@ public class ZoomMessageListItem extends LinearLayout {
      */
     public ZoomMessageListItem(Context context) {
         super(context);
+        sContext = context;
     }
 
     /**
@@ -63,6 +76,7 @@ public class ZoomMessageListItem extends LinearLayout {
      */
     public ZoomMessageListItem(Context context, AttributeSet attrs) {
         super(context, attrs);
+        sContext = context;
     }
 
     /**
@@ -76,6 +90,7 @@ public class ZoomMessageListItem extends LinearLayout {
         }
         if (!mZoomableTextViewList.contains(textView)) {
             mZoomableTextViewList.add(textView);
+            mOriginalTextSizes.put(textView, textView.getTextSize());
         }
     }
 
@@ -89,7 +104,7 @@ public class ZoomMessageListItem extends LinearLayout {
             @Override
             public void run() {
                 for (TextView textView : mZoomableTextViewList) {
-                    zoomViewByScale(getContext(), textView, scale);
+                    zoomViewByScale(sContext, textView, scale);
                 }
             }
         });
@@ -125,6 +140,7 @@ public class ZoomMessageListItem extends LinearLayout {
         // Cast to int in order to normalize it
         // setTextSize takes a Scaled Pixel value
         view.setTextSize((int) currentTextSize);
+        mCurrentTextSize = currentTextSize;
 
     }
 
@@ -139,4 +155,32 @@ public class ZoomMessageListItem extends LinearLayout {
         float scaledDensity = context.getResources().getDisplayMetrics().scaledDensity;
         return px / scaledDensity;
     }
+
+    /**
+     * Accept the font size to use and handle "zooming" the text to the given scale
+     *
+     * @param fontSize {@link java.lang.Integer}
+     */
+    public void setZoomScale(final float scale) {
+        Handler handler = getHandler();
+        if (handler != null) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    for (TextView textView : mZoomableTextViewList) {
+                        zoomViewByScale(getContext(), textView, scale);
+                        setZoomScalePreference();
+                    }
+                }
+            });
+        }
+    }
+
+    private void setZoomScalePreference() {
+        SharedPreferences.Editor editor = PreferenceManager
+                .getDefaultSharedPreferences(sContext).edit();
+        editor.putFloat(MessagingPreferenceActivity.ZOOM_MESSAGE, mCurrentTextSize);
+        editor.apply();
+    }
+
 }

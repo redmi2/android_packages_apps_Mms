@@ -16,6 +16,12 @@
 
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <item android:id="@+id/action_compose_new"
+          android:title="@string/new_message"
+          android:icon="@drawable/ic_menu_msg_compose_holo_dark"
+          android:visible="false"
+          android:showAsAction="always|withText" />
+
     <item android:id="@+id/search"
           android:title="@string/menu_search"
           android:icon="@drawable/search"
@@ -23,6 +29,11 @@
 
     <item android:id="@+id/action_settings"
         android:title="@string/menu_preferences"
+        android:icon="@android:drawable/ic_menu_preferences" />
+
+    <item android:id="@+id/action_mark_as_read"
+        android:title="@string/menu_mark_as_read"
+        android:visible="false"
         android:icon="@android:drawable/ic_menu_preferences" />
 
     <item android:id="@+id/action_change_to_folder_mode"

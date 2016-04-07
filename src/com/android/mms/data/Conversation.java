@@ -37,6 +37,8 @@ import com.android.internal.telephony.PhoneConstants;
 import com.android.mms.LogTag;
 import com.android.mms.MmsApp;
 import com.android.mms.MmsConfig;
+import com.android.mms.model.SlideModel;
+import com.android.mms.model.SlideshowModel;
 import com.android.mms.R;
 import com.android.mms.rcs.RcsUtils;
 import com.android.mms.transaction.MessagingNotification;
@@ -46,6 +48,7 @@ import com.android.mms.ui.MessageUtils;
 import com.android.mms.util.AddressUtils;
 import com.android.mms.util.DraftCache;
 
+import com.google.android.mms.MmsException;
 import com.google.android.mms.pdu.PduHeaders;
 
 import com.suntek.mway.rcs.client.aidl.common.RcsColumns;
@@ -65,6 +68,7 @@ public class Conversation {
     private static final boolean DELETEDEBUG = false;
 
     private static final int INVALID_THREAD_ID = -1;
+    private static final int INVALID_DOWNLOAD_STATUS = -1;
 
     public static final Uri sAllThreadsUri =
         Threads.CONTENT_URI.buildUpon().appendQueryParameter("simple", "true").build();
@@ -80,20 +84,21 @@ public class Conversation {
     private static final String[] SEEN_PROJECTION = new String[] {
         "seen"
     };
-    private static final int ID             = 0;
-    private static final int DATE           = 1;
-    private static final int MESSAGE_COUNT  = 2;
-    private static final int RECIPIENT_IDS  = 3;
-    private static final int SNIPPET        = 4;
-    private static final int SNIPPET_CS     = 5;
-    private static final int READ           = 6;
-    private static final int ERROR          = 7;
-    private static final int HAS_ATTACHMENT = 8;
-    private static final int IS_CONV_T0P    = 9;
-    private static final int RCS_TOP_TIME   = 10;
-    private static final int RCS_MSG_ID     = 11;
-    private static final int RCS_MSG_TYPE   = 12;
-    private static final int RCS_CHAT_TYPE  = 13;
+    private static final int ID              = 0;
+    private static final int DATE            = 1;
+    private static final int MESSAGE_COUNT   = 2;
+    private static final int RECIPIENT_IDS   = 3;
+    private static final int SNIPPET         = 4;
+    private static final int SNIPPET_CS      = 5;
+    private static final int READ            = 6;
+    private static final int ERROR           = 7;
+    private static final int HAS_ATTACHMENT  = 8;
+    private static final int ATTACHMENT_INFO = 9;
+    private static final int IS_CONV_T0P     = 10;
+    private static final int RCS_TOP_TIME    = 11;
+    private static final int RCS_MSG_ID      = 12;
+    private static final int RCS_MSG_TYPE    = 13;
+    private static final int RCS_CHAT_TYPE   = 14;
 
     private final Context mContext;
 
@@ -111,6 +116,7 @@ public class Conversation {
     private boolean mHasError;          // True if any message is in an error state.
     private boolean mIsChecked;         // True if user has selected the conversation for a
                                         // multi-operation such as delete.
+    private String mAttachmentInfo;     // The last mms attachment type in the thread
 
     private static ContentValues sReadContentValues;
     private static boolean sLoadingThreads;
@@ -127,7 +133,7 @@ public class Conversation {
         public static final String[] RCS_ADD_ALL_THREADS_PROJECTION = {
         Threads._ID, Threads.DATE, Threads.MESSAGE_COUNT, Threads.RECIPIENT_IDS,
         Threads.SNIPPET, Threads.SNIPPET_CHARSET, Threads.READ, Threads.ERROR,
-        Threads.HAS_ATTACHMENT, RcsColumns.ThreadColumns.RCS_TOP,
+        Threads.HAS_ATTACHMENT, Threads.ATTACHMENT_INFO, RcsColumns.ThreadColumns.RCS_TOP,
         RcsColumns.ThreadColumns.RCS_TOP_TIME, RcsColumns.ThreadColumns.RCS_MSG_ID,
         RcsColumns.ThreadColumns.RCS_MSG_TYPE, RcsColumns.ThreadColumns.RCS_CHAT_TYPE
    };
@@ -135,7 +141,7 @@ public class Conversation {
     public static final String[] DEFAULT_ALL_THREADS_PROJECTION = {
         Threads._ID, Threads.DATE, Threads.MESSAGE_COUNT, Threads.RECIPIENT_IDS,
         Threads.SNIPPET, Threads.SNIPPET_CHARSET, Threads.READ, Threads.ERROR,
-        Threads.HAS_ATTACHMENT
+        Threads.HAS_ATTACHMENT, Threads.ATTACHMENT_INFO
     };
 
     public static final String[] ALL_THREADS_PROJECTION = MmsConfig.isRcsVersion() ?
@@ -373,8 +379,8 @@ public class Conversation {
         }
 
         final Cursor c = SqliteWrapper.query(context, context.getContentResolver(),
-                        Mms.Inbox.CONTENT_URI, new String[] {Mms._ID, Mms.MESSAGE_ID, Mms.SUBSCRIPTION_ID},
-                        selection, null, null);
+                Mms.Inbox.CONTENT_URI, new String[]{Mms._ID, Mms.MESSAGE_ID, Mms.SUBSCRIPTION_ID},
+                selection, null, null);
 
         try {
             if (c == null || c.getCount() == 0) {
@@ -491,6 +497,119 @@ public class Conversation {
                 }
             }
         }
+    }
+
+    public static String getAttachmentInfo(Context context, Uri uri) {
+        if (uri == null) {
+            return null;
+        }
+        SlideshowModel slideshow;
+        try {
+            slideshow = SlideshowModel.createFromMessageUri(context, uri);
+        } catch (MmsException e) {
+            Log.e(TAG, e.getMessage(), e);
+            return null;
+        }
+
+        String attachmentInfo = "";
+        int slideCount = slideshow.size();
+        if (slideCount == 1) {
+            SlideModel slide = slideshow.get(0);
+            if (slide.hasImage()) {
+                attachmentInfo = context.getResources()
+                        .getString(R.string.mms_attachment_type_picture);
+            } else if (slide.hasVideo()) {
+                attachmentInfo = context.getResources()
+                        .getString(R.string.mms_attachment_type_video);
+            } else if (slide.hasAudio()) {
+                attachmentInfo = context.getResources()
+                        .getString(R.string.mms_attachment_type_audio);
+            } else if (slide.hasVcard()) {
+                attachmentInfo = context.getResources()
+                        .getString(R.string.mms_attachment_type_vcard);
+            } else if (slide.hasText()){
+                attachmentInfo = slide.getText().getText();
+            }
+        } else if (slideCount > 1) {
+            attachmentInfo = context.getResources()
+                    .getString(R.string.mms_attachment_type_slideshow);
+        }
+
+        return attachmentInfo;
+    }
+
+    public synchronized static Uri getLatestMessageAttachmentUri(Context context, long threadId) {
+        if (threadId <= 0) {
+            return null;
+        }
+        Uri attachmentUri = null;
+        Cursor cursor = null;
+        try {
+            cursor = SqliteWrapper.query(context, context.getContentResolver(),
+                    Mms.CONTENT_URI, new String[] {Mms._ID, Mms.MESSAGE_ID},
+                    Mms.THREAD_ID + " = " + threadId, null, null);
+            if (cursor != null && cursor.getCount() != 0) {
+                cursor.moveToFirst();
+                long mmsId = cursor.getLong(cursor.getColumnIndexOrThrow(Mms._ID));
+                attachmentUri = ContentUris.withAppendedId(Mms.CONTENT_URI, mmsId);
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        return attachmentUri;
+    }
+
+    public synchronized int getLatestMmsDownloadStatus(Context context) {
+        if (mThreadId <= 0) {
+            return INVALID_DOWNLOAD_STATUS;
+        }
+        int status = INVALID_DOWNLOAD_STATUS;
+        Cursor cursor = null;
+        try {
+            cursor = SqliteWrapper.query(context, context.getContentResolver(),
+                    Mms.CONTENT_URI, new String[] {Mms._ID, Mms.STATUS},
+                    Mms.THREAD_ID + " = " + mThreadId, null, null);
+            if (cursor != null && cursor.getCount() != 0) {
+                cursor.moveToFirst();
+                int mmsStatus = cursor.getInt(cursor.getColumnIndexOrThrow(Mms.STATUS));
+                status = MessageUtils.getMmsDownloadStatus(mmsStatus);
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        return status;
+    }
+
+    public synchronized boolean isLatestMessageMms(Context context) {
+        if (mThreadId <= 0) {
+            return false;
+        }
+        boolean isMms = false;
+        Cursor cursor = null;
+        try {
+            cursor = SqliteWrapper.query(context, context.getContentResolver(),
+                    getUri(), new String[] {MmsSms.TYPE_DISCRIMINATOR_COLUMN},
+                    Mms.THREAD_ID + " = " + mThreadId, null, null);
+            if (cursor != null && cursor.getCount() != 0) {
+                cursor.moveToLast();
+                String type = cursor.getString(cursor
+                        .getColumnIndexOrThrow(MmsSms.TYPE_DISCRIMINATOR_COLUMN));
+                if (type.equals("mms")) {
+                    isMms = true;
+                }
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return isMms;
     }
 
     /**
@@ -656,6 +775,13 @@ public class Conversation {
      */
     public synchronized boolean hasAttachment() {
         return mHasAttachment;
+    }
+
+    /**
+     * Returns the last mms attachment type in the thread.
+     */
+    public synchronized String getAttachmentInfo() {
+        return mAttachmentInfo;
     }
 
     /**
@@ -1000,14 +1126,12 @@ public class Conversation {
             // Replace the snippet with a default value if it's empty.
             String snippet = MessageUtils.cleanseMmsSubject(context,
                     MessageUtils.extractEncStrFromCursor(c, SNIPPET, SNIPPET_CS));
-            if (TextUtils.isEmpty(snippet)) {
-                snippet = context.getString(R.string.no_subject_view);
-            }
             conv.mSnippet = snippet;
 
             conv.setHasUnreadMessages(c.getInt(READ) == 0);
             conv.mHasError = (c.getInt(ERROR) != 0);
             conv.mHasAttachment = (c.getInt(HAS_ATTACHMENT) != 0);
+            conv.mAttachmentInfo = (c.getString(ATTACHMENT_INFO));
             if (MmsConfig.isRcsVersion()) {
                 conv.mIsTop = c.getInt(IS_CONV_T0P);
                 conv.mRcsTopTime = c.getInt(RCS_TOP_TIME);

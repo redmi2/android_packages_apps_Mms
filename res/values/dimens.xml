@@ -24,8 +24,15 @@ All Rights Reserved. -->
     <dimen name="banner_m_space">8dip</dimen>
 
     <dimen name="conversation_list_itme_height">88dip</dimen>
-    <dimen name="conversation_list_itme_height_unread">115dip</dimen>
+    <dimen name="conversation_list_itme_height_unread">120dip</dimen>
     <dimen name="search_list_itme_height">56dip</dimen>
     <item name="letter_to_tile_ratio" type="dimen">67%</item>
     <dimen name="compose_message_chips_view_max_height">112dip</dimen>
+
+    <dimen name="quick_reply_activity_padding_left">40dip</dimen>
+    <dimen name="quick_reply_activity_padding_top">124dip</dimen>
+    <dimen name="quick_reply_back_arrow_margin_top">41dip</dimen>
+    <dimen name="quick_reply_back_arrow_margin_start">16dip</dimen>
+    <dimen name="quick_reply_text_editor_margin">18dip</dimen>
+    <dimen name="quick_reply_view_message_margin_start">15dip</dimen>
 </resources>

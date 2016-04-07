@@ -1,4 +1,6 @@
 /*
+* Copyright (c) 2016, The Linux Foundation. All rights reserved.
+* Not a Contribution.
 * Copyright (C) 2014 The CyanogenMod Project
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +22,7 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.ListView;
+
 import com.android.mms.ui.MessageListItem;
 
 /**
@@ -60,7 +63,7 @@ public class ZoomMessageListView extends ListView {
         for (int i = 0; i < viewCount; i++) {
             View view = getChildAt(i);
             if (view instanceof ZoomMessageListItem) {
-                ((ZoomMessageListItem) view).handleZoomWithScale(scale);
+                ((ZoomMessageListItem) view).setZoomScale(scale);
             }
         }
     }

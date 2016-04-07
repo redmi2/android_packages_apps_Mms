@@ -68,6 +68,7 @@ import com.android.mms.LogTag;
 import com.android.mms.MmsConfig;
 import com.android.mms.R;
 import com.android.mms.ui.ComposeMessageActivity;
+import com.android.mms.ui.MessageUtils;
 import com.android.mms.util.DownloadManager;
 import com.android.mms.util.RateController;
 import com.google.android.mms.pdu.GenericPdu;
@@ -848,6 +849,7 @@ public class TransactionService extends Service implements Observer {
                                     threadId,
                                     false);
                             MessagingNotification.updateDownloadFailedNotification(this);
+                            MessageUtils.updateThreadAttachTypeByThreadId(this, threadId);
                             break;
                         case Transaction.SEND_TRANSACTION:
                             RateController.getInstance().update();

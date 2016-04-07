@@ -306,6 +306,7 @@ public class MessageListAdapter extends CursorAdapter {
     private final MessageItemCache mMessageItemCache;
     private final ColumnsMap mColumnsMap;
     private OnDataSetChangedListener mOnDataSetChangedListener;
+    private ComposeMessageActivity.IMMSAudioPlayer mMMSAudioPlayer;
     private Handler mMsgListItemHandler;
     private Pattern mHighlight;
     private Context mContext;
@@ -401,6 +402,10 @@ public class MessageListAdapter extends CursorAdapter {
         return 0;
     }
 
+    public void setMMSAudioPlayer(ComposeMessageActivity.IMMSAudioPlayer mmsAudioPlayer) {
+        mMMSAudioPlayer = mmsAudioPlayer;
+    }
+
     public interface OnDataSetChangedListener {
         void onDataSetChanged(MessageListAdapter adapter);
         void onContentChanged(MessageListAdapter adapter);
@@ -481,6 +486,7 @@ public class MessageListAdapter extends CursorAdapter {
                 // We've got an mms item, pre-inflate the mms portion of the view
                 view.findViewById(R.id.mms_layout_view_stub).setVisibility(View.VISIBLE);
             }
+            ((MessageListItem)view).setMMSAudioPlayer(mMMSAudioPlayer);
         }
         return view;
     }

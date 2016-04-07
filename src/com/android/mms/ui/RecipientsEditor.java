@@ -18,6 +18,7 @@
 package com.android.mms.ui;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import android.content.Context;
@@ -44,10 +45,12 @@ import android.widget.MultiAutoCompleteTextView;
 
 import com.android.ex.chips.DropdownChipLayouter;
 import com.android.ex.chips.RecipientEditTextView;
+import com.android.ex.chips.RecipientEntry;
 import com.android.mms.MmsConfig;
 import com.android.mms.R;
 import com.android.mms.data.Contact;
 import com.android.mms.data.ContactList;
+import com.android.mms.util.ContactRecipientEntryUtils;
 
 /**
  * Provide UI for editing the recipients of multi-media messages.
@@ -145,7 +148,25 @@ public class RecipientsEditor extends RecipientEditTextView {
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        super.onItemClick(parent, view, position, id);
+        if (position < 0) {
+            return;
+        }
+        RecipientEntry item = getAdapter().getItem(position);
+        if (item == null) {
+            return;
+        }
+        if (item.getEntryType() == RecipientEntry.ENTRY_TYPE_PERSON) {
+            super.onItemClick(parent, view, position, id);
+        } else if (item.getEntryType() == RecipientEntry.ENTRY_TYPE_GROUP) {
+            String groupName = item.getDisplayName();
+            List<RecipientEntry> entries = ContactRecipientEntryUtils
+                    .getGroupsMembers(mContext, groupName);
+            Iterator<RecipientEntry> iterator = entries.iterator();
+            while (iterator.hasNext()) {
+                item = iterator.next();
+                super.onGroupItemClick(position, item);
+            }
+        }
 
         if (mOnSelectChipRunnable != null) {
             mOnSelectChipRunnable.run();

@@ -24,10 +24,13 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
+import android.provider.ContactsContract.CommonDataKinds.GroupMembership;
 import android.provider.ContactsContract.CommonDataKinds.Email;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.Directory;
 import android.provider.ContactsContract.DisplayNameSources;
+import android.provider.ContactsContract.Groups;
 import android.telephony.PhoneNumberUtils;
 import android.text.TextUtils;
 import android.util.Log;
@@ -40,7 +43,9 @@ import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,6 +69,10 @@ public class ContactRecipientEntryUtils {
     public static final int INDEX_LOOKUP_KEY = 6;
 
     private static final int MINIMUM_PHONE_NUMBER_LENGTH_TO_FORMAT = 6;
+
+    private static final int INVALID_GROUP_ID = -1;
+    private static final int GROUP_ENTRY_DESTINATION_ID = -1;
+    private static final int GROUP_ENTRY_DATE_ID = -1;
 
     /**
      * Constants for listing and filtering phones.
@@ -104,10 +113,26 @@ public class ContactRecipientEntryUtils {
     }
 
     /**
+     * Constants for listing and filtering groups.
+     */
+    public static class GroupQuery {
+        public static final String[] PROJECTION = new String[] {
+                Groups.TITLE, // 0
+                Groups.SUMMARY_WITH_PHONES // 1,
+        };
+    }
+
+    /**
      * A generated special contact which says "Send to xxx" in the contact list, which allows a user
      * to direct send an SMS to a number that was manually typed in.
      */
     public static final long CONTACT_ID_SENDTO_DESTINATION = -1001;
+
+    /**
+     * Matched Group in the contact list, which allows a user to direct send an SMS
+     * to all the numbers that is the group.
+     */
+    public static final long CONTACT_ID_GROUP_DESTINATION = -1002;
 
     /**
      * Returns true if the given entry is a special send to number item.
@@ -170,6 +195,34 @@ public class ContactRecipientEntryUtils {
     }
 
     /**
+     * Creates a RecipientEntry for GroupQuery result. The result is then displayed in the contact
+     * search drop down or as replacement chips in the chips edit box.
+     */
+    public static RecipientEntry createRecipientEntryForGroupQuery(Context context,
+            final Cursor cursor, final boolean isFirstLevel) {
+        final String groupName = cursor.getString(
+                cursor.getColumnIndexOrThrow(Groups.TITLE));
+        final String groupNumber = cursor.getString(
+                cursor.getColumnIndexOrThrow(Groups.SUMMARY_WITH_PHONES));
+        final String formattedGroupNumber = context.getResources().getString(
+                R.string.group_numbers, groupNumber);
+
+        return createGroupRecipientEntry(groupName,
+                DisplayNameSources.STRUCTURED_NAME, formattedGroupNumber,
+                GROUP_ENTRY_DESTINATION_ID, null, CONTACT_ID_GROUP_DESTINATION,
+                null, GROUP_ENTRY_DATE_ID, null, isFirstLevel);
+    }
+
+    private static RecipientEntry createGroupRecipientEntry(final String displayName,
+            final int displayNameSource, final String destination, final int destinationType,
+            final String destinationLabel, final long contactId, final String lookupKey,
+            final long dataId, final String photoThumbnailUri, final boolean firstLevel) {
+        return RecipientEntry.constructTopLevelEntryForGroup(RecipientEntry.ENTRY_TYPE_GROUP,
+                displayName, displayNameSource, destination, destinationType, destinationLabel,
+                contactId, null, dataId, photoThumbnailUri, true, lookupKey);
+    }
+
+    /**
      * Get a list of destinations (phone, email) matching the partial destination.
      */
     public static Cursor filterDestination(final Context context,
@@ -182,6 +235,17 @@ public class ContactRecipientEntryUtils {
         } else {
             return filterPhones(context, destination);
         }
+    }
+
+    /**
+     * Get a list of groups matching the partial destination.
+     */
+    public static Cursor filterGroupDestination(final Context context,
+            final String destination) {
+        if (!hasPermission(context, Manifest.permission.READ_CONTACTS)) {
+            return performSynchronousQuery(context, null, null, null, null, null);
+        }
+        return filterGroups(context, destination);
     }
 
     private static Hashtable<String, Integer> sPermissions = new Hashtable<String, Integer>();
@@ -216,7 +280,7 @@ public class ContactRecipientEntryUtils {
         return searchText != null && searchText.contains("@");
     }
 
-    public static Cursor filterEmails(final Context context, final String query) {
+    private static Cursor filterEmails(final Context context, final String query) {
         final Uri uri = Email.CONTENT_FILTER_URI.buildUpon()
                 .appendPath(query).appendQueryParameter(
                         ContactsContract.DIRECTORY_PARAM_KEY, String.valueOf(Directory.DEFAULT))
@@ -225,13 +289,27 @@ public class ContactRecipientEntryUtils {
                 null, EmailQuery.SORT_KEY);
     }
 
-    public static Cursor filterPhones(final Context context, final String query) {
+    private static Cursor filterPhones(final Context context, final String query) {
         final Uri uri = Phone.CONTENT_FILTER_URI.buildUpon()
                 .appendPath(query).appendQueryParameter(
                         ContactsContract.DIRECTORY_PARAM_KEY, String.valueOf(Directory.DEFAULT))
                 .build();
         return performSynchronousQuery(context, uri, PhoneQuery.PROJECTION, null,
                 null, PhoneQuery.SORT_KEY);
+    }
+
+    private static Cursor filterGroups(final Context context, final String query) {
+        final Uri uri = Groups.CONTENT_SUMMARY_URI;
+        return performSynchronousQuery(context, uri, GroupQuery.PROJECTION,
+                createGroupSelection(query), null, null);
+    }
+
+    private static String createGroupSelection(String query) {
+        StringBuilder where = new StringBuilder();
+        where.append(Groups.ACCOUNT_TYPE + " NOT NULL AND " + Groups.ACCOUNT_NAME + " NOT NULL AND "
+                + Groups.DELETED + "!=1 AND " + Groups.TITLE + " like '%" + query + "%'");
+        where.append(" AND ("+ Groups.SUMMARY_WITH_PHONES + "<>0)");
+        return where.toString();
     }
 
     private static Cursor performSynchronousQuery(final Context context, final Uri uri,
@@ -344,5 +422,78 @@ public class ContactRecipientEntryUtils {
             return match.group(2);
         }
         return address;
+    }
+
+    private static final String[] GROUP_MEMBER_PROJECTION = new String[] {
+            Phone.CONTACT_ID, // 0
+            Phone.DISPLAY_NAME_PRIMARY, // 1
+            Phone.NUMBER, // 2
+    };
+
+    private static final String[] GROUP_PROJECTION = new String[] {
+            Groups._ID, // 0
+            Groups.TITLE, // 1
+            Groups.SUMMARY_WITH_PHONES, // 2
+    };
+
+    public static List<RecipientEntry> getGroupsMembers(
+                final Context context, final String groupName) {
+        List<RecipientEntry> entries = new ArrayList<RecipientEntry>();
+
+        long groupId = getGroupId(context, groupName);
+        if (groupId == INVALID_GROUP_ID) {
+            return null;
+        }
+
+        Cursor cursor = context.getContentResolver().query(
+                Phone.CONTENT_URI, GROUP_MEMBER_PROJECTION,
+                createGroupMemberSelection(), createGroupMemberSelectionArgs(groupId), null);
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                String displayName = cursor.getString(
+                        cursor.getColumnIndexOrThrow(Phone.DISPLAY_NAME_PRIMARY));
+                String number = cursor.getString(cursor.getColumnIndexOrThrow(Phone.NUMBER));
+                RecipientEntry entry = RecipientEntry.constructGeneratedEntry(
+                        displayName, number, true);
+                entries.add(entry);
+            }
+            cursor.close();
+        }
+        return entries;
+    }
+
+    private static long getGroupId(final Context context, final String groupName) {
+        long groupId = INVALID_GROUP_ID;
+
+        StringBuilder where = new StringBuilder();
+        where.append(Groups.ACCOUNT_TYPE + " NOT NULL AND " + Groups.ACCOUNT_NAME
+                + " NOT NULL AND " + Groups.DELETED + "!=1 AND " + Groups.TITLE
+                + "='" + groupName + "'");
+        where.append(" AND ("+ Groups.SUMMARY_WITH_PHONES + "<>0)");
+
+        Cursor cursor = context.getContentResolver().query(Groups.CONTENT_SUMMARY_URI,
+                GROUP_PROJECTION, where.toString(), null, null);
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                groupId = cursor.getLong(cursor.getColumnIndexOrThrow(Groups._ID));
+            }
+            cursor.close();
+        }
+        return groupId;
+    }
+
+    private static String createGroupMemberSelection() {
+        StringBuilder where = new StringBuilder();
+        where.append(Data.RAW_CONTACT_ID + " IN (" + " SELECT DISTINCT " + Data.RAW_CONTACT_ID
+                + " FROM view_data WHERE " + Data.MIMETYPE + "=?" + " AND "
+                + GroupMembership.GROUP_ROW_ID + "=?)");
+        return where.toString();
+    }
+
+    private static String[] createGroupMemberSelectionArgs(long groupId) {
+        List<String> selectionArgs = new ArrayList<String>();
+        selectionArgs.add(GroupMembership.CONTENT_ITEM_TYPE);
+        selectionArgs.add(String.valueOf(groupId));
+        return selectionArgs.toArray(new String[0]);
     }
 }

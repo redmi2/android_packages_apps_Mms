@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  * Copyright (C) 2008 Esmertec AG.
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -23,6 +25,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.Typeface;
 import android.graphics.Rect;
@@ -32,6 +35,7 @@ import android.provider.Telephony;
 import android.provider.Telephony.Sms;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
+import android.telephony.TelephonyManager;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
@@ -48,6 +52,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.android.mms.LogTag;
+import com.android.mms.MmsApp;
 import com.android.mms.MmsConfig;
 import com.android.mms.R;
 import com.android.mms.data.Contact;
@@ -56,6 +61,7 @@ import com.android.mms.data.Conversation;
 import com.android.mms.R;
 import com.android.mms.rcs.RcsUtils;
 import com.android.mms.ui.LetterTileDrawable;
+import com.android.mms.util.DownloadManager;
 import com.android.mms.util.MaterialColorMapUtils;
 import com.suntek.mway.rcs.client.aidl.service.entity.GroupChat;
 import com.suntek.mway.rcs.client.aidl.common.RcsColumns;
@@ -75,7 +81,10 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
     private TextView mSubjectView;
     private TextView mFromView;
     private TextView mDateView;
-    private TextView mContentView;
+    private TextView mAttachmentInfoView;
+    private TextView mAttachmentStatusView;
+    private TextView mAttachmentStatusSubView;
+    private TextView mSendFailView;
     private View mAttachmentView;
     private View mErrorIndicator;
     private QuickContactBadge mAvatarView;
@@ -91,6 +100,7 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
     private Conversation mConversation;
 
     public static final StyleSpan STYLE_BOLD = new StyleSpan(Typeface.BOLD);
+    public static final StyleSpan ITALIC = new StyleSpan(Typeface.ITALIC);
 
     public ConversationListItem(Context context) {
         super(context);
@@ -123,7 +133,10 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
         mSubjectView = (TextView) findViewById(R.id.subject);
 
         mDateView = (TextView) findViewById(R.id.date);
-        mContentView = (TextView)findViewById(R.id.content);
+        mAttachmentInfoView = (TextView) findViewById(R.id.attachment_info);
+        mAttachmentStatusView = (TextView) findViewById(R.id.attachment_status);
+        mAttachmentStatusSubView = (TextView) findViewById(R.id.attachment_sub_status);
+        mSendFailView = (TextView)findViewById(R.id.error_info);
         mAttachmentView = findViewById(R.id.attachment);
         mErrorIndicator = findViewById(R.id.error);
         mAvatarView = (QuickContactBadge) findViewById(R.id.avatar);
@@ -189,28 +202,6 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
 
         SpannableStringBuilder buf = new SpannableStringBuilder(from);
 
-        if (mConversation.getMessageCount() > 1) {
-            int before = buf.length();
-            if (isLayoutRtl) {
-                if (isEnName) {
-                    buf.insert(1, mConversation.getMessageCount() + " ");
-                    buf.setSpan(new ForegroundColorSpan(
-                            mContext.getResources().getColor(R.color.message_count_color)),
-                            1, buf.length() - before, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
-                } else {
-                    buf.append(" " + mConversation.getMessageCount());
-                    buf.setSpan(new ForegroundColorSpan(
-                            mContext.getResources().getColor(R.color.message_count_color)),
-                            before, buf.length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
-                }
-            } else {
-                buf.append(mContext.getResources().getString(R.string.message_count_format,
-                        mConversation.getMessageCount()));
-                buf.setSpan(new ForegroundColorSpan(
-                        mContext.getResources().getColor(R.color.message_count_color)),
-                        before, buf.length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
-           }
-        }
         if (mConversation.hasDraft()) {
             if (isLayoutRtl && isEnName) {
                 int before = buf.length();
@@ -222,7 +213,7 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
                         1, buf.length() - before + 1, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
                 before = buf.length();
                 int size;
-                buf.insert(1,mContext.getResources().getString(R.string.has_draft));
+                buf.insert(1, mContext.getResources().getString(R.string.has_draft));
                 size = android.R.style.TextAppearance_Small;
                 buf.setSpan(new TextAppearanceSpan(mContext, size), 1,
                         buf.length() - before + 1, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
@@ -230,26 +221,21 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
                         mContext.getResources().getColor(R.drawable.text_color_red)),
                         1, buf.length() - before + 1, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
             } else {
-                mContentView.setVisibility(View.VISIBLE);
-                mContentView.setText(mContext.getResources().getString(R.string.has_draft));
-                mDateView.setVisibility(GONE);
-              }
-        } else {
-            mContentView.setVisibility(View.GONE);
-            mDateView.setVisibility(VISIBLE);
+                SpannableStringBuilder bufDraft = new SpannableStringBuilder(mContext
+                        .getResources().getString(R.string.has_draft));
+                bufDraft.setSpan(ITALIC, 0, bufDraft.length(),
+                        Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+                mDateView.setText(bufDraft);
+            }
         }
 
         // Unread messages are shown in bold
         if (mConversation.hasUnreadMessages()) {
-            mSubjectView.setSingleLine(false);
-            mSubjectView.setMaxLines(mContext.getResources().getInteger(
-                    R.integer.max_unread_message_lines));
             buf.setSpan(STYLE_BOLD, 0, buf.length(),
                     Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
             getLayoutParams().height = mContext.getResources().getDimensionPixelSize(
                     R.dimen.conversation_list_itme_height_unread);
         } else {
-            mSubjectView.setSingleLine(true);
             getLayoutParams().height = mContext.getResources().getDimensionPixelSize(
                     R.dimen.conversation_list_itme_height);
         }
@@ -351,6 +337,13 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
         //if (DEBUG) Log.v(TAG, "bind()");
 
         mConversation = conversation;
+        if (mConversation.hasUnreadMessages() && !mConversation.isLatestMessageMms(context)) {
+            mSubjectView.setSingleLine(false);
+            mSubjectView.setMaxLines(mContext.getResources().getInteger(
+                    R.integer.max_unread_message_lines));
+        } else {
+            mSubjectView.setSingleLine(true);
+        }
 
         updateBackground();
 
@@ -376,12 +369,19 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
         if (MmsConfig.isRcsVersion()) {
             int messageID = conversation.getRcsLastMsgId();
                 // Date
-                mDateView.setText(formateUnreadToBold(MessageUtils.formatTimeStampString(context,
-                        conversation.getDate())));
+                if (!mConversation.hasDraft()) {
+                    mDateView.setText(formateUnreadToBold(MessageUtils.
+                            formatTimeStampString(context, conversation.getDate())));
+                }
                 // Subject
                 String snippet = RcsUtils.formatConversationSnippet(getContext(),
                         conversation.getSnippet(), conversation.getRcsLastMsgType());
                 // TODO judge the latest message is notification message.
+                if (TextUtils.isEmpty(snippet)) {
+                    mSubjectView.setVisibility(View.GONE);
+                } else {
+                    mSubjectView.setVisibility(View.VISIBLE);
+                }
                 if (conversation.isGroupChat()) {
                     snippet = RcsUtils.getStringOfNotificationBody(context, snippet);
                     mSubjectView.setText(snippet);
@@ -393,20 +393,104 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
                     mSubjectView.setText(snippet);
                 }
         } else {
-            mSubjectView.setText(formateUnreadToBold(conversation.getSnippet()));
+            String snippet = conversation.getSnippet();
+            if (!TextUtils.isEmpty(snippet)) {
+                if (mConversation.isLatestMessageMms(mContext)) {
+                    snippet = mContext.getResources().getString(R.string.subject_label) + snippet;
+                }
+                mSubjectView.setText(formateUnreadToBold(snippet));
+                mSubjectView.setVisibility(View.VISIBLE);
+            } else {
+                mSubjectView.setVisibility(View.GONE);
+            }
         }
 
         // Transmission error indicator.
         mErrorIndicator.setVisibility(hasError ? VISIBLE : GONE);
+        mSendFailView.setVisibility(hasError ? VISIBLE : GONE);
+        mDateView.setVisibility(hasError ? GONE : VISIBLE);
 
         updateAvatarView();
+        updateAttachmentView();
+    }
+
+    private void updateAttachmentView() {
+        if (mConversation.isLatestMessageMms(mContext)) {
+            String attachmentInfo = mConversation.getAttachmentInfo();
+            if (TextUtils.isEmpty(attachmentInfo)) {
+                mAttachmentInfoView.setVisibility(View.GONE);
+            } else {
+                mAttachmentInfoView.setVisibility(View.VISIBLE);
+                mAttachmentInfoView.setText(formateUnreadToBold(attachmentInfo));
+                if (mConversation.hasUnreadMessages()) {
+                    mAttachmentInfoView.setSingleLine(false);
+                    mAttachmentInfoView.setMaxLines(mContext.getResources().getInteger(
+                            R.integer.max_unread_message_lines));
+                } else {
+                    mAttachmentInfoView.setSingleLine(true);
+                }
+            }
+            int mmsStatus = mConversation.getLatestMmsDownloadStatus(mContext);
+            mAttachmentStatusView.setVisibility(View.VISIBLE);
+            mAttachmentStatusSubView.setVisibility(View.VISIBLE);
+            switch (mmsStatus) {
+                case DownloadManager.STATE_PRE_DOWNLOADING:
+                case DownloadManager.STATE_DOWNLOADING:
+                    mAttachmentStatusView.setText(R.string.new_mms_message);
+                    mAttachmentStatusSubView.setText(R.string.downloading);
+                    mAttachmentStatusSubView.setTextColor(Color.BLACK);
+                    mAttachmentInfoView.setVisibility(View.GONE);
+                    mDateView.setVisibility(View.GONE);
+                    break;
+                case DownloadManager.STATE_UNSTARTED:
+                    DownloadManager downloadManager = DownloadManager.getInstance();
+                    boolean autoDownload = downloadManager.isAuto();
+                    boolean dataSuspended = (MmsApp.getApplication().getTelephonyManager()
+                            .getDataState() == TelephonyManager.DATA_SUSPENDED);
+                    if (!dataSuspended) {
+                        mAttachmentInfoView.setVisibility(View.GONE);
+                        if (autoDownload) {
+                            mAttachmentStatusView.setText(R.string.new_mms_message);
+                            mAttachmentStatusSubView.setText(R.string.downloading);
+                            mAttachmentStatusSubView.setTextColor(Color.BLACK);
+                            mAttachmentInfoView.setVisibility(View.GONE);
+                            mDateView.setVisibility(View.GONE);
+                        } else {
+                            mAttachmentStatusSubView.setVisibility(View.GONE);
+                            mAttachmentStatusView.setText(R.string.new_mms_download);
+                        }
+                        break;
+                    }
+                case DownloadManager.STATE_UNKNOWN:
+                    mAttachmentStatusView.setVisibility(View.GONE);
+                    mAttachmentStatusSubView.setVisibility(View.GONE);
+                    break;
+                case DownloadManager.STATE_TRANSIENT_FAILURE:
+                case DownloadManager.STATE_PERMANENT_FAILURE:
+                default:
+                    mAttachmentInfoView.setVisibility(View.GONE);
+                    mAttachmentStatusView.setText(R.string.could_not_download);
+                    mAttachmentStatusSubView.setText(R.string.touch_to_download);
+                    mAttachmentStatusSubView.setTextColor(Color.RED);
+                    mErrorIndicator.setVisibility(View.VISIBLE);
+                    mDateView.setVisibility(View.GONE);
+                    break;
+            }
+        } else {
+            mAttachmentInfoView.setVisibility(View.GONE);
+            mAttachmentStatusView.setVisibility(View.GONE);
+            mAttachmentStatusSubView.setVisibility(View.GONE);
+        }
     }
 
     private CharSequence formateUnreadToBold(String content) {
-        SpannableStringBuilder buf = new SpannableStringBuilder(content);
-        if (mConversation.hasUnreadMessages()) {
-            buf.setSpan(STYLE_BOLD, 0, buf.length(),
-                    Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+        SpannableStringBuilder buf = null;
+        if (content != null) {
+            buf = new SpannableStringBuilder(content);
+            if (mConversation.hasUnreadMessages()) {
+                buf.setSpan(STYLE_BOLD, 0, buf.length(),
+                        Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+            }
         }
         return buf;
     }
@@ -473,7 +557,7 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
             if (cursor != null && cursor.moveToFirst()) {
                 isBurnMsg = (cursor.getInt(cursor.getColumnIndex(
                         RcsColumns.SmsRcsColumns.RCS_BURN))> RcsUtils.RCS_NOT_A_BURN_MESSAGE);
-           }
+            }
         } finally {
             if (cursor != null) {
                 cursor.close();

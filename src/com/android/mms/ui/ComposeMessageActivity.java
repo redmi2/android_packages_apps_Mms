@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  * Copyright (C) 2008 Esmertec AG.
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -93,7 +95,9 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.StateListDrawable;
+import android.media.AudioManager;
 import android.media.MediaFile;
+import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
@@ -391,6 +395,8 @@ public class ComposeMessageActivity extends Activity
 
     private static final String INTENT_MULTI_PICK_ACTION = "com.android.contacts.action.MULTI_PICK";
 
+    private static final String EXTRA_START_COMPOSE_FROM = "start_compose_from";
+
     private static String FILE_PATH_COLUMN = "_data";
     private static String BROADCAST_DATA_SCHEME = "file";
     private static String URI_SCHEME_CONTENT = "content";
@@ -612,7 +618,8 @@ public class ComposeMessageActivity extends Activity
     private static Drawable sDefaultContactImage;
     private static int sPrimaryColorDark;
     private Drawable mAvatarDrawable;
-    private int mActionBarColor;
+    private static int mActionBarColor;
+    private static int mSendContactColor;
 
     /* Begin add for RCS */
 
@@ -787,7 +794,7 @@ public class ComposeMessageActivity extends Activity
     }
 
     private void pickContacts(int mode, int requestCode) {
-        Intent intent = new Intent(this, MultiPickContactsActivity.class);
+        Intent intent = new Intent(INTENT_MULTI_PICK_ACTION, Contacts.CONTENT_URI);
         intent.putExtra(MultiPickContactsActivity.MODE, mode);
         startActivityForResult(intent, requestCode);
     }
@@ -912,6 +919,18 @@ public class ComposeMessageActivity extends Activity
                         switch (msgItem.mAttachmentType) {
                             case WorkingMessage.IMAGE:
                             case WorkingMessage.VIDEO:
+                                try {
+                                    Intent intent = new Intent(getContext(),
+                                            PlayVideoOrPicActivity.class);
+                                    intent.putExtra(PlayVideoOrPicActivity.VIDEO_PIC_TYPE,
+                                            msgItem.mAttachmentType);
+                                    intent.putExtra(PlayVideoOrPicActivity.VIDEO_PIC_PATH,
+                                            MessageUtils.getPath(getContext(), msgItem));
+                                    startActivity(intent);
+                                } catch (IOException e) {
+                                    Log.i(TAG,Log.getStackTraceString(e));
+                                }
+                                break;
                             case WorkingMessage.AUDIO:
                             case WorkingMessage.VCARD:
                             case WorkingMessage.SLIDESHOW:
@@ -2411,13 +2430,6 @@ public class ComposeMessageActivity extends Activity
         final Window window = ComposeMessageActivity.this.getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
 
-        View inflate = getLayoutInflater().inflate(R.layout.compose_message_activity, null);
-        mZoomGestureOverlayView = new ZoomGestureOverlayView(this);
-        mZoomGestureOverlayView.addZoomListener(this);
-        mZoomGestureOverlayView.addView(inflate);
-        mZoomGestureOverlayView.setEventsInterceptionEnabled(true);
-        mZoomGestureOverlayView.setGestureVisible(false);
-        setContentView(mZoomGestureOverlayView);
         setProgressBarVisibility(false);
         mIsRcsEnabled=MmsConfig.isRcsEnabled();
         mShowAttachIcon = getResources().getBoolean(R.bool.config_show_attach_icon_always);
@@ -2996,6 +3008,10 @@ public class ComposeMessageActivity extends Activity
 
         mConversation.markAsRead();
         mIsRunning = false;
+
+        if (mMMSAudioPlayer != null && mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+            mMMSAudioPlayer.pause();
+        }
     }
 
     @Override
@@ -3060,6 +3076,8 @@ public class ComposeMessageActivity extends Activity
         }
 
         super.onDestroy();
+
+        mMMSAudioPlayer.releaseMediaPlayer();
     }
 
     @Override
@@ -3236,7 +3254,16 @@ public class ComposeMessageActivity extends Activity
 
     private void goToConversationList() {
         finish();
-        startActivity(new Intent(this, ConversationList.class));
+        String currentClass = "";
+        Intent intent = getIntent();
+        if (intent != null) {
+            currentClass = intent.getStringExtra(EXTRA_START_COMPOSE_FROM);
+        }
+        if (NotificationConversationList.class.getSimpleName().equals(currentClass)) {
+            startActivity(new Intent(this, NotificationConversationList.class));
+        } else {
+            startActivity(new Intent(this, ConversationList.class));
+        }
     }
 
     private void hideRecipientEditor() {
@@ -3517,11 +3544,6 @@ public class ComposeMessageActivity extends Activity
             }
         }
 
-        if ((isSubjectEditorVisible() && mSubjectTextEditor.isFocused())
-                || !mWorkingMessage.hasSlideshow()) {
-            menu.add(0, MENU_IMPORT_TEMPLATE, 0, R.string.import_message_template);
-        }
-
         if (getRecipients().size() > 1) {
             menu.add(0, MENU_GROUP_PARTICIPANTS, 0, R.string.menu_group_participants);
         }
@@ -3560,8 +3582,6 @@ public class ComposeMessageActivity extends Activity
             }
         }
 
-        menu.add(0, MENU_PREFERENCES, 0, R.string.menu_preferences).setIcon(
-                android.R.drawable.ic_menu_preferences);
 
         if (LogTag.DEBUG_DUMP) {
             menu.add(0, MENU_DEBUG_DUMP, 0, R.string.menu_debug_dump);
@@ -4360,11 +4380,14 @@ public class ComposeMessageActivity extends Activity
         Bundle bundle = data.getExtras().getBundle("result");
         final Set<String> keySet = bundle.keySet();
         final int recipientCount = (keySet != null) ? keySet.size() : 0;
+        final Bundle numberBundle = data.getExtras().getBundle("result_only_number");
+        final Set<String> numberKeySet = numberBundle.keySet();
+        final int numberRecipientCount = (numberKeySet != null) ? numberKeySet.size() : 0;
 
         // If total recipients count > recipientLimit,
         // then forbid add reipients to RecipientsEditor
         final int recipientLimit = MmsConfig.getRecipientLimit();
-        int totalRecipientsCount = mExistsRecipientsCount + recipientCount;
+        int totalRecipientsCount = mExistsRecipientsCount + recipientCount + numberRecipientCount;
         if (recipientLimit != Integer.MAX_VALUE && totalRecipientsCount > recipientLimit) {
             new AlertDialog.Builder(this)
                     .setMessage(getString(R.string.too_many_recipients, totalRecipientsCount,
@@ -4379,7 +4402,13 @@ public class ComposeMessageActivity extends Activity
                             if (newPickRecipientsCount <= 0) {
                                 return;
                             }
-                            processAddRecipients(keySet, newPickRecipientsCount);
+                            if (newPickRecipientsCount >= numberRecipientCount) {
+                                inputNumbers(numberBundle, numberKeySet, numberRecipientCount);
+                                newPickRecipientsCount -= numberRecipientCount;
+                                processAddRecipients(keySet, newPickRecipientsCount);
+                            } else {
+                                inputNumbers(numberBundle, numberKeySet, newPickRecipientsCount);
+                            }
                         }
                     })
                     .setNegativeButton(android.R.string.cancel, null)
@@ -4387,7 +4416,23 @@ public class ComposeMessageActivity extends Activity
             return;
         }
 
+        inputNumbers(numberBundle, numberKeySet, numberRecipientCount);
         processAddRecipients(keySet, recipientCount);
+    }
+
+    private void inputNumbers(final Bundle bundle,
+                              final Set<String> keySet,
+                              final int numberRecipientCount) {
+        Iterator<String> it = keySet.iterator();
+        int i = 0;
+        while (it.hasNext()) {
+            i++;
+            String number = bundle.getStringArray(it.next())[0];
+            mRecipientsEditor.append(number+",");
+            if (i == numberRecipientCount) {
+                break;
+            }
+        }
     }
 
     private Uri[] buildUris(final Set<String> keySet, final int newPickRecipientsCount) {
@@ -4774,7 +4819,6 @@ public class ComposeMessageActivity extends Activity
         if (Intent.ACTION_SEND.equals(action)) {
             if (extras.containsKey(Intent.EXTRA_STREAM)) {
                 final Uri uri = (Uri)extras.getParcelable(Intent.EXTRA_STREAM);
-
                 boolean isRcsAvailable = mIsRcsEnabled && RcsUtils.isRcsOnline();
                 if (isRcsAvailable && uri.toString().contains("as_vcard")) {
                     String vcardPath = RcsUtils.createVcardFile(this, uri);
@@ -5292,6 +5336,15 @@ public class ComposeMessageActivity extends Activity
      * Initialize all UI elements from resources.
      */
     private void initResourceRefs() {
+
+        View inflate = getLayoutInflater().inflate(R.layout.compose_message_activity, null);
+        mZoomGestureOverlayView = new ZoomGestureOverlayView(this);
+        mZoomGestureOverlayView.addZoomListener(this);
+        mZoomGestureOverlayView.addView(inflate);
+        mZoomGestureOverlayView.setEventsInterceptionEnabled(true);
+        mZoomGestureOverlayView.setGestureVisible(false);
+        setContentView(mZoomGestureOverlayView);
+
         mToolBar = (Toolbar) findViewById(R.id.toolbar);
         setActionBar(mToolBar);
         if (sPrimaryColorDark == 0) {
@@ -5364,6 +5417,10 @@ public class ComposeMessageActivity extends Activity
         }
         mTextEditor.setOnEditorActionListener(this);
         mTextEditor.addTextChangedListener(mTextEditorWatcher);
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+        float mTextSize = sp.getFloat(MessagingPreferenceActivity.ZOOM_MESSAGE,
+                MmsConfig.DEFAULT_FONT_SIZE);
+        mTextEditor.setTextSize((int) mTextSize);
         if (getResources().getInteger(R.integer.limit_count) == 0) {
             mTextEditor.setFilters(new InputFilter[] {
                     new LengthFilter(MmsConfig.getMaxTextLimit())});
@@ -5512,6 +5569,7 @@ public class ComposeMessageActivity extends Activity
         mMsgListAdapter.setIsMsimIccCardActived(MessageUtils.isMsimIccCardActive());
         mMsgListAdapter.setOnDataSetChangedListener(mDataSetChangedListener);
         mMsgListAdapter.setMsgListItemHandler(mMessageListItemHandler);
+        mMsgListAdapter.setMMSAudioPlayer(mMMSAudioPlayer);
         mMsgListView.setAdapter(mMsgListAdapter);
         mMsgListView.setItemsCanFocus(false);
         mMsgListView.setVisibility((mSendDiscreetMode || MessageUtils.isMailboxMode())
@@ -6337,6 +6395,7 @@ public class ComposeMessageActivity extends Activity
         @Override
         protected void onDeleteComplete(int token, Object cookie, int result) {
             super.onDeleteComplete(token, cookie, result);
+            updateThreadAttachType();
             switch(token) {
                 case ConversationList.DELETE_CONVERSATION_TOKEN:
                     mConversation.setMessageCount(0);
@@ -6382,6 +6441,15 @@ public class ComposeMessageActivity extends Activity
             MmsWidgetProvider.notifyDatasetChanged(getApplicationContext());
         }
     }
+    private void updateThreadAttachType() {
+        long threadId = mConversation.getThreadId();
+        String attachmentInfo = Conversation.getAttachmentInfo(getContext(),
+                Conversation.getLatestMessageAttachmentUri(getContext(), threadId));
+        Uri uri = Conversation.getUri(threadId);
+        ContentValues values = new ContentValues();
+        values.put(Telephony.Threads.ATTACHMENT_INFO, attachmentInfo);
+        getContext().getContentResolver().update(uri, values, null, null);
+    }
 
     @Override
     public void onUpdate(final Contact updated) {
@@ -6421,6 +6489,17 @@ public class ComposeMessageActivity extends Activity
     public static Intent createIntent(Context context, long threadId) {
         Intent intent = new Intent(context, ComposeMessageActivity.class);
 
+        if (threadId > 0) {
+            intent.setData(Conversation.getUri(threadId));
+        }
+
+        return intent;
+    }
+
+    public static Intent createIntent(Context context, long threadId, String from) {
+        Intent intent = new Intent(context, ComposeMessageActivity.class);
+
+        intent.putExtra(EXTRA_START_COMPOSE_FROM, from);
         if (threadId > 0) {
             intent.setData(Conversation.getUri(threadId));
         }
@@ -6780,7 +6859,11 @@ public class ComposeMessageActivity extends Activity
                 if (!mDeleteLockedMessages && mSelectedLockedMsg.contains(uri)) {
                     continue;
                 }
-                SqliteWrapper.delete(getContext(), mContentResolver, uri, null,
+                mBackgroundQueryHandler.startDelete(
+                        WORK_TOKEN_DELETE,
+                        mConversation.getThreadId(),
+                        uri,
+                        null,
                         null);
             }
             mDeleteLockedMessages = false;
@@ -9264,6 +9347,7 @@ public class ComposeMessageActivity extends Activity
 
         mAccentColor = palette.mPrimaryColor;
         mStatusBarColor = palette.mSecondaryColor;
+        mSendContactColor = mAccentColor;
     }
 
     private void updateThemeColors(int accentColor, int statusBarColor) {
@@ -9297,4 +9381,144 @@ public class ComposeMessageActivity extends Activity
     private void setActionBarColor(int color) {
         mActionBarColor = color;
     }
+
+    public static int getSendContactColor() {
+        return mSendContactColor;
+    }
+
+    /* Following code used to support inline play Audio, while not
+    play audio by choosing another application */
+
+    public interface IMMSUpdateProgressBar {
+        void update(String time, int pos);
+        void reset();
+    }
+
+    public interface IMMSAudioPlayer {
+        void prepare(String path, ImageView view, int color);
+        void setUpdateCallback(IMMSUpdateProgressBar callback);
+        void pause();
+        void releaseMediaPlayer();
+    }
+
+    private IMMSAudioPlayer mMMSAudioPlayer = new MMSAudioPlayer();
+    private MediaPlayer mMediaPlayer;
+    private boolean mMediaPlayerPrepared = false;
+    private IMMSUpdateProgressBar mUpdateCallBack;
+    private String mCurPlayUrl;
+    private final int POST_DELAY = 100;
+    private final int MAX_DURATION = 100;
+
+    private class MMSAudioPlayer implements IMMSAudioPlayer {
+        private ImageView mPlayPause;
+        private Drawable mPlayPauseDrawable;
+        private int mColor;
+
+        /**
+         * Check current MediaPlayer status, according which to determine
+         * whether need init player or play/pause audio.
+         */
+        @Override
+        public void prepare(String path, ImageView view, int color) {
+            mPlayPause = view;
+            mColor = color;
+            if (path == null) return;
+            if (mCurPlayUrl == null) {
+                mCurPlayUrl = path;
+            }
+            if (mMediaPlayerPrepared) {
+                if (path.equals(mCurPlayUrl)) {
+                    if (mMediaPlayer.isPlaying()) {
+                        pause();
+                    } else {
+                        play();
+                    }
+                } else {
+                    releaseMediaPlayer();
+                    initMediaPlayer(path);
+                }
+            } else {
+                initMediaPlayer(path);
+            }
+            mCurPlayUrl = path;
+        }
+
+        private void play() {
+            mMediaPlayer.start();
+            mHandler.post(mUpdateThread);
+            mPlayPauseDrawable = getResources().getDrawable(R.drawable.audio_pause);
+            mPlayPauseDrawable.setTint(mColor);
+            mPlayPause.setBackground(mPlayPauseDrawable);
+        }
+
+        @Override
+        public void pause() {
+            mMediaPlayer.pause();
+            mPlayPauseDrawable = getResources().getDrawable(R.drawable.audio_play);
+            mPlayPauseDrawable.setTint(mColor);
+            mPlayPause.setBackground(mPlayPauseDrawable);
+        }
+
+        @Override
+        public void setUpdateCallback(IMMSUpdateProgressBar callback) {
+            mUpdateCallBack = callback;
+        }
+
+        private void initMediaPlayer(final String path) {
+            try {
+                mMediaPlayer = new MediaPlayer();
+                mMediaPlayer.setDataSource(getApplicationContext(), Uri.parse(path));
+                mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mp) {
+                        mMediaPlayerPrepared = true;
+                        play();
+                    }
+                });
+                mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                    @Override
+                    public void onCompletion(MediaPlayer mp) {
+                        mUpdateCallBack.reset();
+                        mPlayPauseDrawable = getResources().getDrawable(R.drawable.audio_play);
+                        mPlayPauseDrawable.setTint(mColor);
+                        mPlayPause.setBackground(mPlayPauseDrawable);
+                        mHandler.removeCallbacks(mUpdateThread);
+                    }
+                });
+                mMediaPlayer.prepareAsync();
+            } catch (Exception e) {
+                Log.w(TAG, "init MediaPlayer error:" + e);
+            }
+        }
+
+        @Override
+        public void releaseMediaPlayer() {
+            if (mMediaPlayer != null) {
+                mMediaPlayer.release();
+                mMediaPlayer = null;
+                mMediaPlayerPrepared = false;
+            }
+        }
+    }
+
+    private Runnable mUpdateThread = new Runnable() {
+        int pos;
+        int time;
+
+        @Override
+        public void run() {
+            if (mMediaPlayer == null) {
+                mHandler.removeCallbacks(mUpdateThread);
+                return;
+            }
+            pos = mMediaPlayer.getCurrentPosition();
+            time = mMediaPlayer.getDuration();
+            if (time != 0) {
+                mUpdateCallBack.update(MessageUtils.getDisplayTime(pos), pos * MAX_DURATION / time);
+            }
+            mHandler.postDelayed(mUpdateThread, POST_DELAY);
+        }
+    };
+
 }

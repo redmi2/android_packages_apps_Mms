@@ -85,10 +85,43 @@
                     android:textSize="16sp"
                     android:visibility="gone"/>
 
+                <TextView android:id="@+id/mms_subject_text"
+                    android:autoLink="all"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:linksClickable="false"
+                    android:paddingStart="@dimen/message_item_text_padding_left_right"
+                    android:gravity="start"
+                    android:fontFamily="Roboto Medium"
+                    android:textColor="@color/black"
+                    android:textSize="14sp"/>
                 <ViewStub android:id="@+id/mms_layout_view_stub"
                     android:layout="@layout/mms_layout_view"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="14dp"
+                    android:layout_marginLeft="12dp"
+                    android:layout_marginRight="12dp"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
+                <ViewStub android:id="@+id/mms_layout_view_audio_play_stub"
+                    android:layout="@layout/mms_layout_view_audio_play"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="14dp"
+                    android:layout_marginLeft="20dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
+                <ViewStub android:id="@+id/mms_layout_view_video_pic_play_stub"
+                    android:layout="@layout/mms_layout_view_video_pic_play"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="14dp"
+                    android:layout_marginLeft="12dp"
+                    android:layout_marginRight="12dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
+
                 <TextView android:id="@+id/text_view_buttom"
                     android:autoLink="all"
                     android:paddingStart="@dimen/message_item_text_padding_left_right"
@@ -108,6 +141,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="4dip"
                     android:paddingEnd="@dimen/message_item_text_padding_left_right"
+                    android:paddingTop="@dimen/message_item_text_padding_top"
                     android:gravity="end"
                     android:orientation="horizontal" >
 
@@ -125,6 +159,15 @@
                         android:layout_height="wrap_content"
                         android:paddingEnd="3dip"
                         android:src="@drawable/ic_sms_mms_delivered"
+                        android:visibility="gone" />
+
+                    <TextView android:id="@+id/error_info"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingEnd="3dip"
+                        android:text="@string/conversation_list_send_fail_text"
+                        android:textColor="@color/conversation_item_fail_text_color"
+                        android:textSize="12sp"
                         android:visibility="gone" />
 
                     <ImageView

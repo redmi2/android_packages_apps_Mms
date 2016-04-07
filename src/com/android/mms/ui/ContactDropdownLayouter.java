@@ -57,11 +57,13 @@ public class ContactDropdownLayouter extends DropdownChipLayouter {
     private Context mContext;
     private RecipientEntry mEntry;
     private Drawable mDefaultContactImage;
+    private Drawable mDefaultGroupContactImage;
 
     public ContactDropdownLayouter(final LayoutInflater inflater, final Context context) {
         super(inflater, context);
         mContext = context;
         mDefaultContactImage = mContext.getResources().getDrawable(R.drawable.stranger);
+        mDefaultGroupContactImage = context.getResources().getDrawable(R.drawable.group_avatar);
     }
 
     /**
@@ -83,7 +85,8 @@ public class ContactDropdownLayouter extends DropdownChipLayouter {
 
     @Override
     protected void bindTextToView(CharSequence text, TextView view) {
-        if (mEntry.getContactId() == ContactRecipientEntryUtils.CONTACT_ID_SENDTO_DESTINATION) {
+        if (mEntry.getContactId()
+                == ContactRecipientEntryUtils.CONTACT_ID_SENDTO_DESTINATION) {
             if (view.getId() == android.R.id.title) {
                 final BidiFormatter bidiFormatter = BidiFormatter.getInstance();
                 final String displayName = bidiFormatter.unicodeWrap(
@@ -92,6 +95,13 @@ public class ContactDropdownLayouter extends DropdownChipLayouter {
                 super.bindTextToView(displayName, view);
             } else {
                 view.setVisibility(View.GONE);
+            }
+        } else if (mEntry.getContactId()
+                == ContactRecipientEntryUtils.CONTACT_ID_GROUP_DESTINATION) {
+            if (view.getId() == android.R.id.text2) {
+                view.setVisibility(View.GONE);
+            } else {
+                super.bindTextToView(text, view);
             }
         } else {
             super.bindTextToView(text, view);
@@ -102,34 +112,46 @@ public class ContactDropdownLayouter extends DropdownChipLayouter {
     protected void bindIconToView(boolean showImage, RecipientEntry entry, ImageView view,
             AdapterType type) {
         if (showImage && view.getId() == android.R.id.icon) {
+            Drawable avatarDrawable;
             Drawable backgroundDrawable;
-            String destination = entry.getDestination();
-            Contact contact = Contact.get(destination, false);
-            Drawable avatarDrawable = contact.getAvatar(mContext, mDefaultContactImage);
-            if (contact.existsInDatabase()) {
-                view.setScaleType(ImageButton.ScaleType.FIT_CENTER);
-                if (avatarDrawable.equals(mDefaultContactImage)) {
-                    if (LetterTileDrawable.isEnglishLetterString(contact.getNameForAvatar())) {
-                        avatarDrawable = MaterialColorMapUtils
-                                .getLetterTitleDraw(mContext, contact);
-                    } else {
-                        backgroundDrawable = MaterialColorMapUtils.getLetterTitleDraw(mContext,
-                                contact);
-                        view.setBackgroundDrawable(backgroundDrawable);
-                        view.setScaleType(ImageButton.ScaleType.CENTER);
-                    }
-                } else {
-                    view.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                    view.setBackgroundDrawable(null);
+            if (mEntry.getContactId()
+                    == ContactRecipientEntryUtils.CONTACT_ID_GROUP_DESTINATION) {
+                String groupName = mEntry.getDisplayName();
+                if (LetterTileDrawable.isEnglishLetterString(groupName)) {
+                    backgroundDrawable = MaterialColorMapUtils.getLetterTitleDraw(mContext, null);
+                    view.setBackgroundDrawable(backgroundDrawable);
                 }
-
-                view.setImageDrawable(avatarDrawable);
-            } else {
-                // identify it is phone number or email address,handle it respectively
                 view.setScaleType(ImageButton.ScaleType.CENTER);
-                view.setBackgroundResource(R.drawable.send_to_avatar_background);
+                view.setImageDrawable(mDefaultGroupContactImage);
+            } else {
+                String destination = entry.getDestination();
+                Contact contact = Contact.get(destination, false);
+                avatarDrawable = contact.getAvatar(mContext, mDefaultContactImage);
+                if (contact.existsInDatabase()) {
+                    view.setScaleType(ImageButton.ScaleType.FIT_CENTER);
+                    if (avatarDrawable.equals(mDefaultContactImage)) {
+                        if (LetterTileDrawable.isEnglishLetterString(contact.getNameForAvatar())) {
+                            avatarDrawable = MaterialColorMapUtils
+                                    .getLetterTitleDraw(mContext, contact);
+                        } else {
+                            backgroundDrawable = MaterialColorMapUtils.getLetterTitleDraw(mContext,
+                                    contact);
+                            view.setBackgroundDrawable(backgroundDrawable);
+                            view.setScaleType(ImageButton.ScaleType.CENTER);
+                        }
+                    } else {
+                        view.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                        view.setBackgroundDrawable(null);
+                    }
+
+                    view.setImageDrawable(avatarDrawable);
+                } else {
+                    // identify it is phone number or email address,handle it respectively
+                    view.setScaleType(ImageButton.ScaleType.CENTER);
+                    view.setBackgroundResource(R.drawable.send_to_avatar_background);
+                }
+                view.setImageDrawable(avatarDrawable);
             }
-            view.setImageDrawable(avatarDrawable);
             view.setVisibility(View.VISIBLE);
         } else {
             super.bindIconToView(showImage, entry, view, type);

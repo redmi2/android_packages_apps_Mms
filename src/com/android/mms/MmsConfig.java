@@ -62,6 +62,7 @@ public class MmsConfig {
     public static final String KILO_BYTE = "KB";
     public static final String MEGA_BYTE = "MB";
     public static final int KB_IN_BYTES = 1024;
+    public static final float DEFAULT_FONT_SIZE = 14.0f;
 
     /**
      * Whether to hide MMS functionality from the user (i.e. SMS only).
@@ -87,6 +88,7 @@ public class MmsConfig {
     private static int mMinimumSlideElementDuration = 7;        // default to 7 sec
     private static boolean mNotifyWapMMSC = false;
     private static boolean mAllowAttachAudio = true;
+    private static boolean mZoomMessage = true;
 
     // If mEnableMultipartSMS is true, long sms messages are always sent as multi-part sms
     // messages, with no checked limit on the number of segments.
@@ -533,4 +535,11 @@ public class MmsConfig {
         return MMS_DESTINATION;
     }
 
+    public static void setZoomMessage(boolean zoom) {
+        mZoomMessage = zoom;
+    }
+
+    public static boolean getZoomMessage() {
+        return mZoomMessage;
+    }
 }

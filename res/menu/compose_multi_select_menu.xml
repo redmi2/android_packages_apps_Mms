@@ -37,6 +37,11 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         android:showAsAction="always|withText"
         android:title="@string/menu_forward"/>
     <item
+        android:id="@+id/copy_text"
+        android:showAsAction="always|withText"
+        android:icon="@drawable/copy"
+        android:title="@string/copy_message_text"/>
+    <item
         android:id="@+id/delete"
         android:icon="@drawable/delete"
         android:showAsAction="always|withText"
@@ -59,10 +64,6 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 android:id="@+id/copy_to_sim"
                 android:showAsAction="never|withText"
                 android:title="@string/operation_to_card_memory"/>
-            <item
-                android:id="@+id/copy_text"
-                android:showAsAction="never|withText"
-                android:title="@string/copy_message_text"/>
             <item
                 android:id="@+id/detail"
                 android:showAsAction="never|withText"

@@ -332,6 +332,7 @@ public class SmsReceiverService extends Service {
                     SmsMessageSender sender = new SmsSingleRecipientSender(this,
                             address, msgText, threadId, status == Sms.STATUS_PENDING,
                             msgUri, subId, isExpectMore);
+                    MessageUtils.markAsNotificationThreadIfNeed(this, threadId, address);
 
                     if(priority != -1){
                         ((SmsSingleRecipientSender)sender).setPriority(priority);
@@ -790,6 +791,7 @@ public class SmsReceiverService extends Service {
         ContentResolver resolver = context.getContentResolver();
 
         Uri insertedUri = SqliteWrapper.insert(context, resolver, Inbox.CONTENT_URI, values);
+        MessageUtils.markAsNotificationThreadIfNeed(context, threadId, address);
 
         // Now make sure we're not over the limit in stored messages
         Recycler.getSmsRecycler().deleteOldMessagesByThreadId(context, threadId);

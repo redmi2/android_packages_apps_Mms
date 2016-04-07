@@ -186,6 +186,8 @@ public class WorkingMessage {
     private final MessageStatusListener mStatusListener;
     private List<String> mWorkingRecipients;
 
+    private static Uri mVcardUri = null;
+
     // Message sizes in Outbox
     private static final String[] MMS_OUTBOX_PROJECTION = {
         Mms._ID,            // 0
@@ -474,6 +476,7 @@ public class WorkingMessage {
         }
         // mark this message as no longer having an attachment
         updateState(HAS_ATTACHMENT, false, notify);
+        MessageUtils.deleteVcardFile(mVcardUri);
         if (notify) {
             // Tell ComposeMessageActivity (or other listener) that the attachment has changed.
             // In the case of ComposeMessageActivity, it will remove its attachment panel because
@@ -521,6 +524,9 @@ public class WorkingMessage {
         }
         int result = OK;
         SlideshowEditor slideShowEditor = new SlideshowEditor(mActivity, mSlideshow);
+        if (dataUri.toString().endsWith(MessageUtils.VCF)) {
+            mVcardUri = dataUri;
+        }
 
         // Special case for deleting a slideshow. When ComposeMessageActivity gets told to
         // remove an attachment (search for AttachmentEditor.MSG_REMOVE_ATTACHMENT), it calls
@@ -714,6 +720,7 @@ public class WorkingMessage {
      */
     private int appendMedia(int type, Uri uri, SlideshowEditor slideShowEditor) {
         int result = OK;
+        MessageUtils.deleteVcardFile(mVcardUri);
 
         // If we're changing to text, just bail out.
         if (type == TEXT) {
@@ -1583,6 +1590,7 @@ public class WorkingMessage {
                         sendReq.setTo(encodedNumbers);
                     }
                 }
+                MessageUtils.markAsNotificationThreadIfNeed(mActivity, threadId, newAddress);
             }
             newMessage = mmsUri == null;
             if (newMessage) {
@@ -1673,6 +1681,7 @@ public class WorkingMessage {
 
         MessageSender sender = new MmsMessageSender(mActivity, mmsUri,
                 slideshow.getCurrentMessageSize(), mCurrentConvSubId);
+        MessageUtils.deleteVcardFile(mVcardUri);
         try {
             if (!sender.sendMessage(threadId)) {
                 // The message was sent through SMS protocol, we should

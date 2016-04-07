@@ -19,6 +19,7 @@
 
 package com.android.mms.ui;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -32,6 +33,7 @@ import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.content.SharedPreferences;
 import android.database.sqlite.SqliteWrapper;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -49,6 +51,7 @@ import android.provider.Browser;
 import android.provider.ContactsContract.Profile;
 import android.provider.Telephony.Sms;
 import android.provider.Telephony.Mms;
+import android.preference.PreferenceManager;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SubscriptionManager;
 import android.telephony.SubscriptionInfo;
@@ -64,6 +67,7 @@ import android.text.style.TextAppearanceSpan;
 import android.text.style.URLSpan;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -72,10 +76,10 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Checkable;
 import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -134,6 +138,8 @@ public class MessageListItem extends ZoomMessageListItem implements
     private static final int ALPHA_TRANSPARENT = 0;
     private static final int KILOBYTE = 1024;
 
+    private static final String AUDIO_DURATION_INITIAL_STATUS = "00:00";
+
     static final int MSG_LIST_EDIT    = 1;
     static final int MSG_LIST_PLAY    = 2;
     static final int MSG_LIST_DETAILS = 3;
@@ -144,6 +150,7 @@ public class MessageListItem extends ZoomMessageListItem implements
     private ImageView mImageView;
     private ImageView mLockedIndicator;
     private ImageView mDeliveredIndicator;
+    private TextView mSendFailView;
     private ImageView mDetailsIndicator;
     private ImageView mSimIndicatorView;
     private ImageButton mSlideShowButton;
@@ -171,6 +178,16 @@ public class MessageListItem extends ZoomMessageListItem implements
     private boolean mIsMsimIccCardActived = false;
     private int mManageMode;
     private int mBackgroundColor;
+
+    /**play audio views**/
+    private ImageView mPlayAudioButton;
+    private TextView mAudioDuration;
+    private ViewGroup mPlayAudioLayout;
+    private ProgressBar mAudioPlayProgressBar;
+    private TextView mSubjectTextView;
+    private ViewGroup mPlayVideoPicLayout;
+    private ImageView mVideoPicThumbnail;
+    private ImageView mVideoPlayButton;
 
     /* Begin add for RCS */
     private static final int MEDIA_IS_DOWNING = 2;
@@ -236,6 +253,7 @@ public class MessageListItem extends ZoomMessageListItem implements
         mDateView = (TextView) findViewById(R.id.date_view);
         mLockedIndicator = (ImageView) findViewById(R.id.locked_indicator);
         mDeliveredIndicator = (ImageView) findViewById(R.id.delivered_indicator);
+        mSendFailView = (TextView) findViewById(R.id.error_info);
         mDetailsIndicator = (ImageView) findViewById(R.id.details_indicator);
         mAvatar = (QuickContactDivot) findViewById(R.id.avatar);
         mSimIndicatorView = (ImageView) findViewById(R.id.sim_indicator_icon);
@@ -244,13 +262,15 @@ public class MessageListItem extends ZoomMessageListItem implements
         mMmsLayout = (LinearLayout) findViewById(R.id.mms_layout_view_parent);
         mChecked = (CheckBox) findViewById(R.id.selected_check);
         mNameView = (TextView) findViewById(R.id.name_view);
+        mSubjectTextView = (TextView) findViewById(R.id.mms_subject_text);
         mAvatar.setOverlay(null);
 
         // Add the views to be managed by the zoom control
+        addZoomableTextView(mBodyTextView);
         addZoomableTextView(mBodyTopTextView);
         addZoomableTextView(mBodyButtomTextView);
-        addZoomableTextView(mDateView);
-        addZoomableTextView(mSimMessageAddress);
+        addZoomableTextView(mSubjectTextView);
+
     }
 
     // add for setting the background according to whether the item is selected
@@ -319,6 +339,15 @@ public class MessageListItem extends ZoomMessageListItem implements
         }
 
         customSIMSmsView();
+
+        if (MmsConfig.getZoomMessage()) {
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(mContext);
+            float mTextSize = sp.getFloat(MessagingPreferenceActivity.ZOOM_MESSAGE,
+                    MmsConfig.DEFAULT_FONT_SIZE);
+            mBodyTextView.setTextSize((int) mTextSize);
+            mSubjectTextView.setTextSize((int) mTextSize);
+        }
+
     }
 
     public void unbind() {
@@ -553,7 +582,7 @@ public class MessageListItem extends ZoomMessageListItem implements
                         backgroundDrawable = MaterialColorMapUtils.getLetterTitleDraw(mContext,
                                 contact);
                     }
-                    mBackgroundColor = contact.getContactColor();
+                    mBackgroundColor = ComposeMessageActivity.getSendContactColor();
                     mMessageBlock.getBackground().setTint(mBackgroundColor);
                 }
             }
@@ -701,7 +730,7 @@ public class MessageListItem extends ZoomMessageListItem implements
             }
             mDateView.setVisibility(View.VISIBLE);
         } else {
-            mDateView.setVisibility(View.INVISIBLE);
+            mDateView.setVisibility(View.GONE);
         }
 
         if (MmsConfig.isRcsVersion() && isRcsMessage()) {
@@ -829,10 +858,18 @@ public class MessageListItem extends ZoomMessageListItem implements
     @Override
     public void setImage(String name, Bitmap bitmap) {
         showMmsView(true);
+        setVideoPicThumbnail(bitmap);
+    }
 
+    private void setVideoPicThumbnail(Bitmap bitmap) {
         try {
-            mImageView.setImageBitmap(bitmap);
-            mImageView.setVisibility(VISIBLE);
+            if (mPlayVideoPicLayout != null && mVideoPicThumbnail != null && bitmap != null) {
+                ViewGroup.LayoutParams params = mPlayVideoPicLayout.getLayoutParams();
+                params.height = bitmap.getHeight();
+                params.width = bitmap.getWidth();
+                mPlayVideoPicLayout.setLayoutParams(params);
+                mVideoPicThumbnail.setImageBitmap(bitmap);
+            }
         } catch (java.lang.OutOfMemoryError e) {
             Log.e(TAG, "setImage: out of memory: ", e);
         }
@@ -860,9 +897,134 @@ public class MessageListItem extends ZoomMessageListItem implements
             if (MmsConfig.isRcsVersion() && mVCardImageView == null) {
                 mVCardImageView = (ImageView) findViewById(R.id.vcard_image_view);
             }
-            mMmsView.setVisibility(visible ? View.VISIBLE : View.GONE);
             mImageView.setVisibility(visible ? View.VISIBLE : View.GONE);
         }
+        switch (mMessageItem.mAttachmentType) {
+            case MessageItem.ATTACHMENT_TYPE_NOT_LOADED:
+                break;
+            case WorkingMessage.AUDIO:
+                initPlayAudioView(visible);
+                break;
+            case WorkingMessage.VIDEO:
+                initPlayVideoPicView(visible, WorkingMessage.VIDEO);
+                mVideoPlayButton.setVisibility(View.VISIBLE);
+                break;
+            case WorkingMessage.IMAGE:
+                initPlayVideoPicView(visible, WorkingMessage.IMAGE);
+                break;
+            default:
+                if (mMmsView != null) {
+                    mMmsView.setVisibility(visible ? View.VISIBLE : View.GONE);
+                }
+                break;
+        }
+
+        if (mMessageItem.mBody != null) {
+            mBodyTextView.setVisibility(View.VISIBLE);
+            mBodyTextView.setText(getContent(mMessageItem.mBody, mMessageItem.mTextContentType));
+        } else {
+            mBodyTextView.setVisibility(View.GONE);
+        }
+        if (mMessageItem.mSubject != null) {
+            mSubjectTextView.setVisibility(View.VISIBLE);
+            mSubjectTextView.setText(getSubject(mMessageItem.mSubject));
+        } else {
+            mSubjectTextView.setVisibility(View.GONE);
+        }
+        mDateView.setText(MessageUtils.formatTimeStampString(getContext(), mMessageItem.mDate));
+    }
+
+    private void initPlayAudioView(boolean visible) {
+        if (mPlayVideoPicLayout != null) {
+            mPlayVideoPicLayout.setVisibility(View.GONE);
+        }
+        if (mPlayAudioLayout == null) {
+            View stub = findViewById(R.id.mms_layout_view_audio_play_stub);
+            stub.setVisibility(View.VISIBLE);
+        }
+        boolean isSelf = Sms.isOutgoingFolder(mMessageItem.mBoxId);
+        final int audioPlayColor = isSelf ? ComposeMessageActivity.getSendContactColor()
+                : mContext.getResources().getColor(R.color.white);
+
+        mPlayAudioLayout = (ViewGroup) findViewById(R.id.play_audio_layout);
+        mAudioDuration = (TextView) mPlayAudioLayout.findViewById(R.id.play_audio_duration);
+        mAudioDuration.setText(AUDIO_DURATION_INITIAL_STATUS);
+        mAudioDuration.setTextColor(isSelf ? R.color.audio_duration_color_black
+                : R.color.audio_duration_c0lor_white);
+        mAudioPlayProgressBar = (ProgressBar) mPlayAudioLayout
+                .findViewById(R.id.play_audio_progressbar);
+        Drawable progressBarDrawable = mAudioPlayProgressBar.getProgressDrawable();
+        progressBarDrawable.setTint(audioPlayColor);
+
+        mPlayAudioButton = (ImageView) mPlayAudioLayout.findViewById(R.id.play_audio_button);
+        Drawable playDrawable = mContext.getResources().getDrawable(R.drawable.audio_play);
+        playDrawable.setTint(audioPlayColor);
+        mPlayAudioButton.setBackground(playDrawable);
+        mPlayAudioButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mMMSAudioPlayer.setUpdateCallback(mUpdateProgressBar);
+                try {
+                    mMMSAudioPlayer.prepare(MessageUtils.getPath(getContext(),
+                            mMessageItem), mPlayAudioButton, audioPlayColor);
+                } catch (IOException e) {
+                    Log.i(TAG, Log.getStackTraceString(e));
+                }
+            }
+        });
+        mPlayAudioLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
+        if (mMmsView != null) {
+            mMmsView.setVisibility(View.GONE);
+        }
+    }
+
+    private void initPlayVideoPicView(boolean visible, int type) {
+        if (mPlayAudioLayout != null) {
+            mPlayAudioLayout.setVisibility(View.GONE);
+        }
+        if (mPlayVideoPicLayout == null) {
+            View stub = findViewById(R.id.mms_layout_view_video_pic_play_stub);
+            stub.setVisibility(View.VISIBLE);
+        }
+        mPlayVideoPicLayout = (ViewGroup) findViewById(R.id.play_video_pic_layout);
+        mVideoPicThumbnail = (ImageView) mPlayVideoPicLayout.findViewById(R.id.mms_thumbnail);
+        mVideoPlayButton = (ImageView) mPlayVideoPicLayout
+                .findViewById(R.id.mms_playback_thumbnail);
+        mVideoPlayButton.setVisibility(type == WorkingMessage.VIDEO
+                ? View.VISIBLE : View.GONE);
+        mPlayVideoPicLayout.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendMessage(mMessageItem, MSG_LIST_PLAY);
+            }
+        });
+        mPlayVideoPicLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
+        if (mMmsView != null) {
+            mMmsView.setVisibility(View.GONE);
+        }
+    }
+
+    private String getContent(String body, String contentType) {
+        SpannableStringBuilder buf = new SpannableStringBuilder();
+        if (!TextUtils.isEmpty(body)) {
+            // Converts html to spannable if ContentType is "text/html".
+            if (contentType != null && ContentType.TEXT_HTML.equals(contentType)) {
+                buf.append("\n");
+                buf.append(Html.fromHtml(body));
+            } else {
+                buf.append(body);
+            }
+        }
+        return buf.toString();
+    }
+
+    private String getSubject(String subject) {
+        SpannableStringBuilder buf = new SpannableStringBuilder();
+        if (!TextUtils.isEmpty(subject)) {
+            String str = mContext.getResources().getString(R.string.inline_subject, subject);
+            buf.append(str.substring(1, str.length() - 1));
+        }
+        return buf.toString();
     }
 
     private void inflateDownloadControls() {
@@ -923,20 +1085,12 @@ public class MessageListItem extends ZoomMessageListItem implements
             Log.d(TAG, "subId: " + subId + " displayName " + displayName);
         }
 
-        boolean hasSubject = !TextUtils.isEmpty(subject);
-        if (hasSubject) {
-            buf.append(mContext.getResources().getString(R.string.inline_subject, subject));
-        }
-
         if (!TextUtils.isEmpty(body)) {
             // Converts html to spannable if ContentType is "text/html".
             if (contentType != null && ContentType.TEXT_HTML.equals(contentType)) {
                 buf.append("\n");
                 buf.append(Html.fromHtml(body));
             } else {
-                if (hasSubject) {
-                    buf.append(" - ");
-                }
                 buf.append(body);
             }
         }
@@ -961,7 +1115,6 @@ public class MessageListItem extends ZoomMessageListItem implements
     private void drawPlaybackButton(MessageItem msgItem) {
         switch (msgItem.mAttachmentType) {
             case WorkingMessage.SLIDESHOW:
-            case WorkingMessage.AUDIO:
             case WorkingMessage.VIDEO:
                 // Show the 'Play' button and bind message info on it.
                 mSlideShowButton.setTag(msgItem);
@@ -1065,8 +1218,9 @@ public class MessageListItem extends ZoomMessageListItem implements
         // delivery report was turned on when the message was sent. Yes, it's confusing!
         if ((msgItem.isOutgoingMessage() && msgItem.isFailedMessage()) ||
                 msgItem.mDeliveryStatus == MessageItem.DeliveryStatus.FAILED) {
-            mDeliveredIndicator.setImageResource(R.drawable.ic_list_alert_sms_failed);
-            mDeliveredIndicator.setVisibility(View.VISIBLE);
+            mSendFailView.setVisibility(View.VISIBLE);
+            mDateView.setVisibility(View.GONE);
+            mDeliveredIndicator.setVisibility(View.GONE);
         } else if (msgItem.isSms() &&
                 msgItem.mDeliveryStatus == MessageItem.DeliveryStatus.RECEIVED) {
             mDeliveredIndicator.setImageResource(R.drawable.ic_sms_mms_delivered);
@@ -1123,13 +1277,7 @@ public class MessageListItem extends ZoomMessageListItem implements
     @Override
     public void setVideoThumbnail(String name, Bitmap bitmap) {
         showMmsView(true);
-
-        try {
-            mImageView.setImageBitmap(bitmap);
-            mImageView.setVisibility(VISIBLE);
-        } catch (java.lang.OutOfMemoryError e) {
-            Log.e(TAG, "setVideo: out of memory: ", e);
-        }
+        setVideoPicThumbnail(bitmap);
     }
 
     @Override
@@ -1578,4 +1726,26 @@ public class MessageListItem extends ZoomMessageListItem implements
         DownloadManager.getInstance().markState(
                  mMessageItem.mMessageUri, DownloadManager.STATE_PRE_DOWNLOADING);
     }
+
+    private ComposeMessageActivity.IMMSAudioPlayer mMMSAudioPlayer;
+
+    public void setMMSAudioPlayer(ComposeMessageActivity.IMMSAudioPlayer mmsAudioPlayer) {
+        mMMSAudioPlayer = mmsAudioPlayer;
+    }
+
+    private ComposeMessageActivity.IMMSUpdateProgressBar mUpdateProgressBar =
+            new ComposeMessageActivity.IMMSUpdateProgressBar() {
+
+                @Override
+                public void update(String time, int pos) {
+                    mAudioDuration.setText(time);
+                    mAudioPlayProgressBar.setProgress(pos);
+                }
+
+                @Override
+                public void reset() {
+                    mAudioDuration.setText(AUDIO_DURATION_INITIAL_STATUS);
+                    mAudioPlayProgressBar.setProgress(0);
+                }
+            };
 }

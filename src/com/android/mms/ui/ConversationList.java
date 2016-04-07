@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  * Copyright (C) 2008 Esmertec AG.
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -49,6 +51,7 @@ import android.provider.ContactsContract.Contacts;
 import android.provider.Telephony;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.Threads;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.ContextMenu;
@@ -83,6 +86,9 @@ import com.android.mms.data.ContactList;
 import com.android.mms.data.Conversation;
 import com.android.mms.data.Conversation.ConversationQueryHandler;
 import com.android.mms.data.RecipientIdCache;
+import com.android.mms.LogTag;
+import com.android.mms.MmsConfig;
+import com.android.mms.R;
 import com.android.mms.rcs.FavouriteMessageList;
 import com.android.mms.rcs.RcsUtils;
 import com.android.mms.rcs.RcsSelectionMenu;
@@ -115,11 +121,13 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     private static final boolean DEBUG = false;
     private static final boolean DEBUGCLEANUP = true;
 
-    private static final int THREAD_LIST_QUERY_TOKEN       = 1701;
-    private static final int UNREAD_THREADS_QUERY_TOKEN    = 1702;
-    public static final int DELETE_CONVERSATION_TOKEN      = 1801;
-    public static final int HAVE_LOCKED_MESSAGES_TOKEN     = 1802;
-    private static final int DELETE_OBSOLETE_THREADS_TOKEN = 1803;
+    public static final int THREAD_LIST_QUERY_TOKEN                 = 1701;
+    public static final int UNREAD_THREADS_QUERY_TOKEN              = 1702;
+    private static final int NOTIFICATION_THREAD_QUERY_TOKEN        = 1703;
+    private static final int UNREAD_NOTIFICATION_THREAD_QUERY_TOKEN = 1704;
+    public static final int DELETE_CONVERSATION_TOKEN               = 1801;
+    public static final int HAVE_LOCKED_MESSAGES_TOKEN              = 1802;
+    private static final int DELETE_OBSOLETE_THREADS_TOKEN          = 1803;
 
     // IDs of the context menu items for the list of conversations.
     public static final int MENU_DELETE               = 0;
@@ -129,7 +137,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
 
     public static final int COLUMN_ID = 0;
 
-    private ThreadListQueryHandler mQueryHandler;
+    public ThreadListQueryHandler mQueryHandler;
     private ConversationListAdapter mListAdapter;
     private SharedPreferences mPrefs;
     private Handler mHandler;
@@ -157,6 +165,11 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     private static long mLastDeletedThread = -1;
     private boolean mMultiChoiceMode = false;
 
+    private ViewGroup mNotificationView;
+    private TextView mNotificationLabel;
+    private TextView mNotificationDate;
+    private TextView mNotificationSubject;
+
     /* Begin add for RCS */
     private ProgressDialog mSaveOrBackProgressDialog = null;
     private ProgressDialog mStartSaveProgressDialog = null;
@@ -180,7 +193,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     private static String GROUP_CHAT_ID = "groupChatId";
     private static String GROUP_CHAT = "GroupChat";
     private static final String CREATE_GROUP_CHAT = "com.suntek.rcs.action.CREATR_GROUP_CHAT";
-    private static final String NOT_OBSOLETE = "_id IN (SELECT DISTINCT thread_id FROM sms where "+
+    public static final String NOT_OBSOLETE = "_id IN (SELECT DISTINCT thread_id FROM sms where "+
                             "thread_id NOT NULL UNION SELECT DISTINCT thread_id FROM pdu where "+
                             "thread_id NOT NULL)";
     private GroupChatManagerReceiver groupReceiver = new GroupChatManagerReceiver(
@@ -257,6 +270,12 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         // Cache recipients information in a background thread in advance.
         RecipientIdCache.init(getApplication());
         mIsRcsEnabled = MmsConfig.isRcsEnabled();
+
+        LayoutInflater inflate = (LayoutInflater)
+                getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mNotificationView = (ViewGroup) inflate.inflate(
+                R.layout.conversation_list_notification_item, null);
+
         setContentView(R.layout.conversation_list_screen);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         getWindow().setStatusBarColor(getResources().getColor(R.color.primary_color_dark));
@@ -368,6 +387,36 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     @Override
     protected void onResume() {
         super.onResume();
+
+        String currentClassName = null;
+        Intent intent = getIntent();
+        if (intent != null) {
+            currentClassName = intent.getComponent().getClassName();
+        }
+
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        if (sp.getBoolean(MessagingPreferenceActivity.SEPERATE_NOTIFI_MSG, true)
+                && ConversationList.class.getName().equals(currentClassName)) {
+            if (getListView() != null && getListView().getHeaderViewsCount() == 0) {
+                getListView().addHeaderView(mNotificationView);
+            }
+            mNotificationLabel = (TextView) mNotificationView.findViewById(R.id.notification_label);
+            mNotificationDate = (TextView) mNotificationView.findViewById(R.id.date);
+            mNotificationSubject = (TextView) mNotificationView.findViewById(R.id.subject);
+            mNotificationView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(ConversationList.this,
+                            NotificationConversationList.class);
+                    startActivity(intent);
+                }
+            });
+        } else {
+            if (getListView() != null && getListView().getHeaderViewsCount() == 1) {
+                getListView().removeHeaderView(mNotificationView);
+            }
+        }
+
         boolean isSmsEnabled = MmsConfig.isSmsEnabled(this);
         if (isSmsEnabled != mIsSmsEnabled) {
             mIsSmsEnabled = isSmsEnabled;
@@ -636,17 +685,24 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         });
     }
 
-    private void startAsyncQuery() {
+    public void startAsyncQuery() {
         try {
             mEmptyView.setText(R.string.loading_conversations);
 
-            //Query all thread without Obsolete.
-            Conversation.startQuery(mQueryHandler,
-                    THREAD_LIST_QUERY_TOKEN, NOT_OBSOLETE);
-
-            //Query all unread thread without Obsolete.
-            Conversation.startQuery(mQueryHandler, UNREAD_THREADS_QUERY_TOKEN,
-                    Threads.READ + "=0" + " and " + NOT_OBSOLETE);
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+            if (sp.getBoolean(MessagingPreferenceActivity.SEPERATE_NOTIFI_MSG, true)) {
+                Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN,
+                        Threads.NOTIFICATION + "=0" + " and " + NOT_OBSOLETE);
+                Conversation.startQuery(mQueryHandler, NOTIFICATION_THREAD_QUERY_TOKEN,
+                        Threads.NOTIFICATION + "=1" + " and " + NOT_OBSOLETE);
+                Conversation.startQuery(mQueryHandler, UNREAD_NOTIFICATION_THREAD_QUERY_TOKEN,
+                        Threads.NOTIFICATION + "=1 AND " + Threads.READ + "=0"
+                         + " and " + NOT_OBSOLETE);
+            } else {
+                Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN, NOT_OBSOLETE);
+            }
+            Conversation.startQuery(mQueryHandler, UNREAD_THREADS_QUERY_TOKEN, Threads.READ + "=0"
+                    + " and " + NOT_OBSOLETE);
         } catch (SQLiteException e) {
             SqliteWrapper.checkSQLiteException(this, e);
         }
@@ -706,6 +762,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         }
 
         MenuItem cellBroadcastItem = menu.findItem(R.id.action_cell_broadcasts);
+        cellBroadcastItem.setVisible(false);
         if (cellBroadcastItem != null) {
             // Enable link to Cell broadcast activity depending on the value in config.xml.
             boolean isCellBroadcastAppLinkEnabled = this.getResources().getBoolean(
@@ -749,7 +806,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         }
         MenuItem item = menu.findItem(R.id.action_delete_all);
         if (item != null) {
-            item.setVisible((mListAdapter.getCount() > 0) && mIsSmsEnabled);
+            item.setVisible(false);
         }
 
         if (!getResources().getBoolean(R.bool.config_mailbox_enable)) {
@@ -769,6 +826,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 item.setVisible(false);
             }
         }
+
         return true;
     }
 
@@ -802,6 +860,9 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             case R.id.action_settings:
                 Intent intent = new Intent(this, MessagingPreferenceActivity.class);
                 startActivityIfNeeded(intent, -1);
+                break;
+            case R.id.action_mark_as_read:
+                MessageUtils.markAsReadForNotificationMessage(this);
                 break;
             case R.id.action_change_to_folder_mode:
                 Intent modeIntent = new Intent(this, MailBoxMessageList.class);
@@ -899,11 +960,11 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         }
     }
 
-    private void createNewMessage() {
+    public void createNewMessage() {
         startActivity(ComposeMessageActivity.createIntent(this, 0));
     }
 
-    private void openThread(long threadId) {
+    public void openThread(long threadId) {
         startActivity(ComposeMessageActivity.createIntent(this, threadId));
     }
 
@@ -1255,6 +1316,56 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 mUnreadConvCount.setText(count > 0 ? Integer.toString(count) : null);
                 break;
 
+            case NOTIFICATION_THREAD_QUERY_TOKEN:
+                int notificationCount = 0;
+                if (cursor != null) {
+                    notificationCount = cursor.getCount();
+                    if (notificationCount > 0) {
+                        if (cursor.moveToFirst()) {
+                            Conversation conv = Conversation.from(getApplicationContext(),
+                                    cursor);
+                            mNotificationDate.setText(MessageUtils.formatTimeStampString(
+                                    getApplicationContext(), conv.getDate()));
+                            String subject = conv.getSnippet();
+                            if (!TextUtils.isEmpty(subject)) {
+                                mNotificationSubject.setText(subject);
+                                mNotificationSubject.setVisibility(View.VISIBLE);
+                            } else {
+                                mNotificationSubject.setVisibility(View.GONE);
+                            }
+                            int backgroundId;
+                            if (conv.hasUnreadMessages()) {
+                                backgroundId = R.drawable.conversation_item_background_unread;
+                            } else {
+                                backgroundId = R.drawable.conversation_item_background_read;
+                            }
+                            Drawable background = getApplicationContext().getResources()
+                                    .getDrawable(backgroundId);
+                            mNotificationView.setBackground(background);
+                            if (getListView() != null && getListView().getHeaderViewsCount() == 0) {
+                                getListView().addHeaderView(mNotificationView);
+                            }
+                        }
+                    } else {
+                        if (getListView() != null && getListView().getHeaderViewsCount() == 1) {
+                            getListView().removeHeaderView(mNotificationView);
+                        }
+                    }
+                    cursor.close();
+                }
+                break;
+
+            case UNREAD_NOTIFICATION_THREAD_QUERY_TOKEN:
+                int unreadCount = 0;
+                if (cursor != null) {
+                    unreadCount = cursor.getCount();
+                    cursor.close();
+                }
+                mNotificationLabel.setText(unreadCount > 0 ?
+                        getString(R.string.unread_notification_message_label, unreadCount) :
+                        getString(R.string.notification_message_label));
+                break;
+
             case HAVE_LOCKED_MESSAGES_TOKEN:
                 if (ConversationList.this.isFinishing()) {
                     Log.w(TAG, "ConversationList is finished, do nothing ");
@@ -1420,6 +1531,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             } else {
                 moreItem.setVisible(false);
             }
+            mNotificationView.setEnabled(false);
 
             if (mMultiSelectActionBarView == null) {
                 mMultiSelectActionBarView = LayoutInflater.from(ConversationList.this).inflate(
@@ -1528,6 +1640,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                  mSelectedThreadIds = null;
                  mSelectionMenu.dismiss();
                  mMultiChoiceMode = false;
+                 mNotificationView.setEnabled(true);
              }
         }
 

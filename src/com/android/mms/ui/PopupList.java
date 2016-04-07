@@ -32,7 +32,9 @@ package com.android.mms.ui;
 import java.util.ArrayList;
 
 import android.content.Context;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
@@ -172,10 +174,8 @@ public class PopupList {
     private PopupWindow createPopupWindow() {
         PopupWindow popup = new PopupWindow(mContext);
         popup.setOnDismissListener(mOnDismissListener);
-
-        popup.setBackgroundDrawable(mContext.getResources().getDrawable(
-                R.drawable.menu_dropdown_panel_holo_light));
-
+        ColorDrawable cd = new ColorDrawable(Color.WHITE);
+        popup.setBackgroundDrawable(cd);
         mContentList = new ListView(mContext, null,
                 android.R.attr.dropDownListViewStyle);
         mContentList.setAdapter(new ItemDataAdapter());

@@ -43,6 +43,8 @@
     <string name="menu_call">Call</string>
     <!-- Menu item for search -->
     <string name="menu_search">Search</string>
+    <!-- Menu item for mark as read -->
+    <string name="menu_mark_as_read">Mark as read</string>
     <!-- Menu item for deleting all conversations -->
     <string name="menu_delete_all">Delete all threads</string>
     <!-- Context menu item on an individual conversation for deleting that conversation -->
@@ -105,12 +107,14 @@
     <string name="downloading">Downloading...</string>
     <!-- Dispaly downloading when download Mms -->
     <string name="new_message_download">New message to download</string>
+    <string name="new_mms_download">New MMS message to download</string>
     <!-- Dispaly New message to download  when income Mms  -->
     <string name="touch_to_download">Touch to download</string>
     <!-- Inform user can Touch to download Mms   -->
     <string name="touch_to_try_again">Touch to try again</string>
     <!-- Dispaly Touch to try again when download failed -->
     <string name="could_not_downloading">Couldn\'t download...</string>
+    <string name="could_not_download">Couldn\'t download</string>
     <!-- Display Couldn't download...if download failed -->
     <string name="new_mms_message">New MMS message</string>
     <!-- Dispaly New MMS message when downloading -->
@@ -919,7 +923,7 @@
 
     <!-- Copy message to sim -->
     <string name="menu_copy_to">Copy</string>
-    <string name="operation_to_card_memory">Copy message to SIM card</string>
+    <string name="operation_to_card_memory">Save to SIM card</string>
 
     <!-- SMSC -->
     <string name="pref_smsc_title">SMSC Setings</string>
@@ -1013,7 +1017,7 @@
     <string name="send_failure">Sending failed!</string>
     <string name="send_success">Send successfully!</string>
     <!-- title of mailboxmessagecontent -->
-    <string name="message_detail">Message detail</string>
+    <string name="message_detail">Details</string>
     <string name="select_messages">Select messages</string>
     <string name="no_message">No messages</string>
     <string name="change_to_folder_mode">Change to folder mode</string>
@@ -1141,4 +1145,25 @@
     <string name="menu_more">"More"</string>
     <string name="letter_tile_letter_font_family">sans-serif-light</string>
     <string name="contact_list_send_to_text">Send to <xliff:g id="destination">%s</xliff:g></string>
+    <!-- The label of all Notification messages -->
+    <string name="notification_message_label">Notifications</string>
+    <string name="unread_notification_message_label">Notifications (<xliff:g id="count">%s</xliff:g>)</string>
+    <string name="mms_attachment_type_audio">Audio</string>
+    <string name="mms_attachment_type_video">Video</string>
+    <string name="mms_attachment_type_picture">Picture</string>
+    <string name="mms_attachment_type_vcard">Vcard</string>
+    <string name="mms_attachment_type_slideshow">SlideShow</string>
+    <string name="group_numbers"><xliff:g id="number">%s</xliff:g> numbers</string>
+    <string name="mms_save_title">Save</string>
+    <string name="mms_share_title">Share</string>
+    <string name="mms_new_file_name_format" translatable="false">"yyyyMMdd_HHmmss"</string>
+    <string name="mms_photo_attachment_saved_title">Photo saved to \"<xliff:g id="albumName">%s</xliff:g>\" album</string>
+    <string name="mms_video_attachment_saved_title">Video saved to \"<xliff:g id="albumName">%s</xliff:g>\" album</string>
+    <string name="mms_attachment_saved_fail_title">Save failed</string>
+    <string name="notification_mark_as_read">Mark as read</string>
+    <string name="notification_reply">Reply</string>
+    <string name="notification_reply_to">Reply to <xliff:g id="name">%s</xliff:g></string>
+    <string name="notification_view_message_text">View Message</string>
+
+    <string name="conversation_list_send_fail_text">Not sent, touch to try again</string>
 </resources>

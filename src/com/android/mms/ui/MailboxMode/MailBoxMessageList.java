@@ -728,6 +728,10 @@ public class MailBoxMessageList extends ListActivity implements
         if (item != null) {
             item.setVisible(false);
         }
+        item = menu.findItem(R.id.action_compose_new);
+        if (item != null) {
+            item.setVisible(true);
+        }
         MenuItem saveOrBackItem = menu.findItem(R.id.saveorbackmessage);
         if (saveOrBackItem != null) {
             saveOrBackItem.setVisible(false);
@@ -756,6 +760,9 @@ public class MailBoxMessageList extends ListActivity implements
                     break;
                 }
                 return true;
+            case R.id.action_compose_new:
+                startActivity(ComposeMessageActivity.createIntent(this, 0));
+                break;
             case R.id.action_settings:
                 Intent intent = new Intent(this, MessagingPreferenceActivity.class);
                 startActivityIfNeeded(intent, -1);
