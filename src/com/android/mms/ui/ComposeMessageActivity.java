@@ -4234,6 +4234,7 @@ public class ComposeMessageActivity extends Activity
                     break;
                 }
                 addAudio(uri, append);
+                drawBottomPanel();
                 break;
             }
 
