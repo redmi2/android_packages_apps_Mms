@@ -3286,6 +3286,7 @@ public class ComposeMessageActivity extends Activity
                     }
                     showConvertToSmsToast();
                 }
+                updateSendButtonState();
             }
         });
     }
