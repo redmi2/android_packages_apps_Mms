@@ -49,6 +49,7 @@ import android.database.sqlite.SqliteWrapper;
 import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -59,6 +60,7 @@ import android.provider.BaseColumns;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.MmsSms;
 import android.provider.Telephony.Sms;
+import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.telephony.PhoneStateListener;
 import android.telephony.SubscriptionManager;
 import android.telephony.SubscriptionInfo;
@@ -1149,9 +1151,8 @@ public class MessagingNotification {
             title = context.getString(R.string.message_count_notification, messageCount);
         } else {    // same thread, single or multiple messages
             title = mostRecentNotification.mTitle;
-            BitmapDrawable contactDrawable = (BitmapDrawable)mostRecentNotification.mSender
-                    .getAvatar(context, null);
-
+            Contact contact = mostRecentNotification.mSender;
+            Drawable contactDrawable = contact.getAvatar(context, null);
             final int idealIconHeight =
                 res.getDimensionPixelSize(android.R.dimen.notification_large_icon_height);
             final int idealIconWidth =
@@ -1160,21 +1161,23 @@ public class MessagingNotification {
             if (contactDrawable != null) {
                 // Show the sender's avatar as the big icon. Contact bitmaps are 96x96 so we
                 // have to scale 'em up to 128x128 to fill the whole notification large icon.
-                avatar = contactDrawable.getBitmap();
+                if (contactDrawable instanceof RoundedBitmapDrawable) {
+                    avatar = ((RoundedBitmapDrawable) contactDrawable).getBitmap();
+                }
                 if (avatar != null) {
                     if (avatar.getHeight() < idealIconHeight) {
                         // Scale this image to fit the intended size
                         avatar = Bitmap.createScaledBitmap(
                                 avatar, idealIconWidth, idealIconHeight, true);
+                        avatar = MaterialColorMapUtils.getCircularBitmap(context, avatar);
                     }
                     if (avatar != null) {
                         noti.setLargeIcon(avatar);
                     }
                 }
-            } else if (LetterTileDrawable.isEnglishLetterString(mostRecentNotification.mSender.
-                    getNameForAvatar())) {
+            } else if (LetterTileDrawable.isEnglishLetterString(contact.getNameForAvatar())) {
                 Bitmap newAvatar = MaterialColorMapUtils.getLetterTitleDraw(context,
-                        mostRecentNotification.mSender, idealIconWidth);
+                        contact, idealIconWidth);
                 Bitmap roundBitmap = MaterialColorMapUtils.getCircularBitmap(context, newAvatar);
                 noti.setLargeIcon(roundBitmap);
             }
