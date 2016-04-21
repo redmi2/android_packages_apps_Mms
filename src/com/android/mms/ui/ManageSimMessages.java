@@ -685,7 +685,8 @@ public class ManageSimMessages extends Activity
                             }
                             return true;
                         }
-                    });
+                    },
+                    (ImageView)mMultiSelectActionBarView.findViewById(R.id.expand));
             return true;
         }
 
@@ -723,6 +724,7 @@ public class ManageSimMessages extends Activity
                 Log.d(TAG, "onItemCheck select all false");
             }
             mSelectionMenu.updateSelectAllMode(mHasSelectAll);
+            mSelectionMenu.updateCheckedCount();
         }
 
         private void customMenuVisibility(ActionMode mode, int checkedCount) {
