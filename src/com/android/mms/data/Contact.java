@@ -55,6 +55,8 @@ public class Contact {
     private static final int CONTACT_UPDATE = 4;
     private static final int DEFAULT_CONTACT_COLOR = 0;
 
+    protected static final String MULTIPLE_CELLPHONE_CONCATENATE_SYMBOL = ";";
+
     private static final ContentObserver sContactsObserver = new ContentObserver(new Handler()) {
         @Override
         public void onChange(boolean selfUpdate) {
@@ -314,6 +316,16 @@ public class Contact {
         return ContentUris.withAppendedId(Contacts.CONTENT_URI, mPersonId);
     }
 
+    /**
+     * This contact constructed by string which integrated by multiple cell phone,
+     * Such as constructed by 12345;42132.
+     * @return return true for prove constructed by multiple cell phone,
+     *         return false for not.
+     */
+    public boolean isCreatedByMultipleCellPhone() {
+        return sContactCache.getMultiple();
+    }
+
     public synchronized int getPresenceResId() {
         return mPresenceResId;
     }
@@ -531,6 +543,16 @@ public class Contact {
         private final HashMap<String, ArrayList<Contact>> mContactsHash =
             new HashMap<String, ArrayList<Contact>>();
 
+        private boolean mIsMultiple = false;
+
+        private void setMultiple(boolean isMultiple) {
+            mIsMultiple = isMultiple;
+        }
+
+        public boolean getMultiple() {
+            return mIsMultiple;
+        }
+
         private ContactsCache(Context context) {
             mContext = context;
         }
@@ -610,6 +632,10 @@ public class Contact {
                                     // a message without the sender's address. In this case,
                                     // all such anonymous messages will get added to the same
                                     // thread.
+            } else if (number.contains(MULTIPLE_CELLPHONE_CONCATENATE_SYMBOL)) {
+                setMultiple(true);  // Multiple cellphones Concatenated, such as 123;2341.
+            } else {
+                setMultiple(false); // Only one cellphone.
             }
 
             // Always return a Contact object, if if we don't have an actual contact
