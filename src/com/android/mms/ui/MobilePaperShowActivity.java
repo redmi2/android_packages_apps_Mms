@@ -311,12 +311,12 @@ public class MobilePaperShowActivity extends Activity {
 
                 @Override
                 public boolean onTouchEvent(MotionEvent ev) {
+                    super.onTouchEvent(ev);
                     return mScaleDetector.onTouchEvent(ev);
                 }
 
                 @Override
                 public boolean onInterceptTouchEvent(MotionEvent ev) {
-                    super.onInterceptTouchEvent(ev);
 
                     final int action = ev.getAction();
                     switch (action) {
@@ -338,11 +338,18 @@ public class MobilePaperShowActivity extends Activity {
                                 int y2 = (int) ev.getY(MotionEvent.ACTION_POINTER_INDEX_MASK
                                         & MotionEvent.ACTION_POINTER_DOWN);
                                 move += Math.abs(currentY - y2);
+                            } else {
+                                int x2 = (int) ev.getRawX();
+                                int y2 = (int) ev.getRawY();
+                                move += Math.abs(currentY - y2);
+                                currentX = x2;
+                                currentY = y2;
                             }
                             break;
                         }
                     }
 
+                    super.onInterceptTouchEvent(ev);
                     return move > CLICK_LIMIT;
                 }
             };
