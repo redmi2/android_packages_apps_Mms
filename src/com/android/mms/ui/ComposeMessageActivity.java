@@ -1627,6 +1627,8 @@ public class ComposeMessageActivity extends Activity
         if (recipientLimit != Integer.MAX_VALUE && recipientLimit > 0) {
             final int recipientCount = recipientCount();
             boolean tooMany = recipientCount > recipientLimit;
+            int index = mRecipientsEditor.getSelectionStart();
+            Editable editable = mRecipientsEditor.getText();
 
             if (recipientCount != mLastRecipientCount) {
                 // Don't warn the user on every character they type when they're over the limit,
@@ -1637,6 +1639,7 @@ public class ComposeMessageActivity extends Activity
                             recipientLimit);
                     Toast.makeText(ComposeMessageActivity.this,
                             tooManyMsg, Toast.LENGTH_LONG).show();
+                    editable.delete(index-1 , index);
                 }
             }
         }
