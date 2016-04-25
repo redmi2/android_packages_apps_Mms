@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014, 2016 The Linux Foundation. All rights reserved.
  * Not a Contribution.
  *
  * Copyright (C) 2012 The Android Open Source Project.
@@ -51,9 +51,11 @@ import android.widget.QuickContactBadge;
 import android.widget.TextView;
 
 import com.android.mms.data.Contact;
+import com.android.mms.data.Conversation;
 import com.android.mms.LogTag;
 import com.android.mms.R;
 import com.android.mms.ui.MessageUtils;
+import com.android.mms.ui.MailboxMode.MailBoxMessageListItem;
 import com.google.android.mms.pdu.EncodedStringValue;
 import com.google.android.mms.pdu.PduPersister;
 
@@ -90,9 +92,6 @@ public class MailBoxMessageListAdapter extends CursorAdapter implements Contact.
     TextView mDateView;
     ImageView mErrorIndicator;
     ImageView mImageViewLock;
-    Drawable mBgSelectedDrawable;
-    Drawable mBgUnReadDrawable;
-    Drawable mBgReadDrawable;
 
     private int mSubscription = MessageUtils.SUB_INVALID;
     private String mMsgType; // "sms" or "mms"
@@ -115,12 +114,6 @@ public class MailBoxMessageListAdapter extends CursorAdapter implements Contact.
             }
         };
         mWapPushAddressIndex = context.getResources().getInteger(R.integer.wap_push_address_index);
-        mBgSelectedDrawable = context.getResources().getDrawable(
-                R.drawable.list_selected_holo_light);
-        mBgUnReadDrawable = context.getResources().getDrawable(
-                R.drawable.conversation_item_background_unread);
-        mBgReadDrawable = context.getResources().getDrawable(
-                R.drawable.conversation_item_background_read);
     }
 
     public BoxMessageItem getCachedMessageItem(String type, long msgId, Cursor c) {
@@ -215,18 +208,8 @@ public class MailBoxMessageListAdapter extends CursorAdapter implements Contact.
         View view = mListView.getChildAt(position - firstPosition);
         if (cursor == null || view == null) {
             return;
-        }
-
-        String type = cursor.getString(COLUMN_MSG_TYPE);
-        int read = type.equals("mms") ? cursor.getInt(COLUMN_MMS_READ) :
-                cursor.getInt(COLUMN_SMS_READ);
-        boolean isUnread = read == 0 ? true : false;
-        if (mListView.isItemChecked(position)) {
-            view.setBackgroundDrawable(mBgSelectedDrawable);
-        } else if (isUnread) {
-            view.setBackgroundDrawable(mBgUnReadDrawable);
         } else {
-            view.setBackgroundDrawable(mBgReadDrawable);
+            ((MailBoxMessageListItem) view).updateBackground();
         }
     }
 
@@ -304,13 +287,10 @@ public class MailBoxMessageListAdapter extends CursorAdapter implements Contact.
             }
         }
 
-        if (mListView.isItemChecked(cursor.getPosition())) {
-            view.setBackgroundDrawable(mBgSelectedDrawable);
-        } else if (isUnread) {
-            view.setBackgroundDrawable(mBgUnReadDrawable);
-        } else {
-            view.setBackgroundDrawable(mBgReadDrawable);
-        }
+        Conversation conv = Conversation.from(context, cursor);
+        ((MailBoxMessageListItem) view).bind(isUnread,
+                mListView.isItemChecked(cursor.getPosition()),
+                conv);
 
         mBodyView = (TextView) view.findViewById(R.id.msgBody);
         mDateView = (TextView) view.findViewById(R.id.textViewDate);

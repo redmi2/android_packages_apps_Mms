@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014, 2016 The Linux Foundation. All rights reserved.
  * Not a Contribution.
  *
  * Copyright (c) 2012 The Android Open Source Project.
@@ -18,7 +18,7 @@
  * limitations under the License.
  -->
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.android.mms.ui.MailboxMode.MailBoxMessageListItem xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="?android:attr/listPreferredItemHeight"
     android:background="?android:attr/activatedBackgroundIndicator"
@@ -97,4 +97,4 @@
         </LinearLayout>
     </LinearLayout>
 
-</LinearLayout>
+</com.android.mms.ui.MailboxMode.MailBoxMessageListItem>
