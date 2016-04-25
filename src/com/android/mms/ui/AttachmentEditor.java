@@ -57,6 +57,8 @@ public class AttachmentEditor extends LinearLayout {
     static final int MSG_VIEW_VCARD        = 11;
     static final int MSG_REPLACE_VCARD     = 12;
 
+    private static int ATTACHMENT_FONT_SIZE = 12;
+
     private static final int KILOBYTE = 1024;
 
     private final Context mContext;
@@ -222,6 +224,15 @@ public class AttachmentEditor extends LinearLayout {
         Button replaceButton = (Button) view.findViewById(replace_button_id);
         Button removeButton = (Button) view.findViewById(remove_button_id);
 
+        if (viewButton != null) {
+            viewButton.setTextSize(ATTACHMENT_FONT_SIZE);
+        }
+        if (replaceButton != null) {
+            replaceButton.setTextSize(ATTACHMENT_FONT_SIZE);
+        }
+        if (removeButton != null) {
+            removeButton.setTextSize(ATTACHMENT_FONT_SIZE);
+        }
         viewButton.setOnClickListener(new MessageOnClick(view_message));
         replaceButton.setOnClickListener(new MessageOnClick(replace_message));
         removeButton.setOnClickListener(new MessageOnClick(remove_message));
