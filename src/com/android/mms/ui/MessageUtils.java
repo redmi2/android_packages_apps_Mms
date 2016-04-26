@@ -38,6 +38,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -2947,7 +2948,8 @@ public class MessageUtils {
         return isTooLarge;
     }
 
-    public static boolean hasInvalidSmsRecipient(Context context, ArrayList<MessageItem> msgItems) {
+    public static boolean hasInvalidSmsRecipient(Context context,
+            CopyOnWriteArrayList<MessageItem> msgItems) {
         for (MessageItem msgItem : msgItems) {
             String address = msgItem.mAddress;
             String[] number = null;
