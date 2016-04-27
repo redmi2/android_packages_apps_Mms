@@ -1586,30 +1586,6 @@ public class ComposeMessageActivity extends Activity
         }
     }
 
-    private final OnCreateContextMenuListener mRecipientsMenuCreateListener =
-        new OnCreateContextMenuListener() {
-        @Override
-        public void onCreateContextMenu(ContextMenu menu, View v,
-                ContextMenuInfo menuInfo) {
-            if (menuInfo != null) {
-                Contact c = ((RecipientContextMenuInfo) menuInfo).recipient;
-                RecipientsMenuClickListener l = new RecipientsMenuClickListener(c);
-
-                menu.setHeaderTitle(c.getName());
-
-                if (c.existsInDatabase()) {
-                    menu.add(0, MENU_VIEW_CONTACT, 0, R.string.menu_view_contact)
-                            .setOnMenuItemClickListener(l);
-                } else if (canAddToContacts(c)){
-                    menu.add(0, MENU_ADD_TO_CONTACTS, 0, R.string.menu_add_to_contacts)
-                            .setOnMenuItemClickListener(l);
-                }
-                menu.add(0, MENU_COPY_PHONENUMBER, 1, R.string.copy_number)
-                         .setOnMenuItemClickListener(l);
-            }
-        }
-    };
-
     private final class RecipientsMenuClickListener implements MenuItem.OnMenuItemClickListener {
         private final Contact mRecipient;
 
@@ -2373,7 +2349,6 @@ public class ComposeMessageActivity extends Activity
         mRecipientsEditor.setAdapter(new ChipsRecipientAdapter(this));
         mRecipientsEditor.setText(null);
         mRecipientsEditor.populate(recipients);
-        mRecipientsEditor.setOnCreateContextMenuListener(mRecipientsMenuCreateListener);
         // TODO : Remove the max length limitation due to the multiple phone picker is added and the
         // user is able to select a large number of recipients from the Contacts. The coming
         // potential issue is that it is hard for user to edit a recipient from hundred of
