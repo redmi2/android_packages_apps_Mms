@@ -34,6 +34,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
+import android.provider.DocumentsContract.Document;
 import android.provider.Telephony.Mms.Part;
 import android.text.TextUtils;
 import android.util.Log;
@@ -47,6 +48,7 @@ public class VcardModel extends MediaModel {
     private static final String TAG = MediaModel.TAG;
 
     private String mLookupUri = null;
+    private String DOCUMENTS_AUTHORITY = "com.android.providers.downloads.documents";
 
     public VcardModel(Context context, Uri uri) throws MmsException {
         this(context, ContentType.TEXT_VCARD, null, uri);
@@ -73,9 +75,16 @@ public class VcardModel extends MediaModel {
         } else if (scheme.equals("content")){
             Cursor c = null;
             try {
-                c = getContentCursor(uri);
-                mLookupUri = getLookupUri(uri,c);
-                mSrc = getLookupSrc(uri,c);
+                if (DOCUMENTS_AUTHORITY.equals(uri.getAuthority())) {
+                    c = mContext.getContentResolver().query(uri, null, null, null, null);
+                    if (c != null && c.moveToFirst()) {
+                        mSrc = c.getString(c.getColumnIndex(Document.COLUMN_DISPLAY_NAME));
+                    }
+                } else {
+                    c = getContentCursor(uri);
+                    mLookupUri = getLookupUri(uri,c);
+                    mSrc = getLookupSrc(uri,c);
+                }
             } finally {
                 if (c != null) {
                     c.close();
