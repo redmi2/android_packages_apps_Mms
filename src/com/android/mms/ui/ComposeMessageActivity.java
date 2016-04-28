@@ -2870,7 +2870,7 @@ public class ComposeMessageActivity extends Activity
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        outState.putString(RECIPIENTS, getRecipients().serialize());
+        outState.putString(RECIPIENTS, mConversation.getRecipients().serialize());
 
         mWorkingMessage.writeStateToBundle(outState);
 
