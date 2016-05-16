@@ -135,14 +135,12 @@ public class SmsMessageSender implements MessageSender {
                     break;
                 }
                 log("updating Database with subId = " + mSubId);
-                // FIXME: Comment this framework dependency at bring up stage, will restore
-                //        back later.
                 Sms.addMessageToUri(mSubId, mContext.getContentResolver(),
                         Uri.parse("content://sms/queued"), mDests[i],
                         mMessageText, null, mTimestamp,
                         true /* read */,
                         requestDeliveryReport,
-                        mThreadId/*, priority*/);
+                        mThreadId, priority);
             } catch (SQLiteException e) {
                 if (LogTag.DEBUG_SEND) {
                     Log.e(TAG, "queueMessage SQLiteException", e);

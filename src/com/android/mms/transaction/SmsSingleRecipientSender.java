@@ -214,10 +214,8 @@ public class SmsSingleRecipientSender extends SmsMessageSender {
                     + "|mSubId=" + mSubId
                     + "|mRequestDeliveryReport=" + mRequestDeliveryReport
                     );
-            // FIXME: Comment this framework dependency at bring up stage, will restore
-            //        back later.
             smsManager.sendMultipartTextMessage(mDest, mServiceCenter, messages,
-                    sentIntents, deliveryIntents/*, mPriority, isExpectMore, validityPeriod*/);
+                    sentIntents, deliveryIntents, mPriority, isExpectMore, validityPeriod);
         } catch (Exception ex) {
             Log.e(TAG, "SmsMessageSender.sendMessage: caught", ex);
             throw new MmsException("SmsMessageSender.sendMessage: caught " + ex +

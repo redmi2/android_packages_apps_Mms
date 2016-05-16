@@ -102,16 +102,14 @@ public class SmsReceiverService extends Service {
             "com.android.mms.transaction.SEND_INACTIVE_MESSAGE";
 
     // This must match the column IDs below.
-    // FIXME: Comment this framework dependency at bring up stage, will restore
-    //        back later.
     private static final String[] SEND_PROJECTION = new String[] {
         Sms._ID,        //0
         Sms.THREAD_ID,  //1
         Sms.ADDRESS,    //2
         Sms.BODY,       //3
         Sms.STATUS,     //4
-        Sms.SUBSCRIPTION_ID//,   //5
-        //SMS_PRIORITY,   //6
+        Sms.SUBSCRIPTION_ID,   //5
+        SMS_PRIORITY   //6
     };
 
     static final String CB_AREA_INFO_RECEIVED_ACTION =
@@ -323,9 +321,7 @@ public class SmsReceiverService extends Service {
 
                     int msgId = c.getInt(SEND_COLUMN_ID);
                     int subId = c.getInt(SEND_COLUMN_SUB_ID);
-                    // FIXME: Comment this framework dependency at bring up stage, will restore
-                    //        back later.
-                    int priority = -1;//c.getInt(SEND_COLUMN_PRIORITY);
+                    int priority = c.getInt(SEND_COLUMN_PRIORITY);
                     Uri msgUri = ContentUris.withAppendedId(Sms.CONTENT_URI, msgId);
                     // Get the information of is there any messages are pending to process.
                     // If yes, send this inforamtion to framework to control the link and send all
