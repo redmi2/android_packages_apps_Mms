@@ -127,13 +127,14 @@ public class Conversation {
     private boolean mHasMmsForward = false; // True if has forward mms
     private String[] mForwardRecipientNumber; // The recipient that the forwarded Mms received from
 
+// FIXME: Comment this provider dependency temporary, will restore back later.
     /* Begin add for RCS */
     private static final boolean UNMARKDEBUG = false;
 
         public static final String[] RCS_ADD_ALL_THREADS_PROJECTION = {
         Threads._ID, Threads.DATE, Threads.MESSAGE_COUNT, Threads.RECIPIENT_IDS,
         Threads.SNIPPET, Threads.SNIPPET_CHARSET, Threads.READ, Threads.ERROR,
-        Threads.HAS_ATTACHMENT, Threads.ATTACHMENT_INFO, RcsColumns.ThreadColumns.RCS_TOP,
+        Threads.HAS_ATTACHMENT,/* Threads.ATTACHMENT_INFO,*/ RcsColumns.ThreadColumns.RCS_TOP,
         RcsColumns.ThreadColumns.RCS_TOP_TIME, RcsColumns.ThreadColumns.RCS_MSG_ID,
         RcsColumns.ThreadColumns.RCS_MSG_TYPE, RcsColumns.ThreadColumns.RCS_CHAT_TYPE
    };
@@ -141,7 +142,7 @@ public class Conversation {
     public static final String[] DEFAULT_ALL_THREADS_PROJECTION = {
         Threads._ID, Threads.DATE, Threads.MESSAGE_COUNT, Threads.RECIPIENT_IDS,
         Threads.SNIPPET, Threads.SNIPPET_CHARSET, Threads.READ, Threads.ERROR,
-        Threads.HAS_ATTACHMENT, Threads.ATTACHMENT_INFO
+        Threads.HAS_ATTACHMENT/*, Threads.ATTACHMENT_INFO*/
     };
 
     public static final String[] ALL_THREADS_PROJECTION = MmsConfig.isRcsVersion() ?
@@ -1131,7 +1132,8 @@ public class Conversation {
             conv.setHasUnreadMessages(c.getInt(READ) == 0);
             conv.mHasError = (c.getInt(ERROR) != 0);
             conv.mHasAttachment = (c.getInt(HAS_ATTACHMENT) != 0);
-            conv.mAttachmentInfo = (c.getString(ATTACHMENT_INFO));
+// FIXME: Comment this provider dependency temporary, will restore back later.
+            conv.mAttachmentInfo = null;//(c.getString(ATTACHMENT_INFO));
             if (MmsConfig.isRcsVersion()) {
                 conv.mIsTop = c.getInt(IS_CONV_T0P);
                 conv.mRcsTopTime = c.getInt(RCS_TOP_TIME);

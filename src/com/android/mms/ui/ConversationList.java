@@ -388,7 +388,9 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     protected void onResume() {
         super.onResume();
 
-        String currentClassName = null;
+// FIXME: Comment this provider dependency temporary, will restore back later.
+mNotificationView.setVisibility(View.GONE);
+        /*String currentClassName = null;
         Intent intent = getIntent();
         if (intent != null) {
             currentClassName = intent.getComponent().getClassName();
@@ -415,7 +417,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             if (getListView() != null && getListView().getHeaderViewsCount() == 1) {
                 getListView().removeHeaderView(mNotificationView);
             }
-        }
+        }*/
 
         boolean isSmsEnabled = MmsConfig.isSmsEnabled(this);
         if (isSmsEnabled != mIsSmsEnabled) {
@@ -689,7 +691,8 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         try {
             mEmptyView.setText(R.string.loading_conversations);
 
-            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+// FIXME: Comment this provider dependency temporary, will restore back later.
+            /*SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
             if (sp.getBoolean(MessagingPreferenceActivity.SEPERATE_NOTIFI_MSG, true)) {
                 Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN,
                         Threads.NOTIFICATION + "=0" + " and " + NOT_OBSOLETE);
@@ -698,9 +701,9 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 Conversation.startQuery(mQueryHandler, UNREAD_NOTIFICATION_THREAD_QUERY_TOKEN,
                         Threads.NOTIFICATION + "=1 AND " + Threads.READ + "=0"
                          + " and " + NOT_OBSOLETE);
-            } else {
+            } else {*/
                 Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN, NOT_OBSOLETE);
-            }
+            //}
             Conversation.startQuery(mQueryHandler, UNREAD_THREADS_QUERY_TOKEN, Threads.READ + "=0"
                     + " and " + NOT_OBSOLETE);
         } catch (SQLiteException e) {
