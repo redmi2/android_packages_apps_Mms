@@ -37,6 +37,7 @@ import android.content.SharedPreferences;
 import android.database.sqlite.SqliteWrapper;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint.FontMetricsInt;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -143,6 +144,7 @@ public class MessageListItem extends ZoomMessageListItem implements
     static final int MSG_LIST_EDIT    = 1;
     static final int MSG_LIST_PLAY    = 2;
     static final int MSG_LIST_DETAILS = 3;
+    static final int MSG_LIST_RESEND = 4;
 
     private boolean mIsCheck = false;
 
@@ -451,7 +453,7 @@ public class MessageListItem extends ZoomMessageListItem implements
                         mDownloading.setVisibility(View.GONE);
                         mDownloadMessage.setVisibility(View.VISIBLE);
                         mDownloadMessage.setText(R.string.touch_to_download);
-                        mDownloadMessage.setTextColor(Color.BLACK);
+                        mDownloadMessage.setTextColor(Color.WHITE);
                     }
 
                     break;
@@ -469,14 +471,7 @@ public class MessageListItem extends ZoomMessageListItem implements
                 break;
         }
 
-        if (mMessageItem.mLocked) {
-            mLockedIndicator.setImageResource(R.drawable.ic_lock_message_sms);
-            mLockedIndicator.setVisibility(View.VISIBLE);
-        } else {
-            mLockedIndicator.setVisibility(View.GONE); // Hide the indicators.
-        }
         mDeliveredIndicator.setVisibility(View.GONE);
-        mDetailsIndicator.setVisibility(View.GONE);
         updateAvatarView(mMessageItem.mAddress, false);
     }
 
@@ -523,6 +518,7 @@ public class MessageListItem extends ZoomMessageListItem implements
                 backgroundDrawable = mContext.getResources().getDrawable(
                         R.drawable.selected_icon_background);
             } else {
+                int defaultColor;
                 if (isSelf) {
                     mAvatar.assignContactUri(Profile.CONTENT_URI);
                     if (MmsConfig.isRcsVersion() && avatarDrawable.equals(sDefaultContactImage)) {
@@ -537,7 +533,7 @@ public class MessageListItem extends ZoomMessageListItem implements
                         backgroundDrawable = mContext.getResources().getDrawable(
                                 R.drawable.default_avatar_background);
                     }
-                    mBackgroundColor = mContext.getResources().getColor(R.color.white);
+                    defaultColor = mContext.getResources().getColor(R.color.white);
                 } else {
                     if (contact.existsInDatabase()) {
                         mAvatar.assignContactUri(contact.getUri());
@@ -582,9 +578,24 @@ public class MessageListItem extends ZoomMessageListItem implements
                         backgroundDrawable = MaterialColorMapUtils.getLetterTitleDraw(mContext,
                                 contact);
                     }
-                    mBackgroundColor = ComposeMessageActivity.getSendContactColor();
-                    mMessageBlock.getBackground().setTint(mBackgroundColor);
+                    defaultColor = ComposeMessageActivity.getSendContactColor();
                 }
+                if (TextUtils.isEmpty(mMessageItem.mSubject)
+                        && TextUtils.isEmpty(mMessageItem.mBody)) {
+                    mBackgroundColor = mContext.getResources().getColor(R.color.transparent_white);
+                    mDateView.setTextColor(R.color.transparent_black);
+                    if (mMessageItem.mAttachmentType == WorkingMessage.AUDIO
+                            && mPlayAudioLayout != null) {
+                        mPlayAudioLayout.setBackgroundColor(defaultColor);
+                    }
+                } else {
+                    mBackgroundColor = defaultColor;
+                    if (mMessageItem.mAttachmentType == WorkingMessage.AUDIO
+                            && mPlayAudioLayout != null) {
+                        mPlayAudioLayout.setBackgroundResource(0);
+                    }
+                }
+                mMessageBlock.getBackground().setTint(mBackgroundColor);
             }
         } else {
             mAvatar.setVisibility(View.INVISIBLE);
@@ -684,11 +695,21 @@ public class MessageListItem extends ZoomMessageListItem implements
                     } else if (mMessageItem.getRcsMsgType() == RcsUtils.RCS_MSG_TYPE_OTHER_FILE) {
                         mBodyTextView.setText(R.string.message_content_other_file);
                     } else {
-                        mBodyTextView.setText(formattedMessage);
+                        if (TextUtils.isEmpty(formattedMessage)) {
+                            mBodyTextView.setVisibility(View.GONE);
+                        } else {
+                            mBodyTextView.setText(formattedMessage);
+                            mBodyTextView.setVisibility(View.VISIBLE);
+                        }
                     }
                 }
             } else {
-                mBodyTextView.setText(formattedMessage);
+                if (TextUtils.isEmpty(formattedMessage)) {
+                    mBodyTextView.setVisibility(View.GONE);
+                } else {
+                    mBodyTextView.setText(formattedMessage);
+                    mBodyTextView.setVisibility(View.VISIBLE);
+                }
             }
         }
         updateSimIndicatorView(mMessageItem.mSubId);
@@ -864,11 +885,23 @@ public class MessageListItem extends ZoomMessageListItem implements
     private void setVideoPicThumbnail(Bitmap bitmap) {
         try {
             if (mPlayVideoPicLayout != null && mVideoPicThumbnail != null && bitmap != null) {
+                int orgWidth = bitmap.getWidth();
+                int orgHeight = bitmap.getHeight();
+                int newWidth = mContext.getResources()
+                        .getDimensionPixelSize(R.dimen.message_item_thumbnail_width);
+                float scale = ((float) newWidth) / orgWidth;
+                int newHeight = (int) (scale * orgHeight);
+
                 ViewGroup.LayoutParams params = mPlayVideoPicLayout.getLayoutParams();
-                params.height = bitmap.getHeight();
-                params.width = bitmap.getWidth();
+                params.height = newHeight;
+                params.width = newWidth;
                 mPlayVideoPicLayout.setLayoutParams(params);
-                mVideoPicThumbnail.setImageBitmap(bitmap);
+
+                Matrix matrix = new Matrix();
+                matrix.postScale(scale, scale);
+                Bitmap resizedBitmap = Bitmap.createBitmap(bitmap, 0, 0,
+                        orgWidth, orgHeight, matrix, true);
+                mVideoPicThumbnail.setImageBitmap(resizedBitmap);
             }
         } catch (java.lang.OutOfMemoryError e) {
             Log.e(TAG, "setImage: out of memory: ", e);
@@ -931,7 +964,6 @@ public class MessageListItem extends ZoomMessageListItem implements
         } else {
             mSubjectTextView.setVisibility(View.GONE);
         }
-        mDateView.setText(MessageUtils.formatTimeStampString(getContext(), mMessageItem.mDate));
     }
 
     private void initPlayAudioView(boolean visible) {
@@ -1157,7 +1189,7 @@ public class MessageListItem extends ZoomMessageListItem implements
             }
             // Assuming the current message is a failed one, reload it into the compose view so
             // the user can resend it.
-            sendMessage(mMessageItem, MSG_LIST_EDIT);
+            sendMessage(mMessageItem, MSG_LIST_RESEND);
             return;
         }
 
@@ -1203,14 +1235,6 @@ public class MessageListItem extends ZoomMessageListItem implements
     }
 
     private void drawRightStatusIndicator(MessageItem msgItem) {
-        // Locked icon
-        if (msgItem.mLocked) {
-            mLockedIndicator.setImageResource(R.drawable.ic_lock_message_sms);
-            mLockedIndicator.setVisibility(View.VISIBLE);
-        } else {
-            mLockedIndicator.setVisibility(View.GONE);
-        }
-
         // Delivery icon - we can show a failed icon for both sms and mms, but for an actual
         // delivery, we only show the icon for sms. We don't have the information here in mms to
         // know whether the message has been delivered. For mms, msgItem.mDeliveryStatus set
@@ -1218,21 +1242,30 @@ public class MessageListItem extends ZoomMessageListItem implements
         // delivery report was turned on when the message was sent. Yes, it's confusing!
         if ((msgItem.isOutgoingMessage() && msgItem.isFailedMessage()) ||
                 msgItem.mDeliveryStatus == MessageItem.DeliveryStatus.FAILED) {
-            mSendFailView.setVisibility(View.VISIBLE);
+            if (mSendFailView != null) {
+                mSendFailView.setVisibility(View.VISIBLE);
+            }
             mDateView.setVisibility(View.GONE);
             mDeliveredIndicator.setVisibility(View.GONE);
         } else if (msgItem.isSms() &&
                 msgItem.mDeliveryStatus == MessageItem.DeliveryStatus.RECEIVED) {
             mDeliveredIndicator.setImageResource(R.drawable.ic_sms_mms_delivered);
             mDeliveredIndicator.setVisibility(View.VISIBLE);
+            if (mSendFailView != null) {
+                mSendFailView.setVisibility(View.GONE);
+            }
         } else {
             mDeliveredIndicator.setVisibility(View.GONE);
+            if (mSendFailView != null) {
+                mSendFailView.setVisibility(View.GONE);
+            }
         }
 
         // Message details icon - this icon is shown both for sms and mms messages. For mms,
         // we show the icon if the read report or delivery report setting was set when the
         // message was sent. Showing the icon tells the user there's more information
         // by selecting the "View report" menu.
+        /*
         if (msgItem.mDeliveryStatus == MessageItem.DeliveryStatus.INFO
                 || (msgItem.isMms() && !msgItem.isSending() &&
                         msgItem.mDeliveryStatus == MessageItem.DeliveryStatus.PENDING)) {
@@ -1247,7 +1280,7 @@ public class MessageListItem extends ZoomMessageListItem implements
             mDetailsIndicator.setVisibility(View.VISIBLE);
         } else {
             mDetailsIndicator.setVisibility(View.GONE);
-        }
+        }*/
     }
 
     @Override
@@ -1355,6 +1388,10 @@ public class MessageListItem extends ZoomMessageListItem implements
         if (mIsCheck) {
             mMessageBlock.getBackground().setTint(mContext.getResources().
                     getColor(R.color.compose_item_selected_background));
+            if (mPlayAudioLayout != null) {
+                mPlayAudioLayout.setBackgroundResource(
+                        R.color.compose_item_selected_background);
+            }
         } else {
             mMessageBlock.getBackground().setTint(mBackgroundColor);
         }

@@ -21,6 +21,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/input_bar"
     android:orientation="vertical">
 
     <LinearLayout
@@ -41,12 +42,21 @@
             android:id="@+id/recipients_subject_linear"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="5dip"
-            android:paddingBottom="5dip"
-            android:paddingStart="20dip"
+            android:gravity="bottom"
             android:paddingEnd="5dip"
-            android:orientation="vertical"
+            android:orientation="horizontal"
             android:visibility="gone">
+
+            <ImageButton android:id="@+id/back_view"
+                         android:background="?android:attr/selectableItemBackgroundBorderless"
+                         style="?android:attr/borderlessButtonStyle"
+                         android:src="@drawable/back_white"
+                         android:layout_gravity="top"
+                         android:layout_marginRight="15dip"
+                         android:layout_marginLeft="15dip"
+                         android:layout_marginTop="15dip"
+                         android:layout_width="24dip"
+                         android:layout_height="24dip"/>
 
             <ViewStub android:id="@+id/recipients_editor_stub"
                 android:layout="@layout/recipients_editor"
@@ -169,11 +179,6 @@
                       android:layout_height="wrap_content"/>
               </view>
             </ScrollView>
-
-            <!-- Divider -->
-            <View android:background="#eeeeee"
-                android:layout_width="match_parent"
-                android:layout_height="1dp" />
 
             <LinearLayout
                 android:id="@+id/bottom_panel"

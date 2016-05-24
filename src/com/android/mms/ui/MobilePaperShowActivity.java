@@ -229,13 +229,6 @@ public class MobilePaperShowActivity extends Activity {
         MessageUtils.saveTextFontSize(this, mFontSizeForSave);
     }
 
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (ev.getPointerCount() > 1) {
-            mScaleDetector.onTouchEvent(ev);
-        }
-        return super.dispatchTouchEvent(ev);
-    }
-
     private void setDetailsView() {
         // Add message details.
         String messageDetails = MessageUtils.getMessageDetails(
@@ -307,23 +300,11 @@ public class MobilePaperShowActivity extends Activity {
             mScrollViewPort = new ScrollView(this) {
                 private int currentX;
                 private int currentY;
-                private int move;
-
+                private int moveX;
+                private int moveY;
                 @Override
                 public boolean onTouchEvent(MotionEvent ev) {
-                    super.onTouchEvent(ev);
-                    return mScaleDetector.onTouchEvent(ev);
-                }
-
-                @Override
-                public boolean onInterceptTouchEvent(MotionEvent ev) {
-
-                    final int action = ev.getAction();
-                    switch (action) {
-                        case MotionEvent.ACTION_DOWN:{
-                            move=0;
-                            break;
-                        }
+                    switch(ev.getAction()) {
                         case MotionEvent.ACTION_POINTER_2_DOWN: {
                             currentX = (int) ev.getX(MotionEvent.ACTION_POINTER_INDEX_MASK
                                     & MotionEvent.ACTION_POINTER_DOWN);
@@ -331,26 +312,33 @@ public class MobilePaperShowActivity extends Activity {
                                     & MotionEvent.ACTION_POINTER_DOWN);
                             break;
                         }
+                        case MotionEvent.ACTION_POINTER_2_UP:{
+                            currentX = 0;
+                            currentY = 0;
+                            stopNestedScroll();
+                        }
+                    }
+                    switch(ev.getActionMasked()) {
                         case MotionEvent.ACTION_MOVE: {
-                            if(ev.getPointerCount()>=MobilePaperShowActivity.TWO_FINGERS) {
+                            if(ev.getPointerCount() >= TWO_FINGERS) {
                                 int x2 = (int) ev.getX(MotionEvent.ACTION_POINTER_INDEX_MASK
                                         & MotionEvent.ACTION_POINTER_DOWN);
                                 int y2 = (int) ev.getY(MotionEvent.ACTION_POINTER_INDEX_MASK
                                         & MotionEvent.ACTION_POINTER_DOWN);
-                                move += Math.abs(currentY - y2);
-                            } else {
-                                int x2 = (int) ev.getRawX();
-                                int y2 = (int) ev.getRawY();
-                                move += Math.abs(currentY - y2);
-                                currentX = x2;
-                                currentY = y2;
+                                moveX += Math.abs(currentX - x2);
+                                moveY += Math.abs(currentY - y2);
                             }
                             break;
                         }
                     }
-
-                    super.onInterceptTouchEvent(ev);
-                    return move > CLICK_LIMIT;
+                    if(moveX > CLICK_LIMIT || moveY > CLICK_LIMIT) {
+                        moveX = 0;
+                        moveY = 0;
+                        stopNestedScroll();
+                        return mScaleDetector.onTouchEvent(ev);
+                    } else {
+                        return super.onTouchEvent(ev);
+                    }
                 }
             };
 

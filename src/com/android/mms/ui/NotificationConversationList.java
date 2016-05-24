@@ -46,11 +46,13 @@ import com.android.mms.ui.MessageUtils;
 import java.util.HashSet;
 
 public class NotificationConversationList extends ConversationList {
+    private TextView mEmptyView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setTitle(R.string.notification_message_label);
+        mEmptyView = (TextView)findViewById(R.id.empty);
 
         ActionBar actionBar = getActionBar();
         actionBar.setDisplayShowHomeEnabled(false);
@@ -61,8 +63,7 @@ public class NotificationConversationList extends ConversationList {
     @Override
     public void startAsyncQuery() {
         try {
-            ((TextView) (getListView().getEmptyView())).setText(
-                    R.string.loading_conversations);
+            mEmptyView.setText(R.string.loading_conversations);
 
 // FIXME: Comment this provider dependency temporary, will restore back later.
             Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN,
@@ -79,6 +80,9 @@ public class NotificationConversationList extends ConversationList {
         switch (item.getItemId()) {
             case android.R.id.home:
                 finish();
+                return true;
+            case R.id.action_mark_as_read:
+                MessageUtils.markAsReadForNotificationMessage(this);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -107,6 +111,11 @@ public class NotificationConversationList extends ConversationList {
         }
 
         return true;
+    }
+
+    @Override
+    protected void initCreateNewMessageButton() {
+        return; // Would be hide floating button (create new conversation button).
     }
 
     @Override

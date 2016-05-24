@@ -387,6 +387,34 @@ public class RecipientsEditor extends RecipientEditTextView {
         }
     }
 
+    public boolean containsMultiContacts(Spanned sp) {
+        int len = sp.length();
+        List<String> list = new ArrayList<String>();
+        int start = 0;
+        int i = 0;
+        while (i < len + 1) {
+            char c;
+            if ((i == len) || ((c = sp.charAt(i)) == ',') || (c == ';')) {
+                if (i > start) {
+                    list.add(getNumberAt(sp, start, i, getContext()));
+
+                    int spanLen = getSpanLength(sp, start, i, getContext());
+                    if (spanLen > i) {
+                        i = spanLen;
+                    }
+                }
+                i++;
+                while ((i < len) && (sp.charAt(i) == ' ')) {
+                    i++;
+                }
+                start = i;
+            } else {
+                i++;
+            }
+        }
+        return list.size() > 1;
+    }
+
     private int pointToPosition(int x, int y) {
         // Check layout before getExtendedPaddingTop().
         // mLayout is used in getExtendedPaddingTop().

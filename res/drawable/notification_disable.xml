@@ -29,44 +29,17 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 -->
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/play_audio_layout"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:paddingTop="14dp"
-    android:paddingBottom="14dp"
-    android:paddingLeft="20dp">
-
-    <ImageView
-        android:id="@+id/play_audio_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:focusable="true"
-        android:clickable="true"/>
-
-    <TextView
-        android:id="@+id/play_audio_duration"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_toRightOf="@id/play_audio_button"
-        android:paddingLeft="12dp"/>
-
-    <ProgressBar
-        android:id="@+id/play_audio_progressbar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="9dp"
-        android:layout_centerVertical="true"
-        android:layout_toRightOf="@id/play_audio_duration"
-        android:progressDrawable="@drawable/play_audio_progressbar"
-        android:max="100"
-        android:progress="0"
-        android:secondaryProgress="0"
-        android:layout_marginLeft="12dp"
-        android:layout_marginRight="20dp"/>
-
-</RelativeLayout>
-
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="60dp"
+        android:height="60dp"
+        android:viewportWidth="60"
+        android:viewportHeight="60">
+    <path
+        android:fillColor="#BDBDBD"
+        android:pathData="M30.19,30.57m-28,0a28,28 0,1 1,56 0a28,28 0,1 1,-56 0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40.15,22.62v10.66c1.96,-0.97 3.31,-2.98 3.31,-5.32C43.46,
+            25.61 42.11,23.6 40.15,22.62zM19.46,23.99v7.85h10.1l7.95,6.72V17.37
+            l-7.95,6.62H19.46zM22.46,43.4h5.55v-9.25h-5.55V43.4z" />
+</vector>

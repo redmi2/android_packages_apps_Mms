@@ -251,37 +251,37 @@
         </activity>
 
         <activity android:name=".ui.MessagingPreferenceActivity"
-            android:theme="@style/MmsNewStyleTheme"
+            android:theme="@style/MmsSettingStyleTheme"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/preferences_title" />
 
         <activity android:name=".ui.SmsPreferenceActivity"
-            android:theme="@style/MmsNewStyleTheme"
+            android:theme="@style/MmsSettingStyleTheme"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/pref_sms_settings_title" />
 
         <activity android:name=".ui.MmsPreferenceActivity"
-            android:theme="@style/MmsNewStyleTheme"
+            android:theme="@style/MmsSettingStyleTheme"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/pref_mms_settings_title" />
 
         <activity android:name=".ui.MessagingReportsPreferenceActivity"
-            android:theme="@style/MmsNewStyleTheme"
+            android:theme="@style/MmsSettingStyleTheme"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/pref_mms_settings_title" />
 
         <activity android:name=".ui.ManageSimSMSPreferenceActivity"
-            android:theme="@style/MmsNewStyleTheme"
+            android:theme="@style/MmsSettingStyleTheme"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/pref_mms_settings_title" />
 
         <activity android:name=".ui.MessagingExpiryPreferenceActivity"
-            android:theme="@style/MmsNewStyleTheme"
+            android:theme="@style/MmsSettingStyleTheme"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/pref_mms_settings_title" />
 
          <activity android:name=".ui.SMSCPreferenceActivity"
-            android:theme="@style/MmsNewStyleTheme"
+            android:theme="@style/MmsSettingStyleTheme"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/pref_mms_settings_title" />
 
@@ -331,7 +331,7 @@
         </receiver>
 
         <activity android:name=".ui.ManageSimMessages"
-                  android:theme="@style/MmsHoloTheme"
+                  android:theme="@style/MmsNewStyleTheme"
                   android:launchMode="singleTop"
                   android:configChanges="orientation|screenSize|keyboardHidden"
                   android:label="@string/sim_manage_messages_title">
@@ -401,7 +401,7 @@
         </activity>
 
         <activity android:name=".ui.MessageTemplate"
-                  android:theme="@android:style/Theme.Holo.Light"
+                  android:theme="@style/MmsSettingStyleTheme"
                   android:launchMode="singleTop"
                   android:label="@string/message_template_title"
                   android:configChanges="orientation|screenSize" >
@@ -588,9 +588,10 @@
         </service>
 
         <receiver
-            android:name=".ui.NotificationMarkAsReadReceiver" >
+            android:name=".ui.NotificationActionHandleReceiver" >
             <intent-filter>
-                <action android:name="com.android.mms.MARK_AS_READ" />
+                <action android:name="org.codeaurora.intent.action.MARK_AS_READ" />
+                <action android:name="org.codeaurora.intent.action.DOWNLOAD" />
             </intent-filter>
         </receiver>
 

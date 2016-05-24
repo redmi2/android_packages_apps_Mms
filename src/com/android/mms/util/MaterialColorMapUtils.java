@@ -38,6 +38,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.Trace;
+import android.text.TextUtils;
 
 public class MaterialColorMapUtils {
     private final TypedArray sPrimaryColors;
@@ -200,6 +201,12 @@ public class MaterialColorMapUtils {
         if (contact != null) {
             mAvatarName = contact.getNameForAvatar();
             lookup = contact.getLookup();
+            if (TextUtils.isEmpty(lookup)) {
+                lookup = contact.getNumber();
+            }
+            if (TextUtils.isEmpty(mAvatarName)) {
+                mAvatarName = contact.getNumber();
+            }
         }
 
         if(mAvatarName != null && lookup != null) {
@@ -219,10 +226,38 @@ public class MaterialColorMapUtils {
         return drawable;
     }
 
+    public static Bitmap toConformBitmap(Bitmap background, Bitmap foreground) {
+        if( background == null ) {
+            return null;
+        }
+
+        int bgWidth = background.getWidth();
+        int bgHeight = background.getHeight();
+        Bitmap newbmp = Bitmap.createBitmap(bgWidth, bgHeight, Bitmap.Config.ARGB_8888);
+        Canvas cv = new Canvas(newbmp);
+        cv.drawBitmap(background, 0, 0, null);
+        cv.drawBitmap(foreground, bgWidth / 4, bgHeight / 4, null);
+        return newbmp;
+    }
+
     public static Bitmap getLetterTitleDraw(Context mContext, Contact contact, int size) {
         if (size <= 0) return null;
 
         Drawable drawable = getLetterTitleDraw(mContext, contact);
+
+        int w = size;
+        int h = size;
+        Bitmap.Config config = drawable.getOpacity() != android.graphics.PixelFormat.OPAQUE
+                ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565;
+        Bitmap bitmap = Bitmap.createBitmap(w, h, config);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, w, h);
+        drawable.draw(canvas);
+        return bitmap;
+    }
+
+    public static Bitmap vectobitmap (Drawable drawable, int size) {
+        if (size <= 0) return null;
 
         int w = size;
         int h = size;

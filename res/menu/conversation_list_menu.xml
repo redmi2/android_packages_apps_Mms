@@ -27,13 +27,12 @@
           android:icon="@drawable/search"
           android:showAsAction="ifRoom|collapseActionView" />
 
-    <item android:id="@+id/action_settings"
-        android:title="@string/menu_preferences"
-        android:icon="@android:drawable/ic_menu_preferences" />
-
     <item android:id="@+id/action_mark_as_read"
         android:title="@string/menu_mark_as_read"
-        android:visible="false"
+        android:visible="false" />
+
+    <item android:id="@+id/action_settings"
+        android:title="@string/menu_preferences"
         android:icon="@android:drawable/ic_menu_preferences" />
 
     <item android:id="@+id/action_change_to_folder_mode"

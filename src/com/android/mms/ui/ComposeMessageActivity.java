@@ -475,6 +475,7 @@ public class ComposeMessageActivity extends Activity
     private ImageView mIndicatorForSimMmsFir, mIndicatorForSimSmsFir;
     private ImageView mIndicatorForSimMmsSec, mIndicatorForSimSmsSec;
     private ZoomGestureOverlayView mZoomGestureOverlayView; // overlay for handling zoom
+    private ImageButton mBackView;
 
     private AttachmentEditor mAttachmentEditor;
     private View mAttachmentEditorScrollView;
@@ -485,6 +486,7 @@ public class ComposeMessageActivity extends Activity
     private RecipientsEditor mRecipientsEditor;  // UI control for editing recipients
     private ImageButton mRecipientsPicker;       // UI control for recipients picker
     private ImageButton mRecipientsPickerGroups; // UI control for group recipients picker
+    private ImageButton mClearButton;
 
 
     // For HW keyboard, 'mIsKeyboardOpen' indicates if the HW keyboard is open.
@@ -913,6 +915,10 @@ public class ComposeMessageActivity extends Activity
                     case MessageListItem.MSG_LIST_EDIT:
                         editMessageItem(msgItem);
                         drawBottomPanel();
+                        break;
+
+                    case MessageListItem.MSG_LIST_RESEND:
+                        resendMessage(msgItem);
                         break;
 
                     case MessageListItem.MSG_LIST_PLAY:
@@ -1512,6 +1518,14 @@ public class ComposeMessageActivity extends Activity
                 Log.w(TAG,
                      "RecipientsWatcher: afterTextChanged called with invisible mRecipientsEditor");
                 return;
+            }
+            if (recipientCount() <= 1 && !TextUtils.isEmpty(s.toString())
+                    && !mRecipientsEditor.containsMultiContacts(new SpannableString(s + "1"))) {
+                mClearButton.setVisibility(View.VISIBLE);
+                mRecipientsPicker.setVisibility(View.GONE);
+            } else {
+                mClearButton.setVisibility(View.GONE);
+                mRecipientsPicker.setVisibility(View.VISIBLE);
             }
 
             mWorkingMessage.setWorkingRecipients(mRecipientsEditor.getNumbers());
@@ -2361,12 +2375,16 @@ public class ComposeMessageActivity extends Activity
             View stubView = stub.inflate();
             mRecipientsEditor = (RecipientsEditor) stubView.findViewById(R.id.recipients_editor);
             mRecipientsPicker = (ImageButton) stubView.findViewById(R.id.recipients_picker);
+            mClearButton = (ImageButton) stubView.findViewById(R.id.clear);
         } else {
             mRecipientsEditor = (RecipientsEditor)findViewById(R.id.recipients_editor);
             mRecipientsEditor.setVisibility(View.VISIBLE);
             mRecipientsPicker = (ImageButton)findViewById(R.id.recipients_picker);
             mRecipientsPicker.setVisibility(View.VISIBLE);
+            mClearButton = (ImageButton) findViewById(R.id.clear);
         }
+        mClearButton.setVisibility(View.GONE);
+        mClearButton.setOnClickListener(this);
         mRecipientsPicker.setOnClickListener(this);
         mRecipientsEditor.addTextChangedListener(mRecipientsWatcher);
         mRecipientsEditor.setAdapter(new ChipsRecipientAdapter(this));
@@ -2419,6 +2437,7 @@ public class ComposeMessageActivity extends Activity
         PhoneNumberFormatter.setPhoneNumberFormattingTextWatcher(this, mRecipientsEditor);
 
         mTopPanel.setVisibility(View.VISIBLE);
+        mToolBar.setVisibility(View.GONE);
     }
 
     @Override
@@ -2475,10 +2494,10 @@ public class ComposeMessageActivity extends Activity
     @Override
     public void onZoomWithScale(float scale) {
         if (mMsgListView != null) {
-            mMsgListView.handleZoomWithScale(scale);
+            mMsgListView.handleZoomWithScale(scale, false);
         }
         if (mTextEditor != null) {
-            ZoomMessageListItem.zoomViewByScale(this, mTextEditor, scale);
+            ZoomMessageListItem.zoomViewByScale(this, mTextEditor, scale, true);
         }
     }
 
@@ -2514,6 +2533,7 @@ public class ComposeMessageActivity extends Activity
     private void hideOrShowTopPanel() {
         boolean anySubViewsVisible = isRecipientsEditorVisible();
         mTopPanel.setVisibility(anySubViewsVisible ? View.VISIBLE : View.GONE);
+        mToolBar.setVisibility(anySubViewsVisible ? View.GONE : View.VISIBLE);
     }
 
     public void initialize(Bundle savedInstanceState, long originalThreadId) {
@@ -5191,6 +5211,15 @@ public class ComposeMessageActivity extends Activity
             }
             ViewStub viewStub = (ViewStub) findViewById(R.id.view_stub);
             showEmojiView(viewStub);
+        } else if (v == mBackView) {
+            exitComposeMessageActivity(new Runnable() {
+                @Override
+                public void run() {
+                    goToConversationList();
+                }
+            });
+        } else if (v == mClearButton) {
+            mRecipientsEditor.setText("");
         }
     }
 
@@ -5352,6 +5381,8 @@ public class ComposeMessageActivity extends Activity
         if (sPrimaryColorDark == 0) {
             sPrimaryColorDark = getResources().getColor(R.color.primary_color_dark);
         }
+        mBackView = (ImageButton)findViewById(R.id.back_view);
+        mBackView.setOnClickListener(this);
 
         mMsgListView = (MessageListView) findViewById(R.id.history);
         mMsgListView.setDivider(null);      // no divider so we look like IM conversation.
@@ -5422,7 +5453,7 @@ public class ComposeMessageActivity extends Activity
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
         float mTextSize = sp.getFloat(MessagingPreferenceActivity.ZOOM_MESSAGE,
                 MmsConfig.DEFAULT_FONT_SIZE);
-        mTextEditor.setTextSize((int) mTextSize);
+        mTextEditor.setTextSize((int) mTextSize + ZoomMessageListItem.DIFF_FONT_SIZE);
         if (getResources().getInteger(R.integer.limit_count) == 0) {
             mTextEditor.setFilters(new InputFilter[] {
                     new LengthFilter(MmsConfig.getMaxTextLimit())});
@@ -6400,7 +6431,9 @@ public class ComposeMessageActivity extends Activity
         @Override
         protected void onDeleteComplete(int token, Object cookie, int result) {
             super.onDeleteComplete(token, cookie, result);
-            updateThreadAttachType();
+            // FIXME: Comment this framework dependency at bring up stage, will restore
+            //        back later.
+            //updateThreadAttachType();
             switch(token) {
                 case ConversationList.DELETE_CONVERSATION_TOKEN:
                     mConversation.setMessageCount(0);

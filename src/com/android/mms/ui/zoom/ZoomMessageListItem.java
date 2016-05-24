@@ -53,6 +53,9 @@ public class ZoomMessageListItem extends LinearLayout {
     // "Zooming" constants
     private static final int MIN_FONT_SIZE = 14;  //sp
     private static final int MAX_FONT_SIZE = 24;  //sp
+    private static final int INPUT_MIN_FONT_SIZE = 16;
+    private static final int INPUT_MAX_FONT_SIZE = 26;
+    public static final int DIFF_FONT_SIZE = 2;
 
     // Members
     private final List<TextView> mZoomableTextViewList = new ArrayList<TextView>();
@@ -104,7 +107,7 @@ public class ZoomMessageListItem extends LinearLayout {
             @Override
             public void run() {
                 for (TextView textView : mZoomableTextViewList) {
-                    zoomViewByScale(sContext, textView, scale);
+                    zoomViewByScale(sContext, textView, scale, true);
                 }
             }
         });
@@ -118,10 +121,20 @@ public class ZoomMessageListItem extends LinearLayout {
      * @param view    {@link android.widget.TextView}
      * @param scale   {@link java.lang.Float}
      */
-    public static void zoomViewByScale(Context context, TextView view, float scale) {
+    public static void zoomViewByScale(Context context, TextView view,
+                                       float scale, boolean isEditorText) {
         if (view == null) {
             Log.w(TAG, "'view' is null!");
             return;
+        }
+        int maxSize;
+        int minSize;
+        if (isEditorText) {
+            maxSize = INPUT_MAX_FONT_SIZE;
+            minSize = INPUT_MIN_FONT_SIZE;
+        } else {
+            maxSize = MAX_FONT_SIZE;
+            minSize = MIN_FONT_SIZE;
         }
         // getTextSize() returns absolute pixels
         // convert to scaled for proper math flow
@@ -129,10 +142,10 @@ public class ZoomMessageListItem extends LinearLayout {
         // Calculate based on the scale (1.1 and 0.95 in this case)
         float calculatedSize = currentTextSize * scale;
         // Limit max and min
-        if (calculatedSize > MAX_FONT_SIZE) {
-            currentTextSize = MAX_FONT_SIZE;
-        } else if (calculatedSize < MIN_FONT_SIZE) {
-            currentTextSize = MIN_FONT_SIZE;
+        if (calculatedSize > maxSize) {
+            currentTextSize = maxSize;
+        } else if (calculatedSize < minSize) {
+            currentTextSize = minSize;
         } else {
             // Specify the calculated if we are within the reasonable bounds
             currentTextSize = calculatedSize;
@@ -161,14 +174,14 @@ public class ZoomMessageListItem extends LinearLayout {
      *
      * @param fontSize {@link java.lang.Integer}
      */
-    public void setZoomScale(final float scale) {
+    public void setZoomScale(final float scale, final boolean isEditorText) {
         Handler handler = getHandler();
         if (handler != null) {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
                     for (TextView textView : mZoomableTextViewList) {
-                        zoomViewByScale(getContext(), textView, scale);
+                        zoomViewByScale(getContext(), textView, scale, isEditorText);
                         setZoomScalePreference();
                     }
                 }

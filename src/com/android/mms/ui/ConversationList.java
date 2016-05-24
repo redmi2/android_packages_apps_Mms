@@ -43,6 +43,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SqliteWrapper;
 import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -51,6 +52,9 @@ import android.provider.ContactsContract.Contacts;
 import android.provider.Telephony;
 import android.provider.Telephony.Mms;
 import android.provider.Telephony.Threads;
+import android.text.Html;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.ActionMode;
@@ -66,6 +70,7 @@ import android.view.View;
 import android.view.View.OnCreateContextMenuListener;
 import android.view.View.OnKeyListener;
 import android.view.ViewGroup;
+import android.view.ViewStub;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -94,6 +99,7 @@ import com.android.mms.rcs.RcsUtils;
 import com.android.mms.rcs.RcsSelectionMenu;
 import com.android.mms.transaction.MessagingNotification;
 import com.android.mms.transaction.SmsRejectedReceiver;
+import com.android.mms.ui.MailBoxMessageList;
 import com.android.mms.ui.PopupList;
 import com.android.mms.ui.SelectionMenu;
 import com.android.mms.util.DraftCache;
@@ -109,9 +115,11 @@ import com.suntek.mway.rcs.client.api.support.SupportApi;
 import com.suntek.rcs.ui.common.mms.GroupChatManagerReceiver;
 import com.suntek.rcs.ui.common.mms.GroupChatManagerReceiver.GroupChatNotifyCallback;
 import com.suntek.rcs.ui.common.RcsLog;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 
 /**
  * This activity provides a list view of existing conversations.
@@ -164,8 +172,13 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     private Toast mComposeDisabledToast;
     private static long mLastDeletedThread = -1;
     private boolean mMultiChoiceMode = false;
+    private boolean mHasNormalThreads = false;
+    private boolean mHasNotificationThreads = false;
 
+    private ViewGroup mListViewHeader;
     private ViewGroup mNotificationView;
+    private ViewGroup mNotificationContent;
+    private ImageView mNotificationIcon;
     private TextView mNotificationLabel;
     private TextView mNotificationDate;
     private TextView mNotificationSubject;
@@ -271,12 +284,14 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         RecipientIdCache.init(getApplication());
         mIsRcsEnabled = MmsConfig.isRcsEnabled();
 
+        setContentView(R.layout.conversation_list_screen);
+
         LayoutInflater inflate = (LayoutInflater)
                 getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        mNotificationView = (ViewGroup) inflate.inflate(
-                R.layout.conversation_list_notification_item, null);
+        mListViewHeader = (ViewGroup) inflate.inflate(
+                R.layout.conversation_list_header, null);
+        getListView().addHeaderView(mListViewHeader);
 
-        setContentView(R.layout.conversation_list_screen);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         getWindow().setStatusBarColor(getResources().getColor(R.color.primary_color_dark));
         if (MessageUtils.isMailboxMode()) {
@@ -287,27 +302,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         }
 
         mSmsPromoBannerView = findViewById(R.id.banner_sms_promo);
-        mComposeMessageButton = (ImageButton) findViewById(R.id.create);
-        mComposeMessageButton.setClickable(true);
-        mComposeMessageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (mIsSmsEnabled) {
-                    if (mIsRcsEnabled) {
-                        selectComposeAction();
-                    } else {
-                        createNewMessage();
-                    }
-                } else {
-                    // Display a toast letting the user know they can not compose.
-                    if (mComposeDisabledToast == null) {
-                        mComposeDisabledToast = Toast.makeText(ConversationList.this,
-                                R.string.compose_disabled_toast, Toast.LENGTH_SHORT);
-                    }
-                    mComposeDisabledToast.show();
-                }
-            }
-        });
+        initCreateNewMessageButton();
 
         mQueryHandler = new ThreadListQueryHandler(getContentResolver());
 
@@ -323,9 +318,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             RcsUtils.addNotificationItem(this, listView);
         }
         // Tell the list view which view to display when the list is empty
-        if (!mIsRcsEnabled) {
-            listView.setEmptyView(findViewById(R.id.empty));
-        } else {
+        if (mIsRcsEnabled) {
             mEmptyView.setVisibility(View.GONE);
         }
 
@@ -384,40 +377,103 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         mSavedFirstItemOffset = (firstChild == null) ? 0 : firstChild.getTop();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
+    /**
+     * Enable Notification Group when quit Action Mode.
+     */
+    private void enableNotificationGroup() {
+        if (mNotificationView == null || mNotificationIcon == null) {
+            return;
+        }
+        mNotificationView.setEnabled(true);
+        mNotificationView.setAlpha(1.0f);
+        mNotificationIcon.setImageResource(R.drawable.notification_main);
+    }
 
-// FIXME: Comment this provider dependency temporary, will restore back later.
-mNotificationView.setVisibility(View.GONE);
-        /*String currentClassName = null;
+    /**
+     * Disable Notification Group when into Action Mode.
+     */
+    private void disableNotificationGroup() {
+        if (mNotificationView == null || mNotificationIcon == null) {
+            return;
+        }
+        mNotificationView.setEnabled(false);
+        mNotificationView.setAlpha(0.25f);
+        mNotificationIcon.setImageResource(R.drawable.notification_disable);
+    }
+
+    /**
+     * Gone Notification Group
+     */
+    private void invisibleNotificationGroup() {
+        if (mNotificationContent != null) {
+            mNotificationContent.setVisibility(View.GONE);
+        }
+        if (mNotificationIcon != null) {
+            mNotificationIcon.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * Visible Notification Group
+     */
+    private void visibleNotificationGroup() {
+        if (mNotificationContent != null) {
+            mNotificationContent.setVisibility(View.VISIBLE);
+        }
+        if (mNotificationIcon != null) {
+            mNotificationIcon.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * Control Notification Group if need visible.
+     * @param visible True is Visible, false is Gone.
+     */
+    private void toggleNotificationGroup(boolean visible) {
+        String currentClassName = null;
         Intent intent = getIntent();
         if (intent != null) {
             currentClassName = intent.getComponent().getClassName();
         }
-
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        if (sp.getBoolean(MessagingPreferenceActivity.SEPERATE_NOTIFI_MSG, true)
+        if (visible && sp.getBoolean(MessagingPreferenceActivity.SEPERATE_NOTIFI_MSG, true)
                 && ConversationList.class.getName().equals(currentClassName)) {
-            if (getListView() != null && getListView().getHeaderViewsCount() == 0) {
-                getListView().addHeaderView(mNotificationView);
-            }
-            mNotificationLabel = (TextView) mNotificationView.findViewById(R.id.notification_label);
-            mNotificationDate = (TextView) mNotificationView.findViewById(R.id.date);
-            mNotificationSubject = (TextView) mNotificationView.findViewById(R.id.subject);
-            mNotificationView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(ConversationList.this,
-                            NotificationConversationList.class);
-                    startActivity(intent);
+            if (mNotificationView == null) {
+                ViewStub stub = (ViewStub) mListViewHeader
+                        .findViewById(R.id.view_stub_notification);
+                if (stub != null) {
+                    stub.inflate();
                 }
-            });
-        } else {
-            if (getListView() != null && getListView().getHeaderViewsCount() == 1) {
-                getListView().removeHeaderView(mNotificationView);
+                mNotificationView = (ViewGroup) mListViewHeader.
+                        findViewById(R.id.notification_header);
+                mNotificationView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent(ConversationList.this,
+                                NotificationConversationList.class);
+                        startActivity(intent);
+                    }
+                });
+                mNotificationContent = (ViewGroup) mNotificationView.
+                        findViewById(R.id.notification_content);
+                mNotificationIcon = (ImageView) mNotificationView.
+                        findViewById(R.id.notification_icon);
+                mNotificationLabel = (TextView) mNotificationView.
+                        findViewById(R.id.notification_label);
+                mNotificationDate = (TextView) mNotificationView.
+                        findViewById(R.id.date);
+                mNotificationSubject = (TextView) mNotificationView.
+                        findViewById(R.id.subject);
             }
-        }*/
+            visibleNotificationGroup();
+        } else {
+            invisibleNotificationGroup();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
 
         boolean isSmsEnabled = MmsConfig.isSmsEnabled(this);
         if (isSmsEnabled != mIsSmsEnabled) {
@@ -692,18 +748,17 @@ mNotificationView.setVisibility(View.GONE);
             mEmptyView.setText(R.string.loading_conversations);
 
 // FIXME: Comment this provider dependency temporary, will restore back later.
+            Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN, NOT_OBSOLETE);
             /*SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
             if (sp.getBoolean(MessagingPreferenceActivity.SEPERATE_NOTIFI_MSG, true)) {
                 Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN,
                         Threads.NOTIFICATION + "=0" + " and " + NOT_OBSOLETE);
                 Conversation.startQuery(mQueryHandler, NOTIFICATION_THREAD_QUERY_TOKEN,
                         Threads.NOTIFICATION + "=1" + " and " + NOT_OBSOLETE);
-                Conversation.startQuery(mQueryHandler, UNREAD_NOTIFICATION_THREAD_QUERY_TOKEN,
-                        Threads.NOTIFICATION + "=1 AND " + Threads.READ + "=0"
-                         + " and " + NOT_OBSOLETE);
-            } else {*/
+            } else {
                 Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN, NOT_OBSOLETE);
-            //}
+                toggleNotificationGroup(false);
+            }*/
             Conversation.startQuery(mQueryHandler, UNREAD_THREADS_QUERY_TOKEN, Threads.READ + "=0"
                     + " and " + NOT_OBSOLETE);
         } catch (SQLiteException e) {
@@ -864,9 +919,6 @@ mNotificationView.setVisibility(View.GONE);
                 Intent intent = new Intent(this, MessagingPreferenceActivity.class);
                 startActivityIfNeeded(intent, -1);
                 break;
-            case R.id.action_mark_as_read:
-                MessageUtils.markAsReadForNotificationMessage(this);
-                break;
             case R.id.action_change_to_folder_mode:
                 Intent modeIntent = new Intent(this, MailBoxMessageList.class);
                 startActivityIfNeeded(modeIntent, -1);
@@ -961,6 +1013,31 @@ mNotificationView.setVisibility(View.GONE);
         } else {
             openThread(tid);
         }
+    }
+
+    protected void initCreateNewMessageButton() {
+        findViewById(R.id.floating_button_view_stub).setVisibility(View.VISIBLE);
+        mComposeMessageButton = (ImageButton) findViewById(R.id.create);
+        mComposeMessageButton.setClickable(true);
+        mComposeMessageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mIsSmsEnabled) {
+                    if (mIsRcsEnabled) {
+                        selectComposeAction();
+                    } else {
+                        createNewMessage();
+                    }
+                } else {
+                    // Display a toast letting the user know they can not compose.
+                    if (mComposeDisabledToast == null) {
+                        mComposeDisabledToast = Toast.makeText(ConversationList.this,
+                                R.string.compose_disabled_toast, Toast.LENGTH_SHORT);
+                    }
+                    mComposeDisabledToast.show();
+                }
+            }
+        });
     }
 
     public void createNewMessage() {
@@ -1287,7 +1364,11 @@ mNotificationView.setVisibility(View.GONE);
 
                 if (mListAdapter.getCount() == 0) {
                     mEmptyView.setText(R.string.no_conversations);
+                    mHasNormalThreads = false;
+                } else {
+                    mHasNormalThreads = true;
                 }
+                updateEmptyView();
 
                 if (mDoOnceAfterFirstQuery) {
                     mDoOnceAfterFirstQuery = false;
@@ -1320,41 +1401,24 @@ mNotificationView.setVisibility(View.GONE);
                 break;
 
             case NOTIFICATION_THREAD_QUERY_TOKEN:
-                int notificationCount = 0;
+                if (cursor != null && cursor.getCount() > 0) {
+                    mHasNotificationThreads = true;
+                } else {
+                    mHasNotificationThreads = false;
+                }
+                updateEmptyView();
                 if (cursor != null) {
+                    int notificationCount = 0;
                     notificationCount = cursor.getCount();
                     if (notificationCount > 0) {
                         if (cursor.moveToFirst()) {
-                            Conversation conv = Conversation.from(getApplicationContext(),
-                                    cursor);
-                            mNotificationDate.setText(MessageUtils.formatTimeStampString(
-                                    getApplicationContext(), conv.getDate()));
-                            String subject = conv.getSnippet();
-                            if (!TextUtils.isEmpty(subject)) {
-                                mNotificationSubject.setText(subject);
-                                mNotificationSubject.setVisibility(View.VISIBLE);
-                            } else {
-                                mNotificationSubject.setVisibility(View.GONE);
-                            }
-                            int backgroundId;
-                            if (conv.hasUnreadMessages()) {
-                                backgroundId = R.drawable.conversation_item_background_unread;
-                            } else {
-                                backgroundId = R.drawable.conversation_item_background_read;
-                            }
-                            Drawable background = getApplicationContext().getResources()
-                                    .getDrawable(backgroundId);
-                            mNotificationView.setBackground(background);
-                            if (getListView() != null && getListView().getHeaderViewsCount() == 0) {
-                                getListView().addHeaderView(mNotificationView);
-                            }
+                            updateNotificationView(cursor);
+                        } else {
+                            Log.e(TAG,"Cursor couldn't move to first");
                         }
                     } else {
-                        if (getListView() != null && getListView().getHeaderViewsCount() == 1) {
-                            getListView().removeHeaderView(mNotificationView);
-                        }
+                        toggleNotificationGroup(false);
                     }
-                    cursor.close();
                 }
                 break;
 
@@ -1453,6 +1517,122 @@ mNotificationView.setVisibility(View.GONE);
         }
     }
 
+    private void updateNotificationView(Cursor cursor) {
+        new AsyncTask<Cursor, Void, Long>() {
+            private int mUnreadCount = 0;
+
+            @Override
+            protected void onPreExecute() {
+                toggleNotificationGroup(true);
+            }
+
+            @Override
+            protected Long doInBackground(Cursor... params) {
+                long firstUnReadThreadId = Conversation.INVALID_THREAD_ID;
+                long firstReadThreadId = Conversation.INVALID_THREAD_ID;
+                do {
+                    Conversation conv = Conversation.
+                            from(getApplicationContext(), params[0]);
+                    if (conv.hasUnreadMessages()) {
+                        if (firstUnReadThreadId == Conversation.INVALID_THREAD_ID) {
+                            firstUnReadThreadId = conv.getThreadId();
+                        }
+                        mUnreadCount++;
+                    } else {
+                        if (firstReadThreadId == Conversation.INVALID_THREAD_ID) {
+                            firstReadThreadId = conv.getThreadId();
+                        }
+                    }
+                } while (params[0].moveToNext());
+
+                params[0].close();
+
+                return firstUnReadThreadId != Conversation.INVALID_THREAD_ID ?
+                        firstUnReadThreadId : firstReadThreadId;
+            }
+
+            @Override
+            protected void onPostExecute(Long integer) {
+                if (integer == -1) {
+                    return;
+                }
+                Conversation conv = Conversation.get(ConversationList.this,
+                        integer, false);
+                if (conv.hasUnreadMessages()) {
+                    String data = MessageUtils.formatTimeStampString(
+                            getApplicationContext(), conv.getDate());
+                    mNotificationDate.setText(formatTextToBold(data));
+
+                    String snippet = conv.getSnippet();
+                    if (!TextUtils.isEmpty(snippet)) {
+                        mNotificationSubject.setSingleLine(false);
+                        mNotificationSubject.setMaxLines(getResources().
+                                getInteger(R.integer.
+                                        max_unread_message_lines));
+                        mNotificationSubject.setText(formatTextToBold(snippet));
+                    } else {
+                        mNotificationSubject.setVisibility(View.GONE);
+                    }
+
+                    String label = getString(R.string.
+                                    unread_notification_message_label,
+                            mUnreadCount);
+                    mNotificationLabel.setText(formatTextToBold(label));
+                    mNotificationView.setBackground(getResources().
+                            getDrawable(R.drawable.
+                                    conversation_item_background_unread));
+                } else {
+                    mNotificationDate.setText(MessageUtils.
+                            formatTimeStampString(getApplicationContext(),
+                                    conv.getDate()));
+
+                    String snippet = conv.getSnippet();
+                    if (!TextUtils.isEmpty(snippet)) {
+                        mNotificationSubject.setSingleLine(true);
+                        mNotificationSubject.setText(snippet);
+                        mNotificationSubject.setVisibility(View.VISIBLE);
+                    } else {
+                        mNotificationSubject.setVisibility(View.GONE);
+                    }
+
+                    mNotificationLabel.setText(
+                            getString(R.string.notification_message_label));
+                    mNotificationView.setBackground(getResources().
+                            getDrawable(R.drawable.
+                                    conversation_item_background_read));
+                }
+            }
+        }.execute(cursor);
+    }
+
+    private CharSequence formatTextToBold(String content) {
+        SpannableStringBuilder buf = null;
+        if (content != null) {
+            buf = new SpannableStringBuilder(content);
+            buf.setSpan(ConversationListItem.STYLE_BOLD, 0, buf.length(),
+                    Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+        }
+        return buf;
+    }
+
+    private void updateEmptyView() {
+        SharedPreferences sp =
+                PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        if (sp.getBoolean(MessagingPreferenceActivity.SEPERATE_NOTIFI_MSG, true)) {
+            if (mHasNotificationThreads || mHasNormalThreads) {
+                mEmptyView.setVisibility(View.GONE);
+            } else {
+                mEmptyView.setVisibility(View.VISIBLE);
+            }
+        } else {
+            if (mHasNormalThreads) {
+                mEmptyView.setVisibility(View.GONE);
+            } else {
+                mEmptyView.setVisibility(View.VISIBLE);
+            }
+        }
+    }
+
     private ProgressDialog createProgressDialog() {
         ProgressDialog dialog = new ProgressDialog(this);
         dialog.setIndeterminate(true);
@@ -1480,18 +1660,18 @@ mNotificationView.setVisibility(View.GONE);
     };
 
     public void checkAll() {
-        int count = getListView().getCount();
+        int count = getListAdapter().getCount();
 
-        for (int i = 0; i < count; i++) {
+        for (int i = 1; i <= count; i++) {
             getListView().setItemChecked(i, true);
         }
         mListAdapter.notifyDataSetChanged();
     }
 
     public void unCheckAll() {
-        int count = getListView().getCount();
+        int count = getListAdapter().getCount();
 
-        for (int i = 0; i < count; i++) {
+        for (int i = 1; i <= count; i++) {
             getListView().setItemChecked(i, false);
         }
         mListAdapter.notifyDataSetChanged();
@@ -1521,6 +1701,8 @@ mNotificationView.setVisibility(View.GONE);
 
         @Override
         public boolean onCreateActionMode(final ActionMode mode, Menu menu) {
+// FIXME: Comment this provider dependency temporary, will restore back later.
+            //disableNotificationGroup();
             getWindow().setStatusBarColor(
                     getResources().getColor(R.color.statubar_select_background));
             MenuInflater inflater = getMenuInflater();
@@ -1534,7 +1716,6 @@ mNotificationView.setVisibility(View.GONE);
             } else {
                 moreItem.setVisible(false);
             }
-            mNotificationView.setEnabled(false);
 
             if (mMultiSelectActionBarView == null) {
                 mMultiSelectActionBarView = LayoutInflater.from(ConversationList.this).inflate(
@@ -1635,16 +1816,16 @@ mNotificationView.setVisibility(View.GONE);
 
         @Override
         public void onDestroyActionMode(ActionMode mode) {
+// FIXME: Comment this provider dependency temporary, will restore back later.
+            //enableNotificationGroup();
             getWindow().setStatusBarColor(getResources().getColor(R.color.primary_color_dark));
-            if (getListView().getAdapter() instanceof ConversationListAdapter) {
-                 ConversationListAdapter adapter =
-                         (ConversationListAdapter)getListView().getAdapter();
-                 adapter.uncheckAll();
-                 mSelectedThreadIds = null;
-                 mSelectionMenu.dismiss();
-                 mMultiChoiceMode = false;
-                 mNotificationView.setEnabled(true);
-             }
+            Iterator<Long> it = mSelectedThreadIds.iterator();
+            while (it.hasNext()) {
+                Conversation.get(getApplicationContext(), it.next(), false).setIsChecked(false);
+            }
+            mSelectedThreadIds = null;
+            mSelectionMenu.dismiss();
+            mMultiChoiceMode = false;
         }
 
         @Override
@@ -1684,8 +1865,8 @@ mNotificationView.setVisibility(View.GONE);
                 unTopItem.setVisible(false);
                 addBlackItem.setVisible(false);
             }
-            mSelectionMenu.setTitle(getApplicationContext().getString(R.string.selected_count,
-                    checkedCount));
+            mSelectionMenu.setTitle(getApplicationContext()
+                    .getString(R.string.selected_count, checkedCount));
             if (getListView().getCount() == checkedCount) {
                 mHasSelectAll = true;
             } else {

@@ -79,6 +79,21 @@
        <item name="android:actionOverflowButtonStyle">@style/OverFlow</item>
     </style>
 
+    <style name="MmsSettingStyleTheme" parent="@android:style/Theme.Material.Light.DarkActionBar">
+       <item name="android:actionMenuTextAppearance">
+           @style/MMSTextAppearance.Holo.Widget.ActionBar.Menu
+       </item>
+       <item name="android:spinnerDropDownItemStyle">@style/CustomDropDownItemStyle</item>
+       <item name="android:actionModeBackground">@color/action_mode_background</item>
+       <item name="android:actionModeCloseDrawable">@drawable/back_black</item>
+       <item name="android:actionBarWidgetTheme">@style/MyActionBarWidgetTheme</item>
+       <item name="android:actionBarStyle">@style/MyActionBar</item>
+       <item name="android:colorPrimary">@color/default_actionabr_background</item>
+       <item name="android:colorPrimaryDark">@color/primary_color_dark</item>
+       <item name="android:colorAccent">@color/default_actionabr_background</item>
+       <item name="android:actionOverflowButtonStyle">@style/OverFlow</item>
+    </style>
+
     <style name="MMSTextAppearance.Holo.Widget.ActionBar.Menu"
         parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Menu">
         <item name="android:textSize">18sp</item>

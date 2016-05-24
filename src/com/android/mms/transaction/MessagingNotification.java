@@ -92,7 +92,7 @@ import com.android.mms.ui.ManageSimMessages;
 import com.android.mms.ui.MessageUtils;
 import com.android.mms.ui.MessagingPreferenceActivity;
 import com.android.mms.ui.MobilePaperShowActivity;
-import com.android.mms.ui.NotificationMarkAsReadReceiver;
+import com.android.mms.ui.NotificationActionHandleReceiver;
 import com.android.mms.ui.NotificationQuickReplyActivity;
 import com.android.mms.util.AddressUtils;
 import com.android.mms.util.DownloadManager;
@@ -808,9 +808,12 @@ public class MessagingNotification {
                 }
 
                 String subjectLabel = context.getResources().getString(R.string.subject_label);
-                String subject = subjectLabel + getMmsSubject(
+                String subject = getMmsSubject(
                         cursor.getString(COLUMN_MMS_SUBJECT),
                         cursor.getInt(COLUMN_MMS_SUBJECT_CS));
+                if (!TextUtils.isEmpty(subject)) {
+                    subject = subjectLabel + subject;
+                }
                 subject = MessageUtils.cleanseMmsSubject(context, subject);
 
                 long threadId = cursor.getLong(COLUMN_MMS_THREAD_ID);
@@ -931,8 +934,8 @@ public class MessagingNotification {
             Context context, Set<Long> threads, SortedSet<NotificationInfo> notificationSet) {
         ContentResolver resolver = context.getContentResolver();
         Cursor cursor = SqliteWrapper.query(context, resolver, Sms.CONTENT_URI,
-                            SMS_STATUS_PROJECTION, NEW_INCOMING_SM_CONSTRAINT,
-                            null, Sms.DATE + " desc");
+                SMS_STATUS_PROJECTION, NEW_INCOMING_SM_CONSTRAINT,
+                null, Sms.DATE + " desc");
 
         if (cursor == null) {
             return;
@@ -1145,21 +1148,31 @@ public class MessagingNotification {
         String title = null;
         Bitmap avatar = null;
         PendingIntent pendingIntent = null;
+        final int idealIconHeight =
+                res.getDimensionPixelSize(android.R.dimen.notification_large_icon_height);
+        final int idealIconWidth =
+                res.getDimensionPixelSize(android.R.dimen.notification_large_icon_width);
         boolean isMultiNewMessages = MessageUtils.isMailboxMode() ?
                 messageCount > 1 : uniqueThreadCount > 1;
         if (isMultiNewMessages) {    // messages from multiple threads
             Intent mainActivityIntent = getMultiThreadsViewIntent(context);
             pendingIntent = PendingIntent.getActivity(context, 0,
-                mainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                    mainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             title = context.getString(R.string.message_count_notification, messageCount);
+            Drawable backgroundDrawable = context
+                    .getResources().getDrawable(R.drawable.notification_multi_icon_background);
+            Drawable foregroundDrawable = context
+                    .getResources().getDrawable(R.drawable.notification_down_multi);
+            Bitmap background = MaterialColorMapUtils
+                    .vectobitmap(backgroundDrawable, idealIconWidth);
+            Bitmap foreground = MaterialColorMapUtils
+                    .vectobitmap(foregroundDrawable, idealIconWidth / 2);
+            Bitmap roundBitmap = MaterialColorMapUtils.toConformBitmap(background, foreground);
+            noti.setLargeIcon(roundBitmap);
         } else {    // same thread, single or multiple messages
             title = mostRecentNotification.mTitle;
             Contact contact = mostRecentNotification.mSender;
             Drawable contactDrawable = contact.getAvatar(context, null);
-            final int idealIconHeight =
-                res.getDimensionPixelSize(android.R.dimen.notification_large_icon_height);
-            final int idealIconWidth =
-                 res.getDimensionPixelSize(android.R.dimen.notification_large_icon_width);
 
             if (contactDrawable != null) {
                 // Show the sender's avatar as the big icon. Contact bitmaps are 96x96 so we
@@ -1182,6 +1195,16 @@ public class MessagingNotification {
                 Bitmap newAvatar = MaterialColorMapUtils.getLetterTitleDraw(context,
                         contact, idealIconWidth);
                 Bitmap roundBitmap = MaterialColorMapUtils.getCircularBitmap(context, newAvatar);
+                noti.setLargeIcon(roundBitmap);
+            } else {
+                Bitmap newAvatar = MaterialColorMapUtils.getLetterTitleDraw(context,
+                        contact, idealIconWidth);
+                Bitmap background = MaterialColorMapUtils.getCircularBitmap(context, newAvatar);
+                Drawable foregroundDrawable =
+                        context.getResources().getDrawable(R.drawable.myavatar);
+                Bitmap foreground = MaterialColorMapUtils
+                        .vectobitmap(foregroundDrawable, idealIconWidth / 2);
+                Bitmap roundBitmap = MaterialColorMapUtils.toConformBitmap(background, foreground);
                 noti.setLargeIcon(roundBitmap);
             }
 
@@ -1264,17 +1287,17 @@ public class MessagingNotification {
         if (messageCount == 1) {
             // We've got a single message
 
-            // Add "Mark as read" option in notification
+            // Create "Mark as read" option in notification
             CharSequence markReadText = context.getText(R.string.notification_mark_as_read);
-            Intent markReadIntent = new Intent(context, NotificationMarkAsReadReceiver.class);
-            markReadIntent.setAction(NotificationMarkAsReadReceiver.ACTION_NOTIFICATION_MARK_READ);
-            markReadIntent.putExtra(NotificationMarkAsReadReceiver.MSG_THREAD_ID,
+            Intent markReadIntent = new Intent(context, NotificationActionHandleReceiver.class);
+            markReadIntent.setAction(
+                    NotificationActionHandleReceiver.ACTION_NOTIFICATION_MARK_READ);
+            markReadIntent.putExtra(NotificationActionHandleReceiver.MSG_THREAD_ID,
                     mostRecentNotification.mThreadId);
             PendingIntent markReadPendingIntent = PendingIntent.getBroadcast(context, 0,
                     markReadIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            noti.addAction(R.drawable.mark_as_read, markReadText, markReadPendingIntent);
 
-            // Add "Reply" option in notification
+            // Create "Reply" option in notification
             CharSequence replyText = context.getText(R.string.notification_reply);
             Intent replyIntent = new Intent(context, NotificationQuickReplyActivity.class);
             replyIntent.putExtra(NotificationQuickReplyActivity.MSG_THREAD_ID,
@@ -1283,10 +1306,69 @@ public class MessagingNotification {
                     mostRecentNotification.mSender.getName());
             PendingIntent replyPendingIntent = PendingIntent.getActivity(context, 0,
                     replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            noti.addAction(R.drawable.notification_reply, replyText, replyPendingIntent);
+
+            String bigMessage = mostRecentNotification.formatBigMessage(context).toString();
+            String pictureMessage = mostRecentNotification.formatPictureMessage(context).toString();
+            if (!mostRecentNotification.mIsSms && !DownloadManager.getInstance().isAuto()) {
+                Cursor cursor = null;
+                try {
+                    cursor = SqliteWrapper.query(context, context.getContentResolver(),
+                            Mms.Inbox.CONTENT_URI, new String[] {
+                            Mms._ID, Mms.THREAD_ID, Mms.SUBSCRIPTION_ID, Mms.MESSAGE_TYPE},
+                            Mms.THREAD_ID + "=" + mostRecentNotification.mThreadId,
+                            null, null);
+                    if (cursor != null && cursor.getCount() != 0) {
+                        cursor.moveToFirst();
+                        long subId = cursor.getLong(
+                                cursor.getColumnIndexOrThrow(Mms.SUBSCRIPTION_ID));
+                        long msgId = cursor.getLong(
+                                cursor.getColumnIndexOrThrow(Mms._ID));
+                        long msgType = cursor.getLong(
+                                cursor.getColumnIndexOrThrow(Mms.MESSAGE_TYPE));
+
+                        if (msgType == PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND) {
+                            // Create "Download" option in notification
+                            CharSequence downloadText = context.getText(
+                                    R.string.notification_download);
+                            Intent downloadIntent = new Intent(context,
+                                    NotificationActionHandleReceiver.class);
+                            downloadIntent.setAction(
+                                    NotificationActionHandleReceiver.ACTION_NOTIFICATION_DOWNLOAD);
+                            downloadIntent.putExtra(
+                                    NotificationActionHandleReceiver.MSG_SUB_ID, subId);
+                            downloadIntent.putExtra(
+                                    NotificationActionHandleReceiver.MSG_ID, msgId);
+                            PendingIntent downloadPendingIntent = PendingIntent.getBroadcast(
+                                    context, 0, downloadIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                            noti.addAction(R.drawable.notification_reply,
+                                    replyText, replyPendingIntent);
+                            noti.addAction(R.drawable.notification_download,
+                                    downloadText, downloadPendingIntent);
+
+                            bigMessage = context.getResources().getString(
+                                    R.string.new_mms_download);
+                            pictureMessage = context.getResources().getString(
+                                    R.string.new_mms_download);
+                        } else {
+                            noti.addAction(R.drawable.mark_as_read,
+                                    markReadText, markReadPendingIntent);
+                            noti.addAction(R.drawable.notification_reply,
+                                    replyText, replyPendingIntent);
+                        }
+                    }
+                } finally {
+                    if (cursor != null) {
+                        cursor.close();
+                    }
+                }
+            } else {
+                noti.addAction(R.drawable.mark_as_read, markReadText, markReadPendingIntent);
+                noti.addAction(R.drawable.notification_reply, replyText, replyPendingIntent);
+            }
 
             // This sets the text for the collapsed form:
-            noti.setContentText(mostRecentNotification.formatBigMessage(context));
+            noti.setContentText(bigMessage);
 
             if (mostRecentNotification.mAttachmentBitmap != null) {
                 // The message has a picture, show that
@@ -1296,12 +1378,12 @@ public class MessagingNotification {
                     .bigPicture(mostRecentNotification.mAttachmentBitmap)
                     .bigLargeIcon(avatar)
                     // This sets the text for the expanded picture form:
-                    .setSummaryText(mostRecentNotification.formatPictureMessage(context))
+                    .setSummaryText(pictureMessage)
                     .build();
             } else {
                 // Show a single notification -- big style with the text of the whole message
                 notification = new Notification.BigTextStyle(noti)
-                    .bigText(mostRecentNotification.formatBigMessage(context))
+                    .bigText(bigMessage)
                     .build();
             }
             if (DEBUG) {

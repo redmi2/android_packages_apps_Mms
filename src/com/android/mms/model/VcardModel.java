@@ -44,6 +44,9 @@ import com.google.android.mms.MmsException;
 
 import org.w3c.dom.events.Event;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class VcardModel extends MediaModel {
     private static final String TAG = MediaModel.TAG;
 
@@ -82,8 +85,12 @@ public class VcardModel extends MediaModel {
                     }
                 } else {
                     c = getContentCursor(uri);
-                    mLookupUri = getLookupUri(uri,c);
-                    mSrc = getLookupSrc(uri,c);
+                    mLookupUri = getLookupUri(uri, c);
+                    if ((uri.getPath() != null) && (uri.getPath().contains("as_multi_vcard"))) {
+                        mSrc = createTempSrcForVcf();
+                    } else {
+                        mSrc = getLookupSrc(uri, c);
+                    }
                 }
             } finally {
                 if (c != null) {
@@ -95,6 +102,14 @@ public class VcardModel extends MediaModel {
             }
         }
         initMediaDuration();
+    }
+
+    private String createTempSrcForVcf(){
+        SimpleDateFormat sf = new SimpleDateFormat("yyyyMMddhhmmss");
+        long temp = System.currentTimeMillis();
+        Date date = new Date(temp);
+        String dateStr = sf.format(date);
+        return dateStr + ".vcf";
     }
 
     private Cursor getContentCursor(Uri uri) {

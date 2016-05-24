@@ -225,20 +225,6 @@ public class MessageTemplate extends Activity {
         super.onCreate(icicle);
         setContentView(R.layout.message_template_list);
 
-        ListView lvTitle = (ListView)findViewById(R.id.listViewTitle);
-        MatrixCursor curTitle = new MatrixCursor(new String[] {"_id","title","summary"});
-        Object[] obj = {0,this.getString(R.string.title_new_message_template),
-                  getString(R.string.summary_new_message_template)};
-        curTitle.addRow(obj);
-
-        ListAdapter adapterTitle = new SimpleCursorAdapter(this,
-                android.R.layout.simple_list_item_2,
-                curTitle,
-                new String[] {"title","summary"},
-            new int[] {  android.R.id.text1, android.R.id.text2});
-        lvTitle.setAdapter(adapterTitle);
-        lvTitle.setOnItemClickListener(mNewSmsTemp);
-
         mLvContent = (ListView)findViewById(R.id.listViewContent);
         Uri uri = Uri.parse(strSmsTempUri);
         Cursor cur = managedQuery(uri, null, null, null, null);
@@ -284,8 +270,17 @@ public class MessageTemplate extends Activity {
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu){
+        getMenuInflater().inflate(R.menu.template_menu, menu);
+        return true;
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.add:
+                createNewMessageDialog(null);
+                return true;
             case android.R.id.home:
                 finish();
                 return true;
@@ -372,7 +367,7 @@ public class MessageTemplate extends Activity {
             et.setSelection(message.length());
         }
         mNewDlg = new AlertDialog.Builder(MessageTemplate.this)
-            .setTitle(getText(R.string.dialog_editSMSTemplate_title))
+            .setTitle(getText(R.string.dialog_createSMSTemplate_title))
             .setView(view)
             .setPositiveButton(android.R.string.ok,newSmsTempClickOK)
             .setNegativeButton(android.R.string.cancel,

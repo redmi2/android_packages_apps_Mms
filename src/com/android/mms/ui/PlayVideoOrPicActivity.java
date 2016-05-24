@@ -29,9 +29,10 @@
 
 package com.android.mms.ui;
 
-import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -84,12 +85,12 @@ public class PlayVideoOrPicActivity extends Activity {
     private TextView mCurPlayTime;
     private TextView mVideoDuration;
     private Runnable mUpdateThread = new UpdateThread();
-    private ActionBar mActionBar;
     private int mType;
     private String mPath;
 
     private boolean mHasVideoPaused;
     private int mVideoPosition;
+    private int mLastSystemUiVis;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -104,9 +105,20 @@ public class PlayVideoOrPicActivity extends Activity {
         mCurPlayTime = (TextView) findViewById(R.id.cur_play_time);
         mCurPlayTime.setText(VIDEO_DURATION_INITIAL_STATUS);
         mPlayVideoButton = (ImageView) findViewById(R.id.mms_play_video_button);
+        mPlayVideoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mVideo.isPlaying()) {
+                    pauseVideo();
+                    showPlayButton();
+                } else {
+                    playVideo();
+                }
+            }
+        });
 
-        mActionBar = getActionBar();
-        mActionBar.setDisplayHomeAsUpEnabled(true);
+        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getActionBar().setBackgroundDrawable(new ColorDrawable(Color.BLACK));
 
         Intent intent = getIntent();
         mType = intent.getIntExtra(VIDEO_PIC_TYPE, WorkingMessage.UNKNOWN_ERROR);
@@ -137,24 +149,12 @@ public class PlayVideoOrPicActivity extends Activity {
                         resetVideo();
                     }
                 });
-                mVideo.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if(mVideo.isPlaying()) {
-                            pauseVideo();
-                        } else {
-                            playVideo();
-                        }
-                    }
-                });
                 mVideo.setOnTouchListener(new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
                         if (event.getAction() == MotionEvent.ACTION_DOWN) {
                             if (mVideo.isPlaying()) {
-                                pauseVideo();
-                            } else {
-                                playVideo();
+                                showPauseButton();
                             }
                             return true;
                         }
@@ -177,30 +177,42 @@ public class PlayVideoOrPicActivity extends Activity {
         }
     }
 
-    private void playVideo() {
-        mPlayVideoButton.setVisibility(View.INVISIBLE);
+    private void showPlayButton() {
+        mPlayVideoButton.setVisibility(View.VISIBLE);
+        mPlayVideoButton.setImageDrawable(getDrawable(R.drawable.video_play));
         mPlayVideoButton.postInvalidate();
+    }
+
+    private void showPauseButton() {
+        mPlayVideoButton.setVisibility(View.VISIBLE);
+        mPlayVideoButton.setImageDrawable(getDrawable(R.drawable.video_pause));
+        mPlayVideoButton.postInvalidate();
+    }
+
+    private void hideButton() {
+        mPlayVideoButton.setVisibility(View.GONE);
+        mPlayVideoButton.postInvalidate();
+    }
+
+    private void playVideo() {
         mVideo.post(mUpdateThread);
         mVideo.start();
+        hideButton();
     }
 
     private void pauseVideo() {
         mHasVideoPaused = true;
         mVideoPosition = mVideo.getCurrentPosition();
         mVideo.pause();
-        mPlayVideoButton.setVisibility(View.VISIBLE);
-        mPlayVideoButton.setImageDrawable(getDrawable(R.drawable.video_pause));
-        mPlayVideoButton.postInvalidate();
+        showPlayButton();
     }
 
     private void resetVideo() {
-        mPlayVideoButton.setVisibility(View.VISIBLE);
-        mPlayVideoButton.setImageDrawable(getDrawable(R.drawable.video_play));
-        mPlayVideoButton.postInvalidate();
         mVideo.seekTo(0);
         mVideo.removeCallbacks(mUpdateThread);
         mProgressBar.updateLocation(0f);
         mCurPlayTime.setText(VIDEO_DURATION_INITIAL_STATUS);
+        showPlayButton();
     }
 
     @Override

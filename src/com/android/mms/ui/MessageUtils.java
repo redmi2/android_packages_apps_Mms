@@ -344,7 +344,7 @@ public class MessageUtils {
     // Filter numbers start with 106575, 1069, and numbers of carrier,
     // bank and public service such as 12306.
     private static Pattern sNotificationNumberPattern = Pattern.compile(
-            "^1065(\\d)+$|^1069(\\d)+$|^10086$|^10001$|^10000$|^955(\\d)+$|^12306$");
+            "^1065(\\d)*$|^1069(\\d)*$|^100(\\d)*$|^955(\\d)*$|^12306$");
 
     private static final String NOTIFICATION_MSG_FLAG = "1";
 
@@ -359,7 +359,6 @@ public class MessageUtils {
 
     public static final String SMS_BOX_ID = "box_id";
     public static final String COPY_SMS_INTO_SIM_SUCCESS = "success";
-    public static final String VCF = ".vcf";
 
     public static final int MESSAGE_REPORT_COLUMN_ID         = 0;
     public static final int MESSAGE_REPORT_COLUMN_MESSAGE_ID = 1;
@@ -824,6 +823,11 @@ public class MessageUtils {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                Conversation conversation = Conversation.get(context, threadId, true);
+                if (conversation != null && conversation.getRecipients().size() > 1) {
+                    return;
+                }
+
                 String stripedNumber = PhoneNumberUtils.stripSeparators(number);
                 boolean needMarkAsNotificationThread = false;
 
@@ -895,19 +899,10 @@ public class MessageUtils {
         updateThreadAttachTypeByThreadId(context, threadId);
     }
 
-    public static void deleteVcardFile(Uri uri) {
-        if (uri != null) {
-            if (uri.toString().endsWith(VCF)) {
-                File file = new File(uri.getPath());
-                if (file.exists()) {
-                    file.delete();
-                }
-            }
-        }
-    }
-
     public static void updateThreadAttachTypeByThreadId(Context context, long threadId) {
-        String attachmentInfo = Conversation.getAttachmentInfo(context,
+        // FIXME: Comment this framework dependency at bring up stage, will restore
+        //        back later.
+        /* String attachmentInfo = Conversation.getAttachmentInfo(context,
                 Conversation.getLatestMessageAttachmentUri(context, threadId));
         Uri uri = Conversation.getUri(threadId);
         ContentValues values = new ContentValues();
@@ -916,7 +911,7 @@ public class MessageUtils {
             context.getContentResolver().update(uri, values, null, null);
         } catch (Exception e) {
             Log.e(TAG, "Update Thread Attachment Type Error", e);
-        }
+        }*/
     }
 
     public static String formatTimeStampString(Context context, long when) {
@@ -934,22 +929,35 @@ public class MessageUtils {
                            DateUtils.FORMAT_ABBREV_ALL |
                            DateUtils.FORMAT_CAP_AMPM;
 
-        // If the message is from a different year, show the date and year.
-        if (then.year != now.year) {
-            format_flags |= DateUtils.FORMAT_SHOW_YEAR | DateUtils.FORMAT_SHOW_DATE;
-        } else if (then.yearDay != now.yearDay) {
-            // If it is from a different day than today, show only the date.
-            format_flags |= DateUtils.FORMAT_SHOW_DATE;
-        } else {
-            // Otherwise, if the message is from today, show the time.
-            format_flags |= DateUtils.FORMAT_SHOW_TIME;
-        }
-
         // If the caller has asked for full details, make sure to show the date
         // and time no matter what we've determined above (but still make showing
         // the year only happen if it is a different year from today).
         if (fullFormat) {
             format_flags |= (DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_TIME);
+        } else {
+            long timeDiff = System.currentTimeMillis() - when;
+            if (timeDiff < DateUtils.MINUTE_IN_MILLIS) {
+                // If the message is in 1 minute, show "now"
+                return context.getResources().getString(R.string.posted_now);
+            } else if (timeDiff < DateUtils.HOUR_IN_MILLIS) {
+                // If the message is 1 minute ago but in 1 hour, show x=1,2... minute(s)
+                long count = (timeDiff / DateUtils.MINUTE_IN_MILLIS);
+                String format = context.getResources().getQuantityString(
+                        R.plurals.num_minutes_ago, (int) count);
+                return String.format(format, count);
+            } else if (then.yearDay == now.yearDay) {
+                // If the message is 1 hour ago but in 1 day, show exactly time, sample as 15:08
+                format_flags |= DateUtils.FORMAT_SHOW_TIME;
+            } else if (timeDiff < DateUtils.WEEK_IN_MILLIS) {
+                // If the message is 1 day ago but in 1 week, show weekday and exactly time
+                format_flags |= DateUtils.FORMAT_SHOW_WEEKDAY | DateUtils.FORMAT_SHOW_TIME;
+            } else if (then.year == now.year) {
+                // If the message is 1 week ago but in 1 year, show date and exactly time
+                format_flags |= DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_TIME;
+            } else {
+                // If the message is from a different year, show the date and year.
+                format_flags |= DateUtils.FORMAT_SHOW_YEAR | DateUtils.FORMAT_SHOW_DATE;
+            }
         }
 
         return DateUtils.formatDateTime(context, when, format_flags);

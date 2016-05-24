@@ -477,7 +477,17 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
                     break;
             }
         } else {
-            mAttachmentInfoView.setVisibility(View.GONE);
+            if (mConversation.hasDraft()) {
+                String attachmentInfo = mConversation.getAttachmentInfo();
+                if (TextUtils.isEmpty(attachmentInfo)) {
+                    mAttachmentInfoView.setVisibility(View.GONE);
+                } else {
+                    mAttachmentInfoView.setVisibility(View.VISIBLE);
+                    mAttachmentInfoView.setText(attachmentInfo);
+                }
+            } else {
+                mAttachmentInfoView.setVisibility(View.GONE);
+            }
             mAttachmentStatusView.setVisibility(View.GONE);
             mAttachmentStatusSubView.setVisibility(View.GONE);
         }

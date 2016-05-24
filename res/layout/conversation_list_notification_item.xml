@@ -31,6 +31,7 @@
 -->
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/notification_header"
     android:layout_width="match_parent"
     android:layout_height="@dimen/conversation_list_itme_height"
     android:paddingEnd="25dip"
@@ -47,6 +48,7 @@
         android:layout_marginTop="16dip" />
 
     <LinearLayout
+        android:id="@+id/notification_content"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toEndOf="@id/notification_icon"
@@ -67,7 +69,6 @@
             android:id="@+id/subject"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:singleLine="true"
             android:ellipsize="end"
             android:textColor="@color/conversation_item_text_color"
             android:textSize="14sp" />

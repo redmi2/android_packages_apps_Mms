@@ -62,7 +62,7 @@ public class ContactDropdownLayouter extends DropdownChipLayouter {
     public ContactDropdownLayouter(final LayoutInflater inflater, final Context context) {
         super(inflater, context);
         mContext = context;
-        mDefaultContactImage = mContext.getResources().getDrawable(R.drawable.stranger);
+        mDefaultContactImage = mContext.getResources().getDrawable(R.drawable.myavatar);
         mDefaultGroupContactImage = context.getResources().getDrawable(R.drawable.group_avatar);
     }
 
@@ -85,6 +85,9 @@ public class ContactDropdownLayouter extends DropdownChipLayouter {
 
     @Override
     protected void bindTextToView(CharSequence text, TextView view) {
+        if (view == null) {
+            return;
+        }
         if (mEntry.getContactId()
                 == ContactRecipientEntryUtils.CONTACT_ID_SENDTO_DESTINATION) {
             if (view.getId() == android.R.id.title) {
@@ -104,6 +107,15 @@ public class ContactDropdownLayouter extends DropdownChipLayouter {
                 super.bindTextToView(text, view);
             }
         } else {
+            if (view.getId() == android.R.id.text2) {
+                if (text != null) {
+                    char c = text.charAt(0);
+                    if (Character.isLetter(c)) {
+                        text = text.subSequence(0,1)+text.subSequence(1,text.length())
+                                .toString().toLowerCase();
+                    }
+                }
+            }
             super.bindTextToView(text, view);
         }
     }
@@ -111,6 +123,9 @@ public class ContactDropdownLayouter extends DropdownChipLayouter {
     @Override
     protected void bindIconToView(boolean showImage, RecipientEntry entry, ImageView view,
             AdapterType type) {
+        if (view == null) {
+            return;
+        }
         if (showImage && view.getId() == android.R.id.icon) {
             Drawable avatarDrawable;
             Drawable backgroundDrawable;

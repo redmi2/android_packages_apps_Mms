@@ -67,7 +67,7 @@ public class Conversation {
     private static final boolean DEBUG = false;
     private static final boolean DELETEDEBUG = false;
 
-    private static final int INVALID_THREAD_ID = -1;
+    public static final int INVALID_THREAD_ID = -1;
     private static final int INVALID_DOWNLOAD_STATUS = -1;
 
     public static final Uri sAllThreadsUri =

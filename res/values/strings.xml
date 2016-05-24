@@ -832,7 +832,7 @@
     <string name="too_many_unsent_mms">Can\'t send message right now. Too many unsent multimedia messages.</string>
 
     <!-- Brief small label shown to right of message when it is being sent. -->
-    <string name="sending_message">SENDING\u2026</string>
+    <string name="sending_message">Sending\u2026</string>
 
     <!-- Title of progress dialog for picker -->
     <string name="pick_too_many_recipients">Too many recipients</string>
@@ -906,10 +906,11 @@
     <!-- Message Template -->
     <string name="pref_summary_message_template">Edit message template</string>
     <string name="pref_title_message_template">Message template</string>
-    <string name="title_new_message_template">New template</string>
+    <string name="title_new_message_template">Template</string>
     <string name="summary_new_message_template">Compose new message template</string>
     <string name="message_template_title">Message template</string>
     <string name="dialog_editSMSTemplate_title">Edit</string>
+    <string name="dialog_createSMSTemplate_title">New template</string>
     <string name="message_template">Message Template</string>
     <string name="import_message_template">Import Template</string>
     <string name="delete_template_message">Delete</string>
@@ -1161,9 +1162,17 @@
     <string name="mms_video_attachment_saved_title">Video saved to \"<xliff:g id="albumName">%s</xliff:g>\" album</string>
     <string name="mms_attachment_saved_fail_title">Save failed</string>
     <string name="notification_mark_as_read">Mark as read</string>
+    <string name="notification_download">Download</string>
     <string name="notification_reply">Reply</string>
     <string name="notification_reply_to">Reply to <xliff:g id="name">%s</xliff:g></string>
     <string name="notification_view_message_text">View Message</string>
 
     <string name="conversation_list_send_fail_text">Not sent, touch to try again</string>
+
+    <!-- Abbreviated message to express that something occurred some number of minutes in the past (e.g., 5 minutes ago). -->
+    <plurals name="num_minutes_ago">
+        <item quantity="one"><xliff:g id="count">%d</xliff:g> min</item>
+        <item quantity="other"><xliff:g id="count">%d</xliff:g> mins</item>
+    </plurals>
+    <string name="posted_now">"Now"</string>
 </resources>

@@ -58,12 +58,12 @@ public class ZoomMessageListView extends ListView {
      *
      * @param scale {@link java.lang.Float}
      */
-    public void handleZoomWithScale(float scale) {
+    public void handleZoomWithScale(float scale, boolean isEditorText) {
         int viewCount = getChildCount();
         for (int i = 0; i < viewCount; i++) {
             View view = getChildAt(i);
             if (view instanceof ZoomMessageListItem) {
-                ((ZoomMessageListItem) view).setZoomScale(scale);
+                ((ZoomMessageListItem) view).setZoomScale(scale, isEditorText);
             }
         }
     }
