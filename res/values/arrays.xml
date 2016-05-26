@@ -28,6 +28,11 @@
         <item>I am in conference. I\'ll call you back later.</item>
         <item>Please call me later.</item>
         <item>Will you please call me back?</item>
+        <item>Where are you?</item>
+        <item>What are you doing?</item>
+        <item>Don\'t worry! I am fine.</item>
+        <item>On my way home.</item>
+        <item>Be there soon.</item>
     </string-array>
 
     <string-array name="box_type">

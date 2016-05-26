@@ -27,5 +27,10 @@
     <item>我在开会，稍后打给您。</item>
     <item>过会儿再打给我。</item>
     <item>请回拨我，好吗？</item>
+    <item>你在哪里?</item>
+    <item>你在干嘛?</item>
+    <item>别担心,我没事。</item>
+    <item>我在回家路上了。</item>
+    <item>就快到了。</item>
   </string-array>
 </resources>
