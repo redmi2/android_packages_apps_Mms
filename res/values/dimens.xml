@@ -38,4 +38,6 @@ All Rights Reserved. -->
     <dimen name="quick_reply_back_arrow_margin_start">16dip</dimen>
     <dimen name="quick_reply_text_editor_margin">18dip</dimen>
     <dimen name="quick_reply_view_message_margin_start">15dip</dimen>
+
+    <dimen name="full_screen_view_message_padding">24dip</dimen>
 </resources>

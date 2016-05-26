@@ -163,4 +163,10 @@
         <item name="android:windowIsTranslucent">true</item>
     </style>
 
+    <style name="SelectableCopyTheme" parent="@android:style/Theme.Material.Light.NoActionBar.Fullscreen">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">@color/white</item>
+        <item name="android:colorAccent">@color/full_screen_accent_color</item>
+    </style>
+
 </resources>

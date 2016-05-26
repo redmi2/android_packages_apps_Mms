@@ -69,6 +69,8 @@ import android.text.style.URLSpan;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -180,6 +182,7 @@ public class MessageListItem extends ZoomMessageListItem implements
     private boolean mIsMsimIccCardActived = false;
     private int mManageMode;
     private int mBackgroundColor;
+    private GestureDetector mGestureDetector;
 
     /**play audio views**/
     private ImageView mPlayAudioButton;
@@ -713,6 +716,7 @@ public class MessageListItem extends ZoomMessageListItem implements
             }
         }
         updateSimIndicatorView(mMessageItem.mSubId);
+        setupOnTouchListener();
         // Debugging code to put the URI of the image attachment in the body of the list item.
         if (DEBUG) {
             String debugText = null;
@@ -816,6 +820,57 @@ public class MessageListItem extends ZoomMessageListItem implements
         drawRightStatusIndicator(mMessageItem);
 
         requestLayout();
+    }
+
+    private void setupOnTouchListener() {
+        mGestureDetector = new GestureDetector(mContext, new GestureListener());
+        mBodyTextView.setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                mGestureDetector.onTouchEvent(event);
+                return true;
+            }
+        });
+    }
+
+    private class GestureListener extends GestureDetector.SimpleOnGestureListener {
+        @Override
+        public boolean onSingleTapConfirmed(MotionEvent e) {
+            // Check for links. If none, do nothing; if 1, open it; if >1, ask user to pick one
+            final URLSpan[] spans = mBodyTextView.getUrls();
+            if (spans.length == 0) {
+                if (mMessageItem.mMessageType == PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND) {
+                    if (mMessageItem.getMmsDownloadStatus()
+                            != DownloadManager.STATE_PRE_DOWNLOADING
+                            && mMessageItem.getMmsDownloadStatus()
+                            != DownloadManager.STATE_DOWNLOADING) {
+                        downloadAttachment();
+                        return true;
+                    }
+                }
+                sendMessage(mMessageItem, MSG_LIST_DETAILS);
+            } else {
+                MessageUtils.onMessageContentClick(mContext, mBodyTextView);
+            }
+            return true;
+        }
+
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(mContext);
+            if (sp.getBoolean(MessagingPreferenceActivity.ENABLE_SELECTABLE_COPY,
+                    MessagingPreferenceActivity.ENABLE_SELECTABLE_COPY_DEFAULT_VALUE)) {
+                startSelectableCopyActivity();
+            }
+            return true;
+        }
+    }
+
+    private void startSelectableCopyActivity() {
+        CharSequence text = mBodyTextView.getText();
+        Intent intent = new Intent(mContext, SelectableCopyActivity.class);
+        intent.putExtra(SelectableCopyActivity.SELECTABLE_COPY_TEXT, text);
+        mContext.startActivity(intent);
     }
 
     static private class ImageLoadedCallback implements ItemLoadedCallback<ImageLoaded> {
@@ -1191,21 +1246,6 @@ public class MessageListItem extends ZoomMessageListItem implements
             // the user can resend it.
             sendMessage(mMessageItem, MSG_LIST_RESEND);
             return;
-        }
-
-        // Check for links. If none, do nothing; if 1, open it; if >1, ask user to pick one
-        final URLSpan[] spans = mBodyTextView.getUrls();
-        if (spans.length == 0) {
-            if (mMessageItem.mMessageType == PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND) {
-                if (mMessageItem.getMmsDownloadStatus() != DownloadManager.STATE_PRE_DOWNLOADING &&
-                        mMessageItem.getMmsDownloadStatus() != DownloadManager.STATE_DOWNLOADING) {
-                    downloadAttachment();
-                    return;
-                }
-            }
-            sendMessage(mMessageItem, MSG_LIST_DETAILS);
-        } else {
-            MessageUtils.onMessageContentClick(mContext, mBodyTextView);
         }
     }
 

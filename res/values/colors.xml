@@ -137,6 +137,8 @@
     <color name="video_timer_font">#aeaeae</color>
     <color name="video_timer_font_color">#ffffff</color>
     <color name="quick_reply_color">#cc000000</color>
+    <color name="full_screen_color">#de000000</color>
+    <color name="full_screen_accent_color">#cc00b8d4</color>
 
     <color name="audio_duration_color_black">#86000000</color>
     <color name="audio_duration_c0lor_white">#54ffffff</color>

@@ -133,6 +133,10 @@
             android:launchMode="singleTop" >
         </activity>
 
+        <activity android:name=".ui.SelectableCopyActivity"
+                  android:theme="@style/SelectableCopyTheme">
+        </activity>
+
         <activity android:name=".ui.ComposeMessageActivity"
                   android:configChanges="orientation|screenSize|keyboardHidden"
                   android:windowSoftInputMode="stateHidden|adjustResize"

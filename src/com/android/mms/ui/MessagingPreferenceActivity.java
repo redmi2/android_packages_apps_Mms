@@ -151,6 +151,10 @@ public class MessagingPreferenceActivity extends PreferenceActivity
     public static final String ZOOM_MESSAGE             = "pref_key_zoom_message";
     public static final String SEPERATE_NOTIFI_MSG      = "pref_key_seperate_notification_msg";
     public static final String ENABLE_GESTURE           = "pref_key_enable_gesture";
+    public static final String ENABLE_SELECTABLE_COPY   = "pref_key_enable_selectable_copy";
+
+    public static final boolean ENABLE_SELECTABLE_COPY_DEFAULT_VALUE = true;
+
     // ConfigurationClient
     public static final String OMACP_CONFIGURATION_CATEGORY =
             "pref_key_sms_omacp_configuration";
