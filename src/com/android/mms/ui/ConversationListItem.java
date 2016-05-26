@@ -432,7 +432,7 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
                     mAttachmentInfoView.setSingleLine(true);
                 }
             }
-            int mmsStatus = mConversation.getLatestMmsDownloadStatus(mContext);
+            int mmsStatus = mConversation.getLastMessageStatus();
             mAttachmentStatusView.setVisibility(View.VISIBLE);
             mAttachmentStatusSubView.setVisibility(View.VISIBLE);
             switch (mmsStatus) {

@@ -2018,21 +2018,22 @@ public class MessageUtils {
 
         final TelecomManager telecomManager = (TelecomManager) context
                 .getSystemService(Context.TELECOM_SERVICE);
-        List<PhoneAccountHandle> pHandles = telecomManager.getCallCapablePhoneAccounts();
-        PhoneAccountHandle phoneAccountHandle = null;
-        for (PhoneAccountHandle itorator : pHandles) {
-            if (String.valueOf(subscription).equals(itorator.getId())) {
-                phoneAccountHandle = itorator;
+        final TelephonyManager telephonyManager = (TelephonyManager) context
+                .getSystemService(Context.TELEPHONY_SERVICE);
+
+        Iterator<PhoneAccountHandle> pHandles = telecomManager.
+                getCallCapablePhoneAccounts().listIterator();
+
+        while (pHandles.hasNext()) {
+            PhoneAccount account = telecomManager.getPhoneAccount(pHandles.next());
+            int subId = telephonyManager.getSubIdForPhoneAccount(account);
+            if (subId == subscription) {
+                return account.getIcon().loadDrawable(context);
             }
         }
 
-        if (phoneAccountHandle == null) {
-            Log.d(TAG, "phoneAccountHandle is null");
-            return null;
-        }
-        final PhoneAccount account = telecomManager
-                .getPhoneAccount(phoneAccountHandle);
-        return account.getIcon().loadDrawable(context);
+        Log.d(TAG, "phoneAccountHandle is null");
+        return null;
     }
 
     private static void log(String msg) {

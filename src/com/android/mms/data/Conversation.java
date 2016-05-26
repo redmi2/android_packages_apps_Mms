@@ -118,6 +118,8 @@ public class Conversation {
     private boolean mIsChecked;         // True if user has selected the conversation for a
                                         // multi-operation such as delete.
     private String mAttachmentInfo;     // The last mms attachment type in the thread
+    private boolean mIsLastMessageMine;
+    private int mLastMessageStatus;
 
     private static ContentValues sReadContentValues;
     private static boolean sLoadingThreads;
@@ -573,21 +575,23 @@ public class Conversation {
         return attachmentUri;
     }
 
-    public synchronized int getLatestMmsDownloadStatus(Context context) {
-        if (mThreadId <= 0) {
-            return INVALID_DOWNLOAD_STATUS;
-        }
+    public synchronized static void setLatestMessageStatus(Context context, Conversation conv) {
         int status = INVALID_DOWNLOAD_STATUS;
+        if (conv.mThreadId <= 0) {
+            return;
+        }
         Cursor cursor = null;
         try {
             cursor = SqliteWrapper.query(context, context.getContentResolver(),
-                    getUri(), new String[] {Mms._ID, Mms.STATUS, Mms.MESSAGE_BOX},
+                    getUri(conv.mThreadId),
+                    new String[] {Mms._ID, Mms.STATUS, Mms.MESSAGE_BOX},
                     null, null, null);
             if (cursor != null && cursor.getCount() != 0) {
                 cursor.moveToFirst();
                 int mmsStatus = cursor.getInt(cursor.getColumnIndexOrThrow(Mms.STATUS));
                 int type = cursor.getInt(cursor.getColumnIndexOrThrow(Mms.MESSAGE_BOX));
-                if (Sms.isOutgoingFolder(type)) {
+                conv.mIsLastMessageMine = Sms.isOutgoingFolder(type);
+                if (conv.mIsLastMessageMine) {
                     status = DownloadManager.STATE_UNKNOWN;
                 } else {
                     status = MessageUtils.getMmsDownloadStatus(mmsStatus);
@@ -598,34 +602,7 @@ public class Conversation {
                 cursor.close();
             }
         }
-
-        return status;
-    }
-
-    public synchronized boolean isLatestMessageMms(Context context) {
-        if (mThreadId <= 0) {
-            return false;
-        }
-        boolean isMms = false;
-        Cursor cursor = null;
-        try {
-            cursor = SqliteWrapper.query(context, context.getContentResolver(),
-                    getUri(), new String[] {MmsSms.TYPE_DISCRIMINATOR_COLUMN},
-                    Mms.THREAD_ID + " = " + mThreadId, null, null);
-            if (cursor != null && cursor.getCount() != 0) {
-                cursor.moveToLast();
-                String type = cursor.getString(cursor
-                        .getColumnIndexOrThrow(MmsSms.TYPE_DISCRIMINATOR_COLUMN));
-                if (type.equals("mms")) {
-                    isMms = true;
-                }
-            }
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-        return isMms;
+        conv.mLastMessageStatus = status;
     }
 
     /**
@@ -816,6 +793,10 @@ public class Conversation {
 
     public synchronized void setIsChecked(boolean isChecked) {
         mIsChecked = isChecked;
+    }
+
+    public synchronized int getLastMessageStatus() {
+        return mLastMessageStatus;
     }
 
     private static long getOrCreateThreadId(Context context, ContactList list) {
@@ -1139,15 +1120,31 @@ public class Conversation {
             conv.mDate = c.getLong(DATE);
             conv.mMessageCount = c.getInt(MESSAGE_COUNT);
 
+            String attachmentInfo = c.getString(ATTACHMENT_INFO);
+            boolean isLastMms = !"SMS".equals(attachmentInfo);
+            setLatestMessageStatus(context, conv);
+            if (!TextUtils.isEmpty(attachmentInfo) && isLastMms
+                    && conv.mIsLastMessageMine) {
+                conv.mAttachmentInfo = context.getResources().getString(R.string.you)
+                        + attachmentInfo;
+            } else {
+                conv.mAttachmentInfo = attachmentInfo;
+            }
+
             // Replace the snippet with a default value if it's empty.
             String snippet = MessageUtils.cleanseMmsSubject(context,
                     MessageUtils.extractEncStrFromCursor(c, SNIPPET, SNIPPET_CS));
+            if (!TextUtils.isEmpty(snippet)) {
+                if (!isLastMms && conv.mIsLastMessageMine) {
+                    snippet = context.getResources().getString(R.string.you) + snippet;
+                }
+            }
             conv.mSnippet = snippet;
 
             conv.setHasUnreadMessages(c.getInt(READ) == 0);
             conv.mHasError = (c.getInt(ERROR) != 0);
             conv.mHasAttachment = (c.getInt(HAS_ATTACHMENT) != 0);
-            conv.mAttachmentInfo = (c.getString(ATTACHMENT_INFO));
+
             if (MmsConfig.isRcsVersion()) {
                 conv.mIsTop = c.getInt(IS_CONV_T0P);
                 conv.mRcsTopTime = c.getInt(RCS_TOP_TIME);
