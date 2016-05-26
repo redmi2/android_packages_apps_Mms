@@ -44,7 +44,9 @@ import android.text.style.TextAppearanceSpan;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Checkable;
 import android.widget.ImageView;
 import android.widget.QuickContactBadge;
@@ -93,6 +95,9 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
     private static Drawable sDefaultGroupChatImage; // The RCS Group Chat photo.
     private static Drawable sDefaultToPcChatImage;
     private static Drawable sDefaultCheckedImageDrawable;
+    private static Drawable sDefaultGroupContactImage;
+
+    private static final int MAX_GROUP_AVATAR_NUM = 4;
 
     // For posting UI update Runnables from other threads:
     private Handler mHandler = new Handler();
@@ -124,6 +129,10 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
         }
         if (sDefaultCheckedImageDrawable == null) {
             sDefaultCheckedImageDrawable = context.getResources().getDrawable(R.drawable.selected);
+        }
+        if (sDefaultGroupContactImage == null) {
+            sDefaultGroupContactImage = context.getResources()
+                    .getDrawable(R.drawable.stranger_group);
         }
     }
 
@@ -258,64 +267,98 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
                 return;
             }
         }
-        mAvatarView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        Drawable avatarDrawable;
-        Drawable backgroundDrawable = null;
+
+        ViewGroup parent = (ViewGroup) findViewById(R.id.avatar_layout);
+        parent.removeAllViews();
         if (mConversation.isChecked()) {
-            avatarDrawable = sDefaultCheckedImageDrawable;
-            mAvatarView.setBackgroundResource(R.drawable.selected_icon_background);
+            setContactDrawable(mAvatarView, null, false);
+            parent.addView(mAvatarView);
         } else {
             if (mConversation.getRecipients().size() == 1) {
                 Contact contact = mConversation.getRecipients().get(0);
-                avatarDrawable = contact.getAvatar(mContext, sDefaultContactImage);
-
-                if (contact.existsInDatabase()) {
-                    // Contact already exist in phonebook
-                    // Check whether there is user-defined photo for this contact
-                    if (avatarDrawable.equals(sDefaultContactImage)) {
-                        // Do not have user-defined photo for this contact
-                        // If contact name start with English letter, use the first letter as avatar
-                        // Otherwise, use default avatar.
-                        if (LetterTileDrawable.isEnglishLetterString(contact.getNameForAvatar())) {
-                            avatarDrawable = MaterialColorMapUtils
-                                    .getLetterTitleDraw(mContext, contact);
-                        } else {
-                            backgroundDrawable = MaterialColorMapUtils.getLetterTitleDraw(mContext,
-                                    contact);
-                            mAvatarView.setBackgroundDrawable(backgroundDrawable);
-                        }
-                    } else {
-                        // Have user-defined photo for this contact, just use it
-                        mAvatarView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                        mAvatarView.setBackgroundDrawable(null);
-                    }
-
-                    mAvatarView.assignContactUri(contact.getUri());
-                } else {
-                    // identify it is phone number or email address,handle it respectively
-                    if (Telephony.Mms.isEmailAddress(contact.getNumber())) {
-                        mAvatarView.assignContactFromEmail(contact.getNumber(), true);
-                    } else if (MessageUtils.isWapPushNumber(contact.getNumber())) {
-                        mAvatarView.assignContactFromPhone(
-                                MessageUtils.getWapPushNumber(contact.getNumber()), true);
-                    } else {
-                        mAvatarView.assignContactFromPhone(contact.getNumber(), true);
-                    }
-                    contact.setContactColor(mContext.getResources().getColor(
-                            R.color.avatar_default_color));
-                    backgroundDrawable = MaterialColorMapUtils
-                            .getLetterTitleDraw(mContext, contact);
-                    mAvatarView.setBackgroundDrawable(backgroundDrawable);
-                }
+                setContactDrawable(mAvatarView, contact, false);
+                parent.addView(mAvatarView);
             } else {
-                // TODO: Need to implement this group function (TS)
-                avatarDrawable = sDefaultContactImage;
-                backgroundDrawable = MaterialColorMapUtils.getLetterTitleDraw(mContext, null);
-                mAvatarView.setBackgroundDrawable(backgroundDrawable);
+                setGroupAvatar(parent);
             }
         }
-        mAvatarView.setImageDrawable(avatarDrawable);
-        mAvatarView.setVisibility(View.VISIBLE);
+    }
+
+    private void setGroupAvatar(ViewGroup parent) {
+        int size = mConversation.getRecipients().size();
+        if (size > MAX_GROUP_AVATAR_NUM) {
+            size = MAX_GROUP_AVATAR_NUM;
+        }
+        int group_layout = 0;
+        switch (size) {
+            case 2:
+                group_layout = R.layout.group_chat_2_layout;
+                break;
+            case 3:
+                group_layout = R.layout.group_chat_3_layout;
+                break;
+            case 4:
+                group_layout = R.layout.group_chat_4_layout;
+                break;
+            default:
+                Log.e(TAG, "No valid group layout found");
+        }
+        ViewGroup groupAvatar = (ViewGroup) LayoutInflater.from(mContext)
+                .inflate(group_layout, parent, false);
+        for (int i = 0; i < groupAvatar.getChildCount(); i++) {
+            setContactDrawable((QuickContactBadge) groupAvatar.getChildAt(i),
+                    mConversation.getRecipients().get(i), true);
+        }
+        parent.addView(groupAvatar);
+    }
+
+    private void setContactDrawable(QuickContactBadge view, Contact contact, boolean isGroup) {
+        view.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        view.setOverlay(null);
+
+        Drawable backgroundDrawable = null;
+        Drawable avatarDrawable;
+        Drawable defaultContactImage = isGroup ? sDefaultGroupContactImage : sDefaultContactImage;
+        if (contact == null) {
+            avatarDrawable = sDefaultCheckedImageDrawable;
+            view.setBackgroundResource(R.drawable.selected_icon_background);
+            view.setImageDrawable(avatarDrawable);
+            view.setVisibility(View.VISIBLE);
+            return;
+        }
+        avatarDrawable = contact.getAvatar(mContext, defaultContactImage);
+        if (contact.existsInDatabase()) {
+            if (avatarDrawable.equals(defaultContactImage)) {
+                if (LetterTileDrawable.isEnglishLetterString(contact.getNameForAvatar())) {
+                    avatarDrawable = MaterialColorMapUtils
+                            .getLetterTitleDraw(mContext, contact);
+                } else {
+                    backgroundDrawable = MaterialColorMapUtils.getLetterTitleDraw(mContext,
+                            contact);
+                    view.setBackgroundDrawable(backgroundDrawable);
+                }
+            } else {
+                view.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                view.setBackgroundDrawable(null);
+            }
+
+            view.assignContactUri(contact.getUri());
+        } else {
+            // identify it is phone number or email address,handle it respectively
+            if (Telephony.Mms.isEmailAddress(contact.getNumber())) {
+                view.assignContactFromEmail(contact.getNumber(), true);
+            } else if (MessageUtils.isWapPushNumber(contact.getNumber())) {
+                view.assignContactFromPhone(
+                        MessageUtils.getWapPushNumber(contact.getNumber()), true);
+            } else {
+                view.assignContactFromPhone(contact.getNumber(), true);
+            }
+            contact.setContactColor(mContext.getResources().getColor(R.color.avatar_default_color));
+            backgroundDrawable = MaterialColorMapUtils.getLetterTitleDraw(mContext, contact);
+            view.setBackgroundDrawable(backgroundDrawable);
+        }
+        view.setImageDrawable(avatarDrawable);
+        view.setVisibility(View.VISIBLE);
     }
 
     private void updateFromView() {
