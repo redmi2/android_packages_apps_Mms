@@ -208,6 +208,8 @@ public class MessageUtils {
     public static final String OCT_STREAM = "application/oct-stream";
     public static final String VCARD = "vcf";
 
+    public static final String NEW_LINE = "\n";
+
     // distinguish view vcard from mms but not from contacts.
     public static final String VIEW_VCARD = "VIEW_VCARD_FROM_MMS";
     // add for obtain mms data path
@@ -324,6 +326,7 @@ public class MessageUtils {
     private static final String IDP_ZERO = "0";
     private static final String IDP_DEFAULT_PREFIX = "01033";
     private static final int IDP_ENABLE = 1;
+    private final static int CDMA_STATUS_SHIFT = 16;
 
     // Save the thread id for same recipient forward mms
     public static ArrayList<Long> sSameRecipientList = new ArrayList<Long>();
@@ -365,6 +368,15 @@ public class MessageUtils {
     public static final int MESSAGE_REPORT_COLUMN_ID         = 0;
     public static final int MESSAGE_REPORT_COLUMN_MESSAGE_ID = 1;
     public static final int MESSAGE_REPORT_COLUMN_SUB_ID   = 2;
+    public static final int COLUMN_SMS_STATUS = 10;
+    public static final int COLUMN_MMS_DELIVERY_REPORT = 20;
+    public static final int COLUMN_MMS_READ_REPORT = 21;
+    public static final String[] MMS_REPORT_STATUS_PROJECTION = new String[] {
+        "delivery_status",      //0
+        "read_status"           //1
+    };
+    public static final int COLUMN_DELIVERY_STATUS     = 0;
+    public static final int COLUMN_READ_STATUS         = 1;
 
     /* Begin add for RCS */
     private static final int SELECT_LOCAL = 2;
@@ -621,7 +633,102 @@ public class MessageUtils {
                 / SlideshowModel.SLIDESHOW_SLOP + 1);
         details.append(" KB");
 
+        if (Sms.isOutgoingFolder(msgBox)) {
+            // Delivery report
+            ReportStatus reportStatus = getMmsReportStatus(context, id);
+            String deliveryReport = cursor.getString(COLUMN_MMS_DELIVERY_REPORT);
+            int deliveryReportInt = 0;
+            if (deliveryReport != null) {
+                deliveryReportInt = Integer.parseInt(deliveryReport);
+            }
+            if (deliveryReportInt == PduHeaders.VALUE_YES) {
+                details.append(NEW_LINE);
+                details.append(res.getString(R.string.delivery_report));
+                if (reportStatus == null) {
+                    details.append(res.getString(R.string.status_pending));
+                } else {
+                    switch (reportStatus.mDeliveryStatus) {
+                        case 0: // No delivery report received so far.
+                            details.append(res.getString(R.string.status_pending));
+                            break;
+                        case PduHeaders.STATUS_FORWARDED:
+                        case PduHeaders.STATUS_RETRIEVED:
+                            details.append(res.getString(R.string.status_received));
+                            break;
+                        case PduHeaders.STATUS_REJECTED:
+                            details.append(res.getString(R.string.status_rejected));
+                            break;
+                        case PduHeaders.STATUS_EXPIRED:
+                            details.append(res.getString(R.string.status_expired));
+                            break;
+                        default:
+                            details.append(res.getString(R.string.status_failed));
+                            break;
+                    }
+                }
+            }
+
+            // Read report
+            String readReport = cursor.getString(COLUMN_MMS_READ_REPORT);
+            int readReportInt = 0;
+            if (readReport != null) {
+                readReportInt = Integer.parseInt(readReport);
+            }
+            if (readReportInt == PduHeaders.VALUE_YES) {
+                details.append(NEW_LINE);
+                details.append(res.getString(R.string.read_report));
+                if (reportStatus == null) {
+                    details.append(res.getString(R.string.status_unread));
+                } else {
+                    switch (reportStatus.mReadStatus) {
+                        case PduHeaders.READ_STATUS_READ:
+                            details.append(res.getString(R.string.status_read));
+                            break;
+                        case PduHeaders.READ_STATUS__DELETED_WITHOUT_BEING_READ:
+                            details.append(res.getString(R.string.status_deleted_unread));
+                            break;
+                        default:
+                            details.append(res.getString(R.string.status_unread));
+                            break;
+                    }
+                }
+            }
+        }
+
         return details.toString();
+    }
+
+    public static ReportStatus getMmsReportStatus(Context context, long messageId) {
+        Uri uri = Uri.withAppendedPath(Mms.REPORT_STATUS_URI,
+                String.valueOf(messageId));
+        Cursor c = SqliteWrapper.query(context, context.getContentResolver(), uri,
+                MMS_REPORT_STATUS_PROJECTION, null, null, null);
+        ReportStatus status = null;
+
+        if (c == null) {
+            return status;
+        }
+
+        try {
+            while (c.moveToNext()) {
+                status = new ReportStatus(
+                        c.getInt(COLUMN_DELIVERY_STATUS),
+                        c.getInt(COLUMN_READ_STATUS));
+            }
+        } finally {
+            c.close();
+        }
+        return status;
+    }
+
+    private static class ReportStatus {
+        final int mDeliveryStatus;
+        final int mReadStatus;
+
+        public ReportStatus(int deliveryStatus, int readStatus) {
+            mDeliveryStatus = deliveryStatus;
+            mReadStatus = readStatus;
+        }
     }
 
     public static String getTextMessageDetails(Context context, Cursor cursor,
@@ -715,15 +822,27 @@ public class MessageUtils {
         long date = cursor.getLong(cursor.getColumnIndexOrThrow(Sms.DATE));
         details.append(MessageUtils.formatTimeStampString(context, date, true));
 
-        // Delivered: ***
-        if (smsType == Sms.MESSAGE_TYPE_SENT) {
-            // For sent messages with delivery reports, we stick the delivery time in the
-            // date_sent column (see MessageStatusReceiver).
-            long dateDelivered = cursor.getLong(cursor.getColumnIndexOrThrow(Sms.DATE_SENT));
-            if (dateDelivered > 0) {
-                details.append('\n');
-                details.append(res.getString(R.string.delivered_label));
-                details.append(MessageUtils.formatTimeStampString(context, dateDelivered, true));
+        // Delivery report
+        if (Sms.isOutgoingFolder(smsType)) {
+            long status = cursor.getLong(COLUMN_SMS_STATUS);
+            // If the 31-16 bits is not 0, means this is a CDMA sms.
+            if ((status >> CDMA_STATUS_SHIFT) > 0) {
+                status = status >> CDMA_STATUS_SHIFT;
+            }
+            details.append(NEW_LINE);
+            details.append(res.getString(R.string.delivery_report));
+            if (status == Sms.STATUS_NONE) {
+                // No delivery report requested
+                details.append(res.getString(R.string.status_none));
+            } else if (status >= Sms.STATUS_FAILED) {
+                // Failure
+                details.append(res.getString(R.string.status_failed));
+            } else if (status >= Sms.STATUS_PENDING) {
+                // Pending
+                details.append(res.getString(R.string.status_pending));
+            } else {
+                // Success
+                details.append(res.getString(R.string.status_received));
             }
         }
 

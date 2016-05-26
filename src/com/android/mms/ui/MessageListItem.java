@@ -1289,7 +1289,7 @@ public class MessageListItem extends ZoomMessageListItem implements
             mDeliveredIndicator.setVisibility(View.GONE);
         } else if (msgItem.isSms() &&
                 msgItem.mDeliveryStatus == MessageItem.DeliveryStatus.RECEIVED) {
-            mDeliveredIndicator.setImageResource(R.drawable.ic_sms_mms_delivered);
+            mDeliveredIndicator.setImageResource(R.drawable.report);
             mDeliveredIndicator.setVisibility(View.VISIBLE);
             if (mSendFailView != null) {
                 mSendFailView.setVisibility(View.GONE);
@@ -1313,10 +1313,10 @@ public class MessageListItem extends ZoomMessageListItem implements
             mDetailsIndicator.setVisibility(View.VISIBLE);
         } else if (msgItem.isMms() && !msgItem.isSending() &&
                 msgItem.mDeliveryStatus == MessageItem.DeliveryStatus.RECEIVED) {
-            mDetailsIndicator.setImageResource(R.drawable.ic_sms_mms_delivered);
+            mDetailsIndicator.setImageResource(R.drawable.report);
             mDetailsIndicator.setVisibility(View.VISIBLE);
         } else if (msgItem.mReadReport) {
-            mDetailsIndicator.setImageResource(R.drawable.ic_sms_mms_details);
+            mDetailsIndicator.setImageResource(R.drawable.report);
             mDetailsIndicator.setVisibility(View.VISIBLE);
         } else {
             mDetailsIndicator.setVisibility(View.GONE);

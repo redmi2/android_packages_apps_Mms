@@ -281,6 +281,7 @@
     <string name="recipient_label" msgid="3922667485312634446">"接收者： "</string>
     <string name="status_label" msgid="7283375460919181660">"状态： "</string>
     <string name="delivered_label" msgid="3514011729156932928">"已发送： "</string>
+    <string name="attach_subject">"主题"</string>
     <string name="attach_image" msgid="6439985727687107742">"照片"</string>
     <string name="attach_take_photo" msgid="4280601313184373837">"拍摄照片"</string>
     <string name="attach_video" msgid="4264272693501538294">"视频"</string>
@@ -616,4 +617,6 @@
     <string name="exit">退出</string>
     <string name="enable_permission_settings">您可以在 设置 > 应用 > 短信 > 权限 中更改权限.</string>
     <string name="no_permission_save_attachment_to_storage">没有权限保存附件到手机USB存储。</string>
+    <string name="delivery_report">发送报告:\u0020</string>
+    <string name="read_report">已读报告:\u0020</string>
 </resources>

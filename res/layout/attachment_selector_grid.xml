@@ -37,8 +37,8 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <ImageView
         android:id="@+id/attachment_selector_image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="30dip"
+        android:layout_height="30dip"
         android:layout_gravity="center_horizontal" />
 
     <TextView

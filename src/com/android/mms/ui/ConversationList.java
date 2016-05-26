@@ -1867,7 +1867,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             }
             mSelectionMenu.setTitle(getApplicationContext()
                     .getString(R.string.selected_count, checkedCount));
-            if (getListView().getCount() == checkedCount) {
+            if (getListAdapter().getCount() == checkedCount) {
                 mHasSelectAll = true;
             } else {
                 mHasSelectAll = false;

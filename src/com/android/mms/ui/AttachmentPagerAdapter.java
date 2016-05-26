@@ -54,29 +54,34 @@ public class AttachmentPagerAdapter extends PagerAdapter {
     public static final int PAGE_GRID_COUNT   = 6;
     public static final int GRID_ITEM_HEIGHT  = 91;
 
-    public static final int ADD_IMAGE            = 0;
-    public static final int TAKE_PICTURE         = 1;
-    public static final int ADD_VIDEO            = 2;
-    public static final int RECORD_VIDEO         = 3;
-    public static final int ADD_SOUND            = 4;
-    public static final int RECORD_SOUND         = 5;
-    public static final int ADD_SLIDESHOW        = 6;
-    public static final int ADD_CONTACT_AS_TEXT  = 7;
-    public static final int ADD_CONTACT_AS_VCARD = 8;
-    public static final int ADD_MAP              = 9;
+    public static final int ADD_SUBJECT          = 0;
+    public static final int ADD_IMAGE            = 1;
+    public static final int TAKE_PICTURE         = 2;
+    public static final int ADD_VIDEO            = 3;
+    public static final int RECORD_VIDEO         = 4;
+    public static final int ADD_SOUND            = 5;
+    public static final int RECORD_SOUND         = 6;
+    public static final int ADD_SLIDESHOW        = 7;
+    public static final int ADD_CONTACT_AS_TEXT  = 8;
+    public static final int ADD_CONTACT_AS_VCARD = 9;
+    public static final int ADD_MAP              = 10;
 
     private static final String GRID_ITEM_IMAGE = "grid_item_image";
     private static final String GRID_ITEM_TEXT  = "grid_item_text";
     private static final int PAGE_COUNT = 2;
 
-    private static final int SLIDESHOW_ITEM_POSITION    = 0;
-    private static final int CONTACT_INFO_ITEM_POSITION = 1;
-    private static final int VCARD_ITEM_POSITION        = 2;
+    private static final int RECORD_SOUND_ITEM_POSITION    = 0;
+    private static final int SLIDESHOW_ITEM_POSITION       = 1;
+    private static final int CONTACT_INFO_ITEM_POSITION    = 2;
+    private static final int VCARD_ITEM_POSITION           = 3;
+
+    private static final int ICON_LIST_SIZE = 11;
 
     private boolean mHasAttachment;
     private boolean mHasVcard;
     private boolean mHasSlideshow;
     private boolean mIsReplace;
+    private boolean mShowAddSubject;
     private Context mContext;
     private ArrayList<GridView> mPagerGridViewViews;
     private OnItemClickListener mGridItemClickListener;
@@ -157,7 +162,10 @@ public class AttachmentPagerAdapter extends PagerAdapter {
 
     private List<IconListItem> getAttachmentData() {
         boolean isRcsAttachment = RcsUtils.isRcsAttachmentEnabled(mContext);
-        List<IconListItem> list = new ArrayList<IconListItem>(10);
+        List<IconListItem> list = new ArrayList<IconListItem>(ICON_LIST_SIZE);
+        list.add(new IconListItem(mContext.getString(R.string.attach_subject),
+                (!mIsReplace && mShowAddSubject) ? R.drawable.ic_attach_subject_holo_light
+                        : R.drawable.ic_attach_subject_disable));
         list.add(new IconListItem(mContext.getString(R.string.attach_image),
                 (!mIsReplace && mHasVcard) ? R.drawable.ic_attach_picture_disable
                         : R.drawable.ic_attach_picture_holo_light));
@@ -208,11 +216,12 @@ public class AttachmentPagerAdapter extends PagerAdapter {
     }
 
     public void setExistAttachmentType(boolean hasAttachment, boolean hasVcard,
-            boolean hasSlideshow, boolean isReplace) {
+            boolean hasSlideshow, boolean isReplace, boolean showAddSubject) {
         mHasAttachment = hasAttachment;
         mHasVcard = hasVcard;
         mHasSlideshow = hasSlideshow;
         mIsReplace = isReplace;
+        mShowAddSubject = showAddSubject;
     }
 
     private void setPagerGridViews(GridView gridView) {
@@ -278,17 +287,23 @@ public class AttachmentPagerAdapter extends PagerAdapter {
         @Override
         public boolean isEnabled(int position) {
             if (mCurrentPager == 0) {
-                if (!mIsReplace && mHasVcard) {
+                if ((!mIsReplace && mHasVcard && position != ADD_SUBJECT)
+                        || shouldDisableAddSubjectItem(position)) {
                     return false;
                 }
             } else {
-                if (!mIsReplace && ((mHasVcard && position == SLIDESHOW_ITEM_POSITION)
+                if (!mIsReplace && ((mHasVcard && position == RECORD_SOUND_ITEM_POSITION)
+                        || (mHasVcard && position == SLIDESHOW_ITEM_POSITION)
                         || (mHasSlideshow && position == CONTACT_INFO_ITEM_POSITION)
                         || (mHasAttachment && position == VCARD_ITEM_POSITION))) {
                     return false;
                 }
             }
             return super.isEnabled(position);
+        }
+
+        private boolean shouldDisableAddSubjectItem(int position) {
+            return position == ADD_SUBJECT && !(!mIsReplace && mShowAddSubject);
         }
     }
 }

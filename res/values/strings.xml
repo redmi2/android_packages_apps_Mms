@@ -599,8 +599,11 @@
     <string name="status_label">Status:\u0020</string>
     <!-- Label in "Report" window [CHAR LIMIT=50]-->
     <string name="delivered_label">Delivered:\u0020</string>
+    <string name="delivery_report">Delivery report:\u0020</string>
+    <string name="read_report">Read report:\u0020</string>
 
 
+    <string name="attach_subject">Subject</string>
     <!-- Attachment Type Selector Adapter. This string is an option in the "Attach" dialog, "Add music" dialog -->
     <string name="attach_image">Pictures</string>
     <!-- Attachment Type Selector Adapter. This string is an option in the "Attach" dialog, "Add music" dialog -->

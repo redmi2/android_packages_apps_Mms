@@ -480,6 +480,7 @@ public class ComposeMessageActivity extends Activity
     private ImageView mIndicatorForSimMmsSec, mIndicatorForSimSmsSec;
     private ZoomGestureOverlayView mZoomGestureOverlayView; // overlay for handling zoom
     private ImageButton mBackView;
+    private View mDeviderView;
 
     private AttachmentEditor mAttachmentEditor;
     private View mAttachmentEditorScrollView;
@@ -2538,6 +2539,7 @@ public class ComposeMessageActivity extends Activity
 
         mSubjectTextEditor.setText(mWorkingMessage.getSubject());
         mSubjectTextEditor.setVisibility(show ? View.VISIBLE : View.GONE);
+        mDeviderView.setVisibility(show ? View.VISIBLE : View.GONE);
         hideOrShowTopPanel();
     }
 
@@ -3937,6 +3939,13 @@ public class ComposeMessageActivity extends Activity
             currentSlideSize = slide.getSlideSize();
         }
         switch (type) {
+            case AttachmentPagerAdapter.ADD_SUBJECT:
+                showSubjectEditor(true);
+                mWorkingMessage.setSubject("", true);
+                updateSendButtonState();
+                mSubjectTextEditor.requestFocus();
+                break;
+
             case AttachmentPagerAdapter.ADD_IMAGE:
                 MessageUtils.selectImage(this,
                         getMakRequestCode(replace, REQUEST_CODE_ATTACH_IMAGE));
@@ -4063,8 +4072,14 @@ public class ComposeMessageActivity extends Activity
         if (mAttachmentPagerAdapter == null) {
             mAttachmentPagerAdapter = new AttachmentPagerAdapter(this);
         }
+        boolean showSubject = false;
+        if (MmsConfig.getMmsEnabled() && mIsSmsEnabled) {
+            if (!isSubjectEditorVisible() && !mConversation.isGroupChat()) {
+                showSubject = true;
+            }
+        }
         mAttachmentPagerAdapter.setExistAttachmentType(mWorkingMessage.hasAttachment(),
-                mWorkingMessage.hasVcard(), mWorkingMessage.hasSlideshow(), replace);
+                mWorkingMessage.hasVcard(), mWorkingMessage.hasSlideshow(), replace, showSubject);
         if (mIsRcsEnabled) {
             if (RcsUtils.isRcsOnline() && RcsDualSimMananger.getUserIsUseRcsPolicy(this)) {
                 setRcsAttachment();
@@ -5394,6 +5409,7 @@ public class ComposeMessageActivity extends Activity
         }
         mBackView = (ImageButton)findViewById(R.id.back_view);
         mBackView.setOnClickListener(this);
+        mDeviderView = findViewById(R.id.subject_text_editor_divider);
 
         mMsgListView = (MessageListView) findViewById(R.id.history);
         mMsgListView.setDivider(null);      // no divider so we look like IM conversation.
