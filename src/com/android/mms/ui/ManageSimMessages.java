@@ -520,12 +520,10 @@ public class ManageSimMessages extends Activity
         int iccCapacityAll = -1;
         if (MessageUtils.isMultiSimEnabledMms()) {
             int[] subId = SubscriptionManager.getSubId(mSlotId);
-            // FIXME: Comment this framework dependency at bring up stage, will restore
-            //        back later.
-            iccCapacityAll = 0;//SmsManager.getSmsManagerForSubscriptionId(subId[0])
-                    //.getSmsCapacityOnIcc();
+            iccCapacityAll = SmsManager.getSmsManagerForSubscriptionId(subId[0])
+                    .getSmsCapacityOnIcc();
         } else {
-            iccCapacityAll = 0;//SmsManager.getDefault().getSmsCapacityOnIcc();
+            iccCapacityAll = SmsManager.getDefault().getSmsCapacityOnIcc();
         }
 
         capacityMessage.append(" " + iccCapacityAll);

@@ -65,9 +65,8 @@ public class NotificationConversationList extends ConversationList {
         try {
             mEmptyView.setText(R.string.loading_conversations);
 
-// FIXME: Comment this provider dependency temporary, will restore back later.
             Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN,
-                    /*Threads.NOTIFICATION + "=1" + " and " +*/ NOT_OBSOLETE);
+                    Threads.NOTIFICATION + "=1" + " and " + NOT_OBSOLETE);
             Conversation.startQuery(mQueryHandler, UNREAD_THREADS_QUERY_TOKEN,
                     Threads.READ + "=0" + " and " + NOT_OBSOLETE);
         } catch (SQLiteException e) {

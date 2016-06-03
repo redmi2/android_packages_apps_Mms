@@ -747,9 +747,8 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         try {
             mEmptyView.setText(R.string.loading_conversations);
 
-// FIXME: Comment this provider dependency temporary, will restore back later.
             Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN, NOT_OBSOLETE);
-            /*SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
             if (sp.getBoolean(MessagingPreferenceActivity.SEPERATE_NOTIFI_MSG, true)) {
                 Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN,
                         Threads.NOTIFICATION + "=0" + " and " + NOT_OBSOLETE);
@@ -758,7 +757,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             } else {
                 Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN, NOT_OBSOLETE);
                 toggleNotificationGroup(false);
-            }*/
+            }
             Conversation.startQuery(mQueryHandler, UNREAD_THREADS_QUERY_TOKEN, Threads.READ + "=0"
                     + " and " + NOT_OBSOLETE);
         } catch (SQLiteException e) {
@@ -1701,8 +1700,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
 
         @Override
         public boolean onCreateActionMode(final ActionMode mode, Menu menu) {
-// FIXME: Comment this provider dependency temporary, will restore back later.
-            //disableNotificationGroup();
+            disableNotificationGroup();
             getWindow().setStatusBarColor(
                     getResources().getColor(R.color.statubar_select_background));
             MenuInflater inflater = getMenuInflater();
@@ -1816,8 +1814,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
 
         @Override
         public void onDestroyActionMode(ActionMode mode) {
-// FIXME: Comment this provider dependency temporary, will restore back later.
-            //enableNotificationGroup();
+            enableNotificationGroup();
             getWindow().setStatusBarColor(getResources().getColor(R.color.primary_color_dark));
             Iterator<Long> it = mSelectedThreadIds.iterator();
             while (it.hasNext()) {

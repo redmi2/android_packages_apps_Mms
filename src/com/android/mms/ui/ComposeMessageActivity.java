@@ -107,6 +107,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Parcelable;
+import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemProperties;
@@ -130,6 +131,7 @@ import android.provider.Telephony.Sms;
 import android.provider.Telephony.Sms.Conversations;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.telephony.CarrierConfigManager;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
@@ -186,7 +188,6 @@ import android.widget.Toast;
 import android.widget.Toolbar;
 import android.widget.Button;
 
-//import com.android.internal.telephony.ConfigResourceUtil;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.RILConstants;
 import com.android.internal.telephony.TelephonyIntents;
@@ -611,8 +612,6 @@ public class ComposeMessageActivity extends Activity
     private final static int REPLACE_ATTACHMEN_MASK = 1 << 16;
 
     private boolean mShowTwoButtons = false;
-
-    private boolean mSendMmsMobileDataOff = false;
 
     private boolean mSendMmsSupportViaWiFi = false;
 
@@ -1182,7 +1181,7 @@ public class ComposeMessageActivity extends Activity
         @Override
         public void onClick(DialogInterface dialog, int whichButton) {
             boolean isMms = mWorkingMessage.requiresMms();
-            if (isMms && !mSendMmsSupportViaWiFi && mSendMmsMobileDataOff &&
+            if (isMms && !mSendMmsSupportViaWiFi && canSendMmsMobileDataOff(mSubscription) &&
                     MessageUtils.isMobileDataDisabled(getApplicationContext())) {
                 showMobileDataDisabledDialog(mSubscription);
             } else if ((TelephonyManager.getDefault().getPhoneCount()) > 1) {
@@ -1345,6 +1344,17 @@ public class ComposeMessageActivity extends Activity
         startActivity(intent);
     }
 
+    private boolean canSendMmsMobileDataOff(int subscription) {
+        boolean result = false;
+        CarrierConfigManager configManager = (CarrierConfigManager)
+                getSystemService(Context.CARRIER_CONFIG_SERVICE);
+        PersistableBundle b = configManager.getConfigForSubId(subscription);
+        if (b != null) {
+            result = b.getBoolean("config_enable_mms_with_mobile_data_off");
+        }
+        return result;
+    }
+
     private void confirmSendMessageIfNeeded(int subscription) {
         if (isLTEOnlyMode(subscription)) {
             showDisableLTEOnlyDialog(subscription);
@@ -1352,7 +1362,7 @@ public class ComposeMessageActivity extends Activity
         }
         boolean isMms = mWorkingMessage.requiresMms();
         if (!isRecipientsEditorVisible()) {
-            if (isMms && !mSendMmsSupportViaWiFi && mSendMmsMobileDataOff &&
+            if (isMms && !mSendMmsSupportViaWiFi && canSendMmsMobileDataOff(subscription) &&
                     MessageUtils.isMobileDataDisabled(getApplicationContext())) {
                 showMobileDataDisabledDialog(subscription);
             } else {
@@ -1363,7 +1373,7 @@ public class ComposeMessageActivity extends Activity
 
         if (mRecipientsEditor.hasInvalidRecipient(isMms)) {
             showInvalidRecipientDialog(subscription);
-        } else if (isMms && !mSendMmsSupportViaWiFi && mSendMmsMobileDataOff &&
+        } else if (isMms && !mSendMmsSupportViaWiFi && canSendMmsMobileDataOff(subscription) &&
                 MessageUtils.isMobileDataDisabled(getApplicationContext())) {
             showMobileDataDisabledDialog(subscription);
         } else {
@@ -1398,7 +1408,8 @@ public class ComposeMessageActivity extends Activity
 
         boolean isMms = mWorkingMessage.requiresMms();
         if (!isRecipientsEditorVisible()) {
-            if (isMms && !mSendMmsSupportViaWiFi && mSendMmsMobileDataOff &&
+            if (isMms && !mSendMmsSupportViaWiFi &&
+                    canSendMmsMobileDataOff(SubscriptionManager.getDefaultSmsSubscriptionId()) &&
                     MessageUtils.isMobileDataDisabled(getApplicationContext())) {
                 showMobileDataDisabledDialog();
             } else if ((TelephonyManager.getDefault().getPhoneCount()) > 1) {
@@ -1413,7 +1424,8 @@ public class ComposeMessageActivity extends Activity
 
         if (mRecipientsEditor.hasInvalidRecipient(isMms)) {
             showInvalidRecipientDialog();
-        } else if (isMms && !mSendMmsSupportViaWiFi && mSendMmsMobileDataOff &&
+        } else if (isMms && !mSendMmsSupportViaWiFi &&
+                canSendMmsMobileDataOff(SubscriptionManager.getDefaultSmsSubscriptionId()) &&
                 MessageUtils.isMobileDataDisabled(getApplicationContext())) {
             showMobileDataDisabledDialog();
         } else {
@@ -2539,12 +2551,6 @@ public class ComposeMessageActivity extends Activity
     public void initialize(Bundle savedInstanceState, long originalThreadId) {
         // Create a new empty working message.
         mWorkingMessage = WorkingMessage.createEmpty(this);
-
-        // FIXME: Comment this framework dependency at bring up stage, will restore
-        //        back later.
-        //ConfigResourceUtil configResUtil = new ConfigResourceUtil();
-        mSendMmsMobileDataOff = false;//configResUtil.getBooleanValue(this,
-               // "config_enable_mms_with_mobile_data_off");
 
         mSendMmsSupportViaWiFi = getResources().getBoolean(R.bool.support_send_mms_over_wifi);
 
@@ -6431,9 +6437,7 @@ public class ComposeMessageActivity extends Activity
         @Override
         protected void onDeleteComplete(int token, Object cookie, int result) {
             super.onDeleteComplete(token, cookie, result);
-            // FIXME: Comment this framework dependency at bring up stage, will restore
-            //        back later.
-            //updateThreadAttachType();
+            updateThreadAttachType();
             switch(token) {
                 case ConversationList.DELETE_CONVERSATION_TOKEN:
                     mConversation.setMessageCount(0);

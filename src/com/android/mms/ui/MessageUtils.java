@@ -836,8 +836,7 @@ public class MessageUtils {
                     needMarkAsNotificationThread = true;
                 }
 
-// FIXME: Comment this provider dependency temporary, will restore back later.
-                /*if (needMarkAsNotificationThread) {
+                if (needMarkAsNotificationThread) {
                     Uri uri = Conversation.getUri(threadId);
                     ContentValues values = new ContentValues();
                     values.put(Threads.NOTIFICATION, NOTIFICATION_MSG_FLAG);
@@ -846,7 +845,7 @@ public class MessageUtils {
                     } catch (Exception e) {
                         Log.e(TAG, "Update Threads.NOTIFICATION Error", e);
                     }
-                }*/
+                }
             }
         }).start();
     }
@@ -900,9 +899,7 @@ public class MessageUtils {
     }
 
     public static void updateThreadAttachTypeByThreadId(Context context, long threadId) {
-        // FIXME: Comment this framework dependency at bring up stage, will restore
-        //        back later.
-        /* String attachmentInfo = Conversation.getAttachmentInfo(context,
+        String attachmentInfo = Conversation.getAttachmentInfo(context,
                 Conversation.getLatestMessageAttachmentUri(context, threadId));
         Uri uri = Conversation.getUri(threadId);
         ContentValues values = new ContentValues();
@@ -911,7 +908,7 @@ public class MessageUtils {
             context.getContentResolver().update(uri, values, null, null);
         } catch (Exception e) {
             Log.e(TAG, "Update Thread Attachment Type Error", e);
-        }*/
+        }
     }
 
     public static String formatTimeStampString(Context context, long when) {
@@ -1337,10 +1334,9 @@ public class MessageUtils {
         HashSet<Long> unreadNotificationThreadIds = new HashSet<Long>();
         Cursor cursor = null;
         try {
-// FIXME: Comment this provider dependency temporary, will restore back later.
             cursor = SqliteWrapper.query(context, context.getContentResolver(),
                     Conversation.sAllThreadsUri, new String[] {Threads._ID, Threads.READ},
-                    /*Threads.NOTIFICATION + " = 1 AND " +*/ Threads.READ + " = 0 ", null, null);
+                    Threads.NOTIFICATION + " = 1 AND " + Threads.READ + " = 0 ", null, null);
             if (cursor != null && cursor.getCount() != 0) {
                 while (cursor.moveToNext()) {
                     long threadId = cursor.getLong(cursor.getColumnIndexOrThrow(Threads._ID));
