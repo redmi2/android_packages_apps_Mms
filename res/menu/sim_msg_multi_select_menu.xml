@@ -32,21 +32,28 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <item
         android:id="@+id/forward"
-        android:icon="@drawable/ic_forward"
+        android:icon="@drawable/forward"
         android:showAsAction="always|withText"
         android:title="@string/menu_forward"/>
     <item
         android:id="@+id/delete"
-        android:icon="@drawable/ic_menu_trash_holo_dark"
+        android:icon="@drawable/delete"
         android:showAsAction="always|withText"
         android:title="@string/menu_delete_msg"/>
     <item
-        android:id="@+id/reply"
-        android:icon="@drawable/ic_reply"
-        android:showAsAction="ifRoom|withText"
-        android:title="@string/menu_reply"/>
-    <item
-        android:id="@+id/copy_to_phone"
-        android:showAsAction="never|withText"
-        android:title="@string/sim_copy_to_phone_memory"/>
+        android:id="@+id/more"
+        android:icon="@drawable/more_black"
+        android:showAsAction="always"
+        android:title="@string/menu_more">
+        <menu>
+            <item
+                android:id="@+id/reply"
+                android:showAsAction="never|withText"
+                android:title="@string/menu_reply"/>
+            <item
+                android:id="@+id/copy_to_phone"
+                android:showAsAction="never|withText"
+                android:title="@string/sim_copy_to_phone_memory"/>
+        </menu>
+    </item>
 </menu>

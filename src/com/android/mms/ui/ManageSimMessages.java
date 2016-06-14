@@ -660,6 +660,8 @@ public class ManageSimMessages extends Activity
                 case R.id.reply:
                     replyMessage();
                     break;
+                case R.id.more:
+                    return true;
                 default:
                     break;
             }
@@ -734,10 +736,12 @@ public class ManageSimMessages extends Activity
                 mode.getMenu().findItem(R.id.forward).setVisible(false);
                 mode.getMenu().findItem(R.id.reply).setVisible(false);
                 mode.getMenu().findItem(R.id.copy_to_phone).setVisible(false);
+                mode.getMenu().findItem(R.id.more).setVisible(false);
             } else if(checkedCount == 1) {
                 mode.getMenu().findItem(R.id.forward).setVisible(true);
                 mode.getMenu().findItem(R.id.copy_to_phone).setVisible(true);
                 mode.getMenu().findItem(R.id.reply).setVisible(isInboxSms());
+                mode.getMenu().findItem(R.id.more).setVisible(true);
             }
         }
 
