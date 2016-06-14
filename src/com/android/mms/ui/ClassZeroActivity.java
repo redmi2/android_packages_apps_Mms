@@ -139,6 +139,9 @@ public class ClassZeroActivity extends Activity {
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setBackgroundDrawableResource(
                 R.drawable.class_zero_background);

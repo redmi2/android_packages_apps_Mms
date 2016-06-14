@@ -280,6 +280,9 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         // Cache recipients information in a background thread in advance.
         RecipientIdCache.init(getApplication());
         mIsRcsEnabled = MmsConfig.isRcsEnabled();

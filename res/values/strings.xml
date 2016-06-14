@@ -1175,4 +1175,10 @@
         <item quantity="other"><xliff:g id="count">%d</xliff:g> mins</item>
     </plurals>
     <string name="posted_now">"Now"</string>
+    <string name="basic_permission_required">Messaging needs permission to SMS, Phone and Contacts.</string>
+    <string name="next">Next &gt;</string>
+    <string name="settings">Settings &gt;</string>
+    <string name="exit">Exit</string>
+    <string name="enable_permission_settings">You need enable permissions in Settings > Apps > Messaging > Permissions.</string>
+    <string name="no_permission_save_attachment_to_storage">No permission save attachment to external storage</string>
 </resources>

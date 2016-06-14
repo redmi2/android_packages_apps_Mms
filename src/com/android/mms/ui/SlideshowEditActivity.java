@@ -87,7 +87,9 @@ public class SlideshowEditActivity extends ListActivity {
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         mList = getListView();
         mAddSlideItem = createAddSlideItem();
         mList.addFooterView(mAddSlideItem);

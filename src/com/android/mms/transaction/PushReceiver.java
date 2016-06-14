@@ -261,6 +261,10 @@ public class PushReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if (!MessageUtils.hasBasicPermissions()){
+            Log.d(TAG, "PushReceiver do not have basic permissions");
+            return;
+        }
         if (intent.getAction().equals(WAP_PUSH_DELIVER_ACTION)
                 && (ContentType.MMS_MESSAGE.equals(intent.getType())
                 || WAP_PUSH_TYPE_SIC.equals(intent.getType())

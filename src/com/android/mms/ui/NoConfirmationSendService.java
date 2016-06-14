@@ -49,6 +49,10 @@ public class NoConfirmationSendService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         ComposeMessageActivity.log("NoConfirmationSendService onHandleIntent");
 
+        if (!MessageUtils.hasBasicPermissions()) {
+            ComposeMessageActivity.log("NoConfirmationSendService do not have basic permissions");
+            return;
+        }
         if (!MmsConfig.isSmsEnabled(this)) {
             ComposeMessageActivity.log("NoConfirmationSendService is not the default sms app");
             return;

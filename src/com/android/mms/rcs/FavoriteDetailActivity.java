@@ -146,6 +146,9 @@ public class FavoriteDetailActivity  extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setProgressBarIndeterminateVisibility(true);
         setContentView(R.layout.message_detail_viewpaper);

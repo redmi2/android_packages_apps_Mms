@@ -67,6 +67,10 @@ public class NotificationActionHandleReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if (!MessageUtils.hasBasicPermissions()) {
+            Log.d("Mms", "NotificationActionHandleReceiver do not have basic permissions");
+            return;
+        }
         if (intent == null) {
             return;
         }

@@ -24,6 +24,8 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.util.Map;
 
+import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -128,7 +130,7 @@ public class SlideListItemView extends LinearLayout implements SlideViewInterfac
         }
     }
 
-    private class ViewAttachmentListener implements OnClickListener {
+     class ViewAttachmentListener implements OnClickListener {
         private final Uri mAttachmentUri;
         private final String mAttachmentName;
         private final boolean mImportVcard;
@@ -179,14 +181,19 @@ public class SlideListItemView extends LinearLayout implements SlideViewInterfac
                                 Log.e(TAG, "Can't open " + mAttachmentUri);
                             }
                         } else if (which == SAVE_OPTION) {
-                            int resId = R.string.copy_to_sdcard_fail;
-                            Uri saveUri = saveAttachment(mAttachmentUri, mAttachmentName);
-                            if (saveUri != null) {
-                                resId = R.string.copy_to_sdcard_success;
-                                mContext.sendBroadcast(new Intent(
-                                        Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, saveUri));
+                            if (MessageUtils.hasStoragePermission()) {
+                                save();
+                            } else {
+                                if (mContext instanceof MobilePaperShowActivity) {
+                                    MobilePaperShowActivity activity = (MobilePaperShowActivity)mContext;
+                                    activity.setViewAttachmentListener(ViewAttachmentListener.this);
+                                    activity.requestPermissions(
+                                            new String[] {
+                                                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                                            },
+                                            MobilePaperShowActivity.SAVE_SLIDER_ATTACHMENT_PERMISSION_REQUEST_CODE);
+                                }
                             }
-                            Toast.makeText(mContext, resId, Toast.LENGTH_SHORT).show();
                         }
                         dialog.dismiss();
                     }
@@ -197,6 +204,16 @@ public class SlideListItemView extends LinearLayout implements SlideViewInterfac
                         .setItems(options, clickListener)
                         .show();
             }
+        }
+        public void save(){
+            int resId = R.string.copy_to_sdcard_fail;
+            Uri saveUri = saveAttachment(mAttachmentUri, mAttachmentName);
+            if (saveUri != null) {
+                resId = R.string.copy_to_sdcard_success;
+                mContext.sendBroadcast(new Intent(
+                        Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, saveUri));
+            }
+            Toast.makeText(mContext, resId, Toast.LENGTH_SHORT).show();
         }
     }
 

@@ -27,6 +27,7 @@ import android.provider.Telephony.Sms.Conversations;
 import android.util.Log;
 
 import com.android.mms.LogTag;
+import com.android.mms.MmsApp;
 
 /**
  * Cache for information about draft messages on conversations.
@@ -240,6 +241,9 @@ public class DraftCache {
      * Get the global instance.
      */
     public static DraftCache getInstance() {
+        if (sInstance == null) {
+            sInstance = new DraftCache(MmsApp.getApplication().getApplicationContext());
+        }
         return sInstance;
     }
 

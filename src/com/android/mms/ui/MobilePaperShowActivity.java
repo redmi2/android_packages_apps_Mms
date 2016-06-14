@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2013-2014, The Linux Foundation. All Rights Reserved.
+   Copyright (c) 2013-2014, 2016, The Linux Foundation. All Rights Reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
 met:
@@ -69,6 +69,7 @@ import com.android.mms.model.RegionModel;
 import com.android.mms.model.SlideModel;
 import com.android.mms.model.SlideshowModel;
 import com.android.mms.R;
+import com.android.mms.ui.SlideListItemView.ViewAttachmentListener;
 import com.android.mms.util.AddressUtils;
 
 import com.android.mms.transaction.MessagingNotification;
@@ -107,6 +108,7 @@ public class MobilePaperShowActivity extends Activity {
     private ScrollView mScrollViewPort;
     private Cursor mCursor;
     private String mSubject;
+    private ViewAttachmentListener mViewAttachmentListener;
 
     private float mFontSizeForSave = MessageUtils.FONT_SIZE_DEFAULT;
     private Handler mHandler;
@@ -116,6 +118,7 @@ public class MobilePaperShowActivity extends Activity {
     private static final int QUERY_MESSAGE_TOKEN = 6702;
     private BackgroundQueryHandler mAsyncQueryHandler;
     private static final String MAILBOX_URI = "content://mms-sms/mailbox/";
+    static final int SAVE_SLIDER_ATTACHMENT_PERMISSION_REQUEST_CODE = 2017;
     private Runnable mStopScaleRunnable = new Runnable() {
         @Override
         public void run() {
@@ -149,6 +152,9 @@ public class MobilePaperShowActivity extends Activity {
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         setContentView(R.layout.mobile_paper_view);
         mHandler = new Handler();
         mIntent = getIntent();
@@ -517,5 +523,20 @@ public class MobilePaperShowActivity extends Activity {
                 MobilePaperShowActivity.this.startActivity(intentForward);
             }
         }, R.string.building_slideshow_title);
+    }
+
+    public void setViewAttachmentListener(ViewAttachmentListener listener) {
+        mViewAttachmentListener = listener;
+    }
+    @Override
+    public void onRequestPermissionsResult(final int requestCode, final String permissions[],
+            final int[] grantResults) {
+        if (requestCode == SAVE_SLIDER_ATTACHMENT_PERMISSION_REQUEST_CODE) {
+            if (MessageUtils.hasStoragePermission()) {
+                mViewAttachmentListener.save();
+            } else {
+                Toast.makeText(this, R.string.no_permission_save_attachment_to_storage, Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }

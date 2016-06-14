@@ -41,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Notification;
@@ -59,6 +60,7 @@ import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.ContentResolver;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.content.SharedPreferences;
 import android.content.res.TypedArray;
@@ -370,6 +372,12 @@ public class MessageUtils {
     private static final long ARM_BIT = 12791;
     private static final int MILLISECOND_SIZE = 1000;
     /* End add for RCS */
+
+    /* Basic permissions SMS application should have */
+    public static String[] sSMSBasicPermissions = new String[] {
+        Manifest.permission.READ_SMS, Manifest.permission.READ_PHONE_STATE,
+        Manifest.permission.READ_CONTACTS
+    };
 
     private MessageUtils() {
         // Forbidden being instantiated.
@@ -3020,6 +3028,88 @@ public class MessageUtils {
             }
         }
         return available;
+    }
+
+    /***
+     * added for Android 6.0 + for runtime permission
+     */
+
+    /**
+     * Check whether we have the runtime permission given, suppose api level is
+     * 23 or higher
+     *
+     * @return true or false
+     */
+    public static boolean hasPermission(final String strPermission) {
+        final Context context = MmsApp.getApplication().getApplicationContext();
+        final int state = context.checkSelfPermission(strPermission);
+        return state == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * Check whether have the permissions given
+     *
+     * @return true or false
+     */
+    public static boolean hasPermissions(final String[] strPermissions) {
+        for (final String permission : strPermissions) {
+            if (!hasPermission(permission)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check whether have the basic permission as default SMS application
+     */
+    public static boolean hasBasicPermissions() {
+        return hasPermissions(sSMSBasicPermissions);
+    }
+
+    /**
+     * Launch permission check
+     */
+    public static void launchPermissionCheckActivity(Activity activity) {
+        final Intent intent = new Intent(activity, PermissionGuardActivity.class);
+        intent.putExtra(PermissionGuardActivity.ORIGINAL_INTENT,activity.getIntent());
+        activity.startActivity(intent);
+    }
+
+    /**
+     * Check basic permission before enter app
+     */
+    public static boolean checkPermissionsIfNeeded(Activity activity) {
+        if (!hasBasicPermissions()) {
+            launchPermissionCheckActivity(activity);
+        } else {
+            MmsApp.getApplication().initPermissionRelated();
+            return false;
+        }
+        activity.finish();
+        return true;
+    }
+
+    public static String[] getMissingPermissions(String[] permissions) {
+        final ArrayList<String> missingList = new ArrayList<String>();
+        for (final String permission : permissions) {
+            if (!hasPermission(permission)) {
+                missingList.add(permission);
+            }
+        }
+
+        final String[] missingArray = new String[missingList.size()];
+        missingList.toArray(missingArray);
+        return missingArray;
+
+    }
+
+    public static String[] getMissingBasicPermissions() {
+        return getMissingPermissions(sSMSBasicPermissions);
+    }
+
+    public static boolean hasStoragePermission() {
+        return hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
     }
 
 }

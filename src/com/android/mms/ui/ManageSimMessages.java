@@ -154,7 +154,9 @@ public class ManageSimMessages extends Activity
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 
         mContentResolver = getContentResolver();

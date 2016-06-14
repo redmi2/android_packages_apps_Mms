@@ -58,6 +58,9 @@ public class EditSlideDurationActivity  extends Activity {
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.edit_slide_duration);
 

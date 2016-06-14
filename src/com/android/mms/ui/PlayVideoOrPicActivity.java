@@ -95,6 +95,9 @@ public class PlayVideoOrPicActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         setContentView(R.layout.mms_play_video_pic);
 
         mImage = (ImageView) this.findViewById(R.id.mms_play_image);

@@ -55,7 +55,9 @@ public class RecipientListActivity extends ListActivity {
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         if (icicle != null) {
             // Retrieve previously saved state of this activity.
             mThreadId = icicle.getLong(ComposeMessageActivity.THREAD_ID);

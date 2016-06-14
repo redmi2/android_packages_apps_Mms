@@ -96,6 +96,9 @@ public class DeliveryReportActivity extends ListActivity {
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.delivery_report_activity);
 

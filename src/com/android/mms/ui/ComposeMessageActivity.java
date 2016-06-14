@@ -58,6 +58,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.Set;
 
+import android.Manifest;
 import android.R.integer;
 import android.animation.AnimatorSet;
 import android.animation.ArgbEvaluator;
@@ -441,6 +442,8 @@ public class ComposeMessageActivity extends Activity
     // The default displaying page when selecting attachments.
     private static final int DEFAULT_ATTACHMENT_PAGER = 0;
 
+    private static final int SAVE_ATTACHMENT_PERMISSION_REQUEST_CODE = 2016;
+
     private ContentResolver mContentResolver;
 
     private BackgroundQueryHandler mBackgroundQueryHandler;
@@ -483,6 +486,7 @@ public class ComposeMessageActivity extends Activity
 
     private MessageListView mMsgListView;        // ListView for messages in this conversation
     public MessageListAdapter mMsgListAdapter;  // and its corresponding ListAdapter
+    private ModeCallback mModeCallback;
 
     private RecipientsEditor mRecipientsEditor;  // UI control for editing recipients
     private ImageButton mRecipientsPicker;       // UI control for recipients picker
@@ -746,6 +750,8 @@ public class ComposeMessageActivity extends Activity
 
     private static int FAVOURITE_MSG = 1;
     private int mRcsBurnAfterReadMessageCount = 0;
+    private final IntentFilter mAirplaneModeFilter = new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+    private final IntentFilter mSIMStatusChangeFilter = new IntentFilter(SIM_STATE_CHANGE_ACTION);
     /* End add for RCS */
 
     @SuppressWarnings("unused")
@@ -2456,7 +2462,9 @@ public class ComposeMessageActivity extends Activity
     protected void onCreate(Bundle savedInstanceState) {
         mIsSmsEnabled = MmsConfig.isSmsEnabled(this);
         super.onCreate(savedInstanceState);
-
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         resetConfiguration(getResources().getConfiguration());
         final Window window = ComposeMessageActivity.this.getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
@@ -2474,18 +2482,9 @@ public class ComposeMessageActivity extends Activity
         mBackgroundQueryHandler = new BackgroundQueryHandler(mContentResolver);
 
         initialize(savedInstanceState, 0);
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-        registerReceiver(mAirplaneModeBroadcastReceiver, intentFilter);
 
-        IntentFilter simIntentFilter = new IntentFilter();
-        simIntentFilter.addAction(SIM_STATE_CHANGE_ACTION);
-        registerReceiver(mSimBroadcastReceiver, simIntentFilter);
         if (TRACE) {
             android.os.Debug.startMethodTracing("compose");
-        }
-        if (mIsRcsEnabled) {
-            registerRcsReceiver();
         }
     }
 
@@ -2816,6 +2815,12 @@ public class ComposeMessageActivity extends Activity
         // Register a BroadcastReceiver to listen on SD card state.
         registerReceiver(mMediaStateReceiver, getMediaStateFilter());
 
+        registerReceiver(mAirplaneModeBroadcastReceiver, mAirplaneModeFilter);
+        registerReceiver(mSimBroadcastReceiver, mSIMStatusChangeFilter);
+        if (mIsRcsEnabled) {
+            registerRcsReceiver();
+        }
+
         // figure out whether we need to show the keyboard or not.
         // if there is draft to be loaded for 'mConversation', we'll show the keyboard;
         // otherwise we hide the keyboard. In any event, delay loading
@@ -3078,6 +3083,11 @@ public class ComposeMessageActivity extends Activity
         // Cleanup the BroadcastReceiver.
         unregisterReceiver(mHttpProgressReceiver);
         unregisterReceiver(mMediaStateReceiver);
+        unregisterReceiver(mAirplaneModeBroadcastReceiver);
+        unregisterReceiver(mSimBroadcastReceiver);
+        if (mIsRcsEnabled) {
+            unregisterRcsReceiver();
+        }
 
         if (mAttachmentSelector.getVisibility() == View.VISIBLE) {
             mAttachmentSelector.setVisibility(View.GONE);
@@ -3093,11 +3103,6 @@ public class ComposeMessageActivity extends Activity
             mZoomGestureOverlayView.removeZoomListener(this);
         }
 
-        unregisterReceiver(mAirplaneModeBroadcastReceiver);
-        unregisterReceiver(mSimBroadcastReceiver);
-        if (mIsRcsEnabled) {
-            unregisterRcsReceiver();
-        }
         if (mMsgListAdapter != null) {
             mMsgListAdapter.changeCursor(null);
             mMsgListAdapter.cancelBackgroundLoading();
@@ -5621,7 +5626,8 @@ public class ComposeMessageActivity extends Activity
                 }
             }
         });
-        mMsgListView.setMultiChoiceModeListener(new ModeCallback());
+        mModeCallback = new ModeCallback();
+        mMsgListView.setMultiChoiceModeListener(mModeCallback);
         mMsgListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
 
         mFileTranferReceiver = new ComposeMessageFileTransferReceiver(mMsgListAdapter);
@@ -7196,19 +7202,13 @@ public class ComposeMessageActivity extends Activity
                 showMessageDetail();
                 break;
             case R.id.save_attachment:
-                MessageItem messageItem;
-                try {
-                    Cursor cursor = (Cursor) mMsgListAdapter.getItem(mSelectedPos.get(0));
-                    messageItem = mMsgListAdapter.getCachedMessageItem(
-                            cursor.getString(COLUMN_MSG_TYPE),
-                            cursor.getLong(COLUMN_ID), cursor);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return false;
-                }
-                if (messageItem != null) {
-                    saveAttachment(messageItem);
-                }
+                    if (MessageUtils.hasStoragePermission()) {
+                        saveAttachment();
+                    } else {
+                        requestPermissions(new String[] {
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        }, SAVE_ATTACHMENT_PERMISSION_REQUEST_CODE);
+                    }
                 break;
             case R.id.report:
                 showReport();
@@ -7512,6 +7512,20 @@ public class ComposeMessageActivity extends Activity
                 }
             }
             return true;
+        }
+
+        public void saveAttachment() {
+            MessageItem messageItem = null;
+            try {
+                Cursor cursor = (Cursor) mMsgListAdapter.getItem(mSelectedPos.get(0));
+                messageItem = mMsgListAdapter.getCachedMessageItem(
+                        cursor.getString(COLUMN_MSG_TYPE), cursor.getLong(COLUMN_ID), cursor);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            if (messageItem != null) {
+                saveAttachment(messageItem);
+            }
         }
 
         private void saveAttachment(MessageItem msgItem) {
@@ -9562,5 +9576,15 @@ public class ComposeMessageActivity extends Activity
             mHandler.postDelayed(mUpdateThread, POST_DELAY);
         }
     };
-
+    @Override
+    public void onRequestPermissionsResult(final int requestCode, final String permissions[],
+            final int[] grantResults) {
+        if (requestCode == SAVE_ATTACHMENT_PERMISSION_REQUEST_CODE) {
+            if (MessageUtils.hasStoragePermission()) {
+                mModeCallback.saveAttachment();
+            } else {
+                Toast.makeText(this, R.string.no_permission_save_attachment_to_storage, Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014, 2016, The Linux Foundation. All rights reserved.
  * Not a Contribution.
  * Copyright (C) 2007 The Android Open Source Project.
  *
@@ -80,6 +80,9 @@ public class MultiPickContactsActivity extends ExpandableListActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         // get the mode from the intent or saved instance.
         if (savedInstanceState != null) {
             mMode = savedInstanceState.getInt(MODE);

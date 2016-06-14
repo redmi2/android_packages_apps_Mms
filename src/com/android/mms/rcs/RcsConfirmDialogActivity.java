@@ -46,6 +46,7 @@ import com.android.mms.MmsApp;
 import com.android.mms.R;
 import com.android.mms.transaction.MessageSender;
 import com.android.mms.transaction.SmsMessageSender;
+import com.android.mms.ui.MessageUtils;
 import com.android.mms.ui.MessagingPreferenceActivity;
 import com.google.android.mms.MmsException;
 import com.suntek.mway.rcs.client.aidl.common.RcsColumns;
@@ -72,6 +73,9 @@ public class RcsConfirmDialogActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         this.setFinishOnTouchOutside(false);
         getWindow().setLayout(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
         showPolicyDialog();

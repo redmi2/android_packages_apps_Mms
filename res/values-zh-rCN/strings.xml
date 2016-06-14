@@ -610,4 +610,10 @@
     <string name="notification_reply_to">回复<xliff:g id="name">%s</xliff:g></string>
     <string name="notification_view_message_text">查看消息</string>
     <string name="conversation_list_send_fail_text">发送失败，点击即可重发。</string>
+    <string name="basic_permission_required">短信应用需要获取 短信, 电话 和 联系人权限.</string>
+    <string name="next">下一步 &gt;</string>
+    <string name="settings">设置 &gt;</string>
+    <string name="exit">退出</string>
+    <string name="enable_permission_settings">您可以在 设置 > 应用 > 短信 > 权限 中更改权限.</string>
+    <string name="no_permission_save_attachment_to_storage">没有权限保存附件到手机USB存储。</string>
 </resources>

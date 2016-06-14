@@ -15,6 +15,7 @@
 package com.android.mms.transaction;
 
 import com.android.mms.LogTag;
+import com.android.mms.ui.MessageUtils;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -36,6 +37,10 @@ public class MmsPushOutboxMessages extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
             Log.v(TAG, "Received the MMS_SEND_OUTBOX_MSG intent: " + intent);
+        }
+        if (!MessageUtils.hasBasicPermissions()){
+            Log.d(TAG, "MmsPushOutboxMessages do not have basic permissions");
+            return;
         }
         String action = intent.getAction();
         if(action.equalsIgnoreCase(INTENT_MMS_SEND_OUTBOX_MSG)){

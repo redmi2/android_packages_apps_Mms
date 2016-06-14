@@ -17,9 +17,12 @@
 
 package com.android.mms.transaction;
 
+import com.android.mms.ui.MessageUtils;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 
 public class MessageStatusReceiver extends BroadcastReceiver {
     public static final String MESSAGE_STATUS_RECEIVED_ACTION =
@@ -27,6 +30,10 @@ public class MessageStatusReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if (!MessageUtils.hasBasicPermissions()) {
+            Log.d("Mms", "MessageStatusReceiver do not have basic permissions");
+            return;
+        }
         if (MESSAGE_STATUS_RECEIVED_ACTION.equals(intent.getAction())) {
             intent.setClass(context, MessageStatusService.class);
             context.startService(intent);

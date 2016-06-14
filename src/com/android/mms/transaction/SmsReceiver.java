@@ -23,8 +23,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.PowerManager;
 import android.provider.Telephony.Sms.Intents;
+import android.util.Log;
 
 import com.android.mms.LogTag;
+import com.android.mms.ui.MessageUtils;
 
 /**
  * Handle incoming SMSes.  Just dispatches the work off to a Service.
@@ -47,6 +49,10 @@ public class SmsReceiver extends BroadcastReceiver {
     }
 
     protected void onReceiveWithPrivilege(Context context, Intent intent, boolean privileged) {
+        if (!MessageUtils.hasBasicPermissions()) {
+            Log.d("Mms", "SmsReceiver do not have basic permissions");
+            return;
+        }
         String action = intent.getAction();
         LogTag.debugD("onReceiveWithPrivilege:intent="+intent+"|privileged="+privileged);
         // If 'privileged' is false, it means that the intent was delivered to the base

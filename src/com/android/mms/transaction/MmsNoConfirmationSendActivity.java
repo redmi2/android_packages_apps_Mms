@@ -1,5 +1,5 @@
  /*
- * Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -31,6 +31,7 @@ package com.android.mms.transaction;
 
 import com.android.mms.MmsConfig;
 import com.android.mms.ui.ComposeMessageActivity;
+import com.android.mms.ui.MessageUtils;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -47,6 +48,9 @@ public class MmsNoConfirmationSendActivity extends Activity {
     public void onCreate(final Bundle savedInstanceState) {
         // TODO Auto-generated method stub
         super.onCreate(savedInstanceState);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         Intent intent = this.getIntent();
         if (intent == null) {
             finish();

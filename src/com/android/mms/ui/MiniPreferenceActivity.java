@@ -23,7 +23,9 @@ public class MiniPreferenceActivity extends Activity {
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         boolean notificationsEnabled = MessagingPreferenceActivity.getNotificationEnabled(this);
 
         if (!notificationsEnabled) {

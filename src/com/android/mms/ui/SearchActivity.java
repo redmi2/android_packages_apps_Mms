@@ -229,7 +229,9 @@ public class SearchActivity extends ListActivity
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         String searchStringParameter = getIntent().getStringExtra(SearchManager.QUERY);
         if (searchStringParameter == null) {
             searchStringParameter = getIntent().getStringExtra("intent_extra_data_key" /*SearchManager.SUGGEST_COLUMN_INTENT_EXTRA_DATA*/);

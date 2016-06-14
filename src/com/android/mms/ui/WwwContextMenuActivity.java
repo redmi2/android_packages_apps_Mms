@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014, 2016, The Linux Foundation. All rights reserved.
  * Not a Contribution.
  * Copyright (C) 2012 The Android Open Source Project.
  *
@@ -61,6 +61,9 @@ public class WwwContextMenuActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         initUI(getIntent());

@@ -162,6 +162,9 @@ public class SlideshowActivity extends Activity implements EventListener {
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         mHandler = new Handler();
 
         // Play slide-show in full-screen mode.

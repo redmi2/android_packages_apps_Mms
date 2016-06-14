@@ -140,6 +140,9 @@ public class SlideEditorActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         setContentView(R.layout.edit_slide_activity);
 
         mSlideView = (BasicSlideEditorView) findViewById(R.id.slide_editor_view);

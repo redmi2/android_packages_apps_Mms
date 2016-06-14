@@ -73,6 +73,7 @@ import com.android.mms.LogTag;
 import com.android.mms.ui.ChipsRecipientAdapter;
 import com.android.mms.ui.ComposeMessageActivity;
 import com.android.mms.ui.ConversationList;
+import com.android.mms.ui.MessageUtils;
 import com.android.mms.ui.RecipientsEditor;
 
 import com.suntek.mway.rcs.client.aidl.constant.Actions;
@@ -104,6 +105,9 @@ public class RcsCreateGroupChatActivity extends Activity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         setContentView(R.layout.rcs_new_group_chat_activity);
         getIntentData();
         initView();

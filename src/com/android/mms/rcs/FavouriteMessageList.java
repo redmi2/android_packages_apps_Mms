@@ -152,7 +152,9 @@ public class FavouriteMessageList extends ListActivity implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         mQueryHandler = new BoxMsgListQueryHandler(getContentResolver());
         setContentView(R.layout.mailbox_list_screen);
         View spinners = (View) findViewById(R.id.spinners);

@@ -1,5 +1,5 @@
 /*
- * Copyright(C) 2013-2014, The Linux Foundation. All Rights Reserved.
+ * Copyright(C) 2013-2014, 2016, The Linux Foundation. All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -119,6 +119,9 @@ public class SearchActivityExtend extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (MessageUtils.checkPermissionsIfNeeded(this)) {
+            return;
+        }
         setContentView(R.layout.search_dialog);
 
         mSearchThread.start();

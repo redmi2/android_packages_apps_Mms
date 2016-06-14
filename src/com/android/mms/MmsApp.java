@@ -66,6 +66,7 @@ public class MmsApp extends Application {
     private PduLoaderManager mPduLoaderManager;
     private ThumbnailManager mThumbnailManager;
     private DrmManagerClient mDrmManagerClient;
+    public static boolean hasPermissionRelated = false;
 
     @Override
     public void onCreate() {
@@ -104,18 +105,14 @@ public class MmsApp extends Application {
         mThumbnailManager = new ThumbnailManager(context);
 
         MmsConfig.init(this);
-        Contact.init(this);
-        DraftCache.init(this);
-        Conversation.init(this);
         DownloadManager.init(this);
         RateController.init(this);
         LayoutManager.init(this);
         MessagingNotification.init(this);
         RcsApiManager.init(this);
-        activePendingMessages();
-
-        registerMobileDataObserver();
-
+        if (MessageUtils.hasBasicPermissions()) {
+            initPermissionRelated();
+        }
         int enablePlugger = getResources().getBoolean(R.bool.enablePlugger) ?
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
                 : PackageManager.COMPONENT_ENABLED_STATE_DEFAULT;
@@ -123,6 +120,17 @@ public class MmsApp extends Application {
         pm_plugger.setComponentEnabledSetting(new ComponentName(this,
                 MmsNoConfirmationSendActivity.class), enablePlugger,
                 PackageManager.DONT_KILL_APP);
+    }
+
+    public void initPermissionRelated() {
+        if (!hasPermissionRelated) {
+            Contact.init(MmsApp.getApplication());
+            DraftCache.init(MmsApp.getApplication());
+            Conversation.init(MmsApp.getApplication());
+            MmsApp.getApplication().activePendingMessages();
+            registerMobileDataObserver();
+            hasPermissionRelated = true;
+        }
     }
 
     private void registerMobileDataObserver() {
@@ -165,7 +173,6 @@ public class MmsApp extends Application {
     private void activePendingMessages() {
         // For Mms: try to process all pending transactions if possible
         MmsSystemEventReceiver.wakeUpService(this);
-
         // For Sms: retry to send smses in outbox and queued box
         sendBroadcast(new Intent(SmsReceiverService.ACTION_SEND_INACTIVE_MESSAGE,
                 null,

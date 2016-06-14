@@ -24,9 +24,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.provider.Settings;
 import android.provider.Telephony;
+import android.util.Log;
 
 import com.android.mms.R;
 import com.android.mms.ui.ConversationList;
+import com.android.mms.ui.MessageUtils;
 
 
 /**
@@ -39,6 +41,10 @@ public class SmsRejectedReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if (!MessageUtils.hasBasicPermissions()) {
+            Log.d("Mms", "SmsRejectedReceiver do not have basic permissions");
+            return;
+        }
         if (Settings.Global.getInt(context.getContentResolver(),
                 Settings.Global.DEVICE_PROVISIONED, 0) == 1 &&
                 Telephony.Sms.Intents.SMS_REJECTED_ACTION.equals(intent.getAction())) {

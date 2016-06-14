@@ -35,6 +35,7 @@ import com.android.internal.telephony.TelephonyIntents;
 import com.android.mms.LogTag;
 import com.android.mms.MmsApp;
 import com.android.mms.R;
+import com.android.mms.ui.MessageUtils;
 import com.android.mms.ui.MessagingPreferenceActivity;
 
 /**
@@ -64,6 +65,10 @@ public class MmsSystemEventReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (Log.isLoggable(LogTag.TRANSACTION, Log.VERBOSE)) {
             Log.v(TAG, "Intent received: " + intent);
+        }
+        if (!MessageUtils.hasBasicPermissions()) {
+            Log.d(TAG, "MmsSystemEventReceiver do not have basic permissions");
+            return;
         }
 
         String action = intent.getAction();
