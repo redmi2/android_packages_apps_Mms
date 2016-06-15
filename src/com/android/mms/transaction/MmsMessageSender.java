@@ -109,7 +109,6 @@ public class MmsMessageSender implements MessageSender {
         p.updateHeaders(mMessageUri, sendReq);
 
         long messageId = ContentUris.parseId(mMessageUri);
-        MessageUtils.updateThreadAttachType(mContext, messageId, mMessageUri);
 
         // Move the message into MMS Outbox.
         if (!mMessageUri.toString().startsWith(Mms.Draft.CONTENT_URI.toString())) {

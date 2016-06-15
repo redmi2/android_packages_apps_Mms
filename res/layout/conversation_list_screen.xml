@@ -26,7 +26,7 @@
     <ListView android:id="@android:id/list"
         style="?android:attr/listViewWhiteStyle"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_below="@+id/banner_sms_promo"
         android:drawSelectorOnTop="false"
         android:divider="@null"

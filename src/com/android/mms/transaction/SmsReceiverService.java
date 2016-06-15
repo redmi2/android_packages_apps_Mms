@@ -495,6 +495,7 @@ public class SmsReceiverService extends Service {
             // Called off of the UI thread so ok to block.
             LogTag.debugD("saveMessageToPhone messageUri: " + messageUri + " threadId: " + threadId);
             MessagingNotification.blockingUpdateNewMessageIndicator(this, threadId, false);
+            MessageUtils.updateThreadAttachTypeByThreadId(this, threadId);
         } else {
             LogTag.debugD("saveMessageToPhone messageUri is null !");
         }

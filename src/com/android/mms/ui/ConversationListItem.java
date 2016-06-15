@@ -98,6 +98,7 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
     private Handler mHandler = new Handler();
 
     private Conversation mConversation;
+    private boolean isLastMessageMms;
 
     public static final StyleSpan STYLE_BOLD = new StyleSpan(Typeface.BOLD);
     public static final StyleSpan ITALIC = new StyleSpan(Typeface.ITALIC);
@@ -337,7 +338,9 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
         //if (DEBUG) Log.v(TAG, "bind()");
 
         mConversation = conversation;
-        if (mConversation.hasUnreadMessages() && !mConversation.isLatestMessageMms(context)) {
+        String attachmentInfo = mConversation.getAttachmentInfo();
+        isLastMessageMms = !"SMS".equals(attachmentInfo);
+        if (mConversation.hasUnreadMessages() && !isLastMessageMms) {
             mSubjectView.setSingleLine(false);
             mSubjectView.setMaxLines(mContext.getResources().getInteger(
                     R.integer.max_unread_message_lines));
@@ -395,7 +398,7 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
         } else {
             String snippet = conversation.getSnippet();
             if (!TextUtils.isEmpty(snippet)) {
-                if (mConversation.isLatestMessageMms(mContext)) {
+                if (isLastMessageMms && !mConversation.hasDraft()) {
                     snippet = mContext.getResources().getString(R.string.subject_label) + snippet;
                 }
                 mSubjectView.setText(formateUnreadToBold(snippet));
@@ -411,13 +414,12 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
         mDateView.setVisibility(hasError ? GONE : VISIBLE);
 
         updateAvatarView();
-        updateAttachmentView();
+        updateAttachmentView(attachmentInfo);
     }
 
-    private void updateAttachmentView() {
-        if (mConversation.isLatestMessageMms(mContext)) {
-            String attachmentInfo = mConversation.getAttachmentInfo();
-            if (TextUtils.isEmpty(attachmentInfo)) {
+    private void updateAttachmentView(String attachmentInfo) {
+        if (isLastMessageMms) {
+            if (TextUtils.isEmpty(attachmentInfo) || mConversation.hasDraft()) {
                 mAttachmentInfoView.setVisibility(View.GONE);
             } else {
                 mAttachmentInfoView.setVisibility(View.VISIBLE);
@@ -477,17 +479,7 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
                     break;
             }
         } else {
-            if (mConversation.hasDraft()) {
-                String attachmentInfo = mConversation.getAttachmentInfo();
-                if (TextUtils.isEmpty(attachmentInfo)) {
-                    mAttachmentInfoView.setVisibility(View.GONE);
-                } else {
-                    mAttachmentInfoView.setVisibility(View.VISIBLE);
-                    mAttachmentInfoView.setText(attachmentInfo);
-                }
-            } else {
-                mAttachmentInfoView.setVisibility(View.GONE);
-            }
+            mAttachmentInfoView.setVisibility(View.GONE);
             mAttachmentStatusView.setVisibility(View.GONE);
             mAttachmentStatusSubView.setVisibility(View.GONE);
         }

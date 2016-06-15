@@ -46,6 +46,7 @@ import com.android.mms.transaction.MmsMessageSender;
 import com.android.mms.ui.ComposeMessageActivity;
 import com.android.mms.ui.MessageUtils;
 import com.android.mms.util.AddressUtils;
+import com.android.mms.util.DownloadManager;
 import com.android.mms.util.DraftCache;
 
 import com.google.android.mms.MmsException;
@@ -503,6 +504,9 @@ public class Conversation {
         if (uri == null) {
             return null;
         }
+        if (uri.equals(Sms.CONTENT_URI)) {
+            return "SMS";
+        }
         SlideshowModel slideshow;
         try {
             slideshow = SlideshowModel.createFromMessageUri(context, uri);
@@ -546,12 +550,19 @@ public class Conversation {
         Cursor cursor = null;
         try {
             cursor = SqliteWrapper.query(context, context.getContentResolver(),
-                    Mms.CONTENT_URI, new String[] {Mms._ID, Mms.MESSAGE_ID},
-                    Mms.THREAD_ID + " = " + threadId, null, null);
+                    Conversation.getUri(threadId),
+                    new String[] {Mms._ID, MmsSms.TYPE_DISCRIMINATOR_COLUMN},
+                    null, null, null);
             if (cursor != null && cursor.getCount() != 0) {
-                cursor.moveToFirst();
-                long mmsId = cursor.getLong(cursor.getColumnIndexOrThrow(Mms._ID));
-                attachmentUri = ContentUris.withAppendedId(Mms.CONTENT_URI, mmsId);
+                cursor.moveToLast();
+                String type = cursor.getString(cursor
+                        .getColumnIndexOrThrow(MmsSms.TYPE_DISCRIMINATOR_COLUMN));
+                if ("sms".equals(type)) {
+                    attachmentUri = Sms.CONTENT_URI;
+                } else {
+                    long mmsId = cursor.getLong(cursor.getColumnIndexOrThrow(Mms._ID));
+                    attachmentUri = ContentUris.withAppendedId(Mms.CONTENT_URI, mmsId);
+                }
             }
         } finally {
             if (cursor != null) {
@@ -570,12 +581,17 @@ public class Conversation {
         Cursor cursor = null;
         try {
             cursor = SqliteWrapper.query(context, context.getContentResolver(),
-                    Mms.CONTENT_URI, new String[] {Mms._ID, Mms.STATUS},
-                    Mms.THREAD_ID + " = " + mThreadId, null, null);
+                    getUri(), new String[] {Mms._ID, Mms.STATUS, Mms.MESSAGE_BOX},
+                    null, null, null);
             if (cursor != null && cursor.getCount() != 0) {
                 cursor.moveToFirst();
                 int mmsStatus = cursor.getInt(cursor.getColumnIndexOrThrow(Mms.STATUS));
-                status = MessageUtils.getMmsDownloadStatus(mmsStatus);
+                int type = cursor.getInt(cursor.getColumnIndexOrThrow(Mms.MESSAGE_BOX));
+                if (Sms.isOutgoingFolder(type)) {
+                    status = DownloadManager.STATE_UNKNOWN;
+                } else {
+                    status = MessageUtils.getMmsDownloadStatus(mmsStatus);
+                }
             }
         } finally {
             if (cursor != null) {

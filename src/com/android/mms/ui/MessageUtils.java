@@ -1004,27 +1004,6 @@ public class MessageUtils {
         return partURI.toString();
     }
 
-    public static void updateThreadAttachType(Context context, long messageId, Uri messageUri) {
-        long threadId = 0L;
-        Cursor cursor = null;
-        try {
-            cursor = SqliteWrapper.query(context, context.getContentResolver(),
-                    messageUri, new String[]{Telephony.BaseMmsColumns.THREAD_ID},
-                    Mms._ID + " = " + messageId, null, null);
-            if (cursor != null) {
-                if (cursor.moveToFirst()) {
-                    threadId = cursor.getLong(cursor.getColumnIndexOrThrow(
-                            Telephony.BaseMmsColumns.THREAD_ID));
-                }
-            }
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-        updateThreadAttachTypeByThreadId(context, threadId);
-    }
-
     public static void updateThreadAttachTypeByThreadId(Context context, long threadId) {
         String attachmentInfo = Conversation.getAttachmentInfo(context,
                 Conversation.getLatestMessageAttachmentUri(context, threadId));

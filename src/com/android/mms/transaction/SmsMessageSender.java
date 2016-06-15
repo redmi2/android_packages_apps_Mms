@@ -141,6 +141,7 @@ public class SmsMessageSender implements MessageSender {
                         true /* read */,
                         requestDeliveryReport,
                         mThreadId, priority);
+                MessageUtils.updateThreadAttachTypeByThreadId(mContext, mThreadId);
             } catch (SQLiteException e) {
                 if (LogTag.DEBUG_SEND) {
                     Log.e(TAG, "queueMessage SQLiteException", e);

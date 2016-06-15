@@ -986,10 +986,6 @@ public class WorkingMessage {
         try {
             // Make sure we are saving to the correct thread ID.
             DraftCache.getInstance().setSavingDraft(true);
-            if (!mConversation.getRecipients().isEmpty()) {
-                MessageUtils.updateThreadAttachTypeByThreadId(mActivity,
-                        mConversation.ensureThreadId());
-            }
             mConversation.setDraftState(true);
 
             PduPersister persister = PduPersister.getPduPersister(mActivity);
@@ -1692,6 +1688,7 @@ public class WorkingMessage {
             MessageUtils.sSameRecipientList.remove(threadId);
         }
         MmsWidgetProvider.notifyDatasetChanged(mActivity);
+        MessageUtils.updateThreadAttachTypeByThreadId(mActivity, threadId);
     }
 
     private void markMmsMessageWithError(Uri mmsUri) {
@@ -2057,9 +2054,6 @@ public class WorkingMessage {
             // well call clearThreadId() so ensureThreadId will query the db for the new
             // thread.
             conv.clearThreadId();   // force us to get the updated thread id
-        }
-        if (!conv.getRecipients().isEmpty()) {
-            MessageUtils.updateThreadAttachTypeByThreadId(mActivity, conv.ensureThreadId());
         }
     }
 
