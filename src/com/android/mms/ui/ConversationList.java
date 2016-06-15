@@ -1703,6 +1703,10 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
 
         @Override
         public boolean onCreateActionMode(final ActionMode mode, Menu menu) {
+            View floatingBtnContainer = findViewById(R.id.floating_action_button_container);
+            if(null != floatingBtnContainer) {
+                floatingBtnContainer.setVisibility(View.GONE);
+            }
             disableNotificationGroup();
             getWindow().setStatusBarColor(
                     getResources().getColor(R.color.statubar_select_background));
@@ -1817,6 +1821,10 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
 
         @Override
         public void onDestroyActionMode(ActionMode mode) {
+            View floatingBtnContainer = findViewById(R.id.floating_action_button_container);
+            if(null != floatingBtnContainer) {
+                floatingBtnContainer.setVisibility(View.VISIBLE);
+            }
             enableNotificationGroup();
             getWindow().setStatusBarColor(getResources().getColor(R.color.primary_color_dark));
             Iterator<Long> it = mSelectedThreadIds.iterator();
