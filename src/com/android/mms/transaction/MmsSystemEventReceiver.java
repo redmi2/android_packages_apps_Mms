@@ -30,6 +30,7 @@ import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.util.Log;
 
+import com.android.internal.telephony.IccCardConstants;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.TelephonyIntents;
 import com.android.mms.LogTag;
@@ -143,6 +144,12 @@ public class MmsSystemEventReceiver extends BroadcastReceiver {
             if (!apm) {
                 Log.d(TAG, "Airplane mode OFF");
                 wakeUpService(context);
+            }
+        } else if (action.equals(TelephonyIntents.ACTION_SIM_STATE_CHANGED)) {
+            String stateExtra = intent.getStringExtra(IccCardConstants.INTENT_KEY_ICC_STATE);
+            if (IccCardConstants.INTENT_VALUE_ICC_LOADED.equals(stateExtra)) {
+                MessagingNotification.nonBlockingUpdateNewMessageIndicator(
+                        context, MessagingNotification.THREAD_NONE, false);
             }
         }
     }
