@@ -986,6 +986,9 @@ public class WorkingMessage {
         try {
             // Make sure we are saving to the correct thread ID.
             DraftCache.getInstance().setSavingDraft(true);
+            if (!mConversation.getRecipients().isEmpty()) {
+                mConversation.ensureThreadId();
+            }
             mConversation.setDraftState(true);
 
             PduPersister persister = PduPersister.getPduPersister(mActivity);
@@ -2054,6 +2057,9 @@ public class WorkingMessage {
             // well call clearThreadId() so ensureThreadId will query the db for the new
             // thread.
             conv.clearThreadId();   // force us to get the updated thread id
+        }
+        if (!conv.getRecipients().isEmpty()) {
+            conv.ensureThreadId();
         }
     }
 

@@ -1000,6 +1000,13 @@ public class MessageListItem extends ZoomMessageListItem implements
             case WorkingMessage.IMAGE:
                 initPlayVideoPicView(visible, WorkingMessage.IMAGE);
                 break;
+            case WorkingMessage.TEXT:
+                if (mPlayVideoPicLayout != null) {
+                    mPlayVideoPicLayout.setVisibility(View.GONE);
+                }
+                if (mPlayAudioLayout != null) {
+                    mPlayAudioLayout.setVisibility(View.GONE);
+                }
             default:
                 if (mMmsView != null) {
                     mMmsView.setVisibility(visible ? View.VISIBLE : View.GONE);
@@ -1007,6 +1014,11 @@ public class MessageListItem extends ZoomMessageListItem implements
                 break;
         }
 
+        if (mMessageItem.mAttachmentType != WorkingMessage.TEXT && mBodyTextView != null) {
+            int padding = mContext.getResources().getDimensionPixelSize(
+                    R.dimen.message_item_text_padding_left_right);
+            mBodyTextView.setPadding(padding, 0, padding, 0);
+        }
         if (mMessageItem.mBody != null) {
             mBodyTextView.setVisibility(View.VISIBLE);
             mBodyTextView.setText(getContent(mMessageItem.mBody, mMessageItem.mTextContentType));
@@ -1040,11 +1052,11 @@ public class MessageListItem extends ZoomMessageListItem implements
                 : R.color.audio_duration_c0lor_white);
         mAudioPlayProgressBar = (ProgressBar) mPlayAudioLayout
                 .findViewById(R.id.play_audio_progressbar);
-        Drawable progressBarDrawable = mAudioPlayProgressBar.getProgressDrawable();
+        Drawable progressBarDrawable = mAudioPlayProgressBar.getProgressDrawable().mutate();
         progressBarDrawable.setTint(audioPlayColor);
 
         mPlayAudioButton = (ImageView) mPlayAudioLayout.findViewById(R.id.play_audio_button);
-        Drawable playDrawable = mContext.getResources().getDrawable(R.drawable.audio_play);
+        Drawable playDrawable = mContext.getResources().getDrawable(R.drawable.audio_play).mutate();
         playDrawable.setTint(audioPlayColor);
         mPlayAudioButton.setBackground(playDrawable);
         mPlayAudioButton.setOnClickListener(new OnClickListener() {

@@ -52,7 +52,7 @@
             <LinearLayout
                 android:id="@+id/message_block"
                 android:minHeight="@dimen/avatar_width_height"
-                android:layout_width="@dimen/message_item_bubble_max_width"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_toRightOf="@id/avatar"
                 android:layout_marginLeft="10dip"
@@ -65,6 +65,7 @@
                 <TextView android:id="@+id/text_view_top"
                     android:autoLink="all"
                     android:paddingTop="@dimen/message_item_text_padding_top"
+                    android:maxWidth="@dimen/message_item_bubble_max_width"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:linksClickable="false"
@@ -76,7 +77,8 @@
 
                 <TextView android:id="@+id/mms_subject_text"
                     android:autoLink="all"
-                    android:layout_width="match_parent"
+                    android:maxWidth="@dimen/message_item_bubble_max_width"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:linksClickable="false"
                     android:paddingTop="@dimen/message_item_text_padding_left_right"
@@ -93,12 +95,12 @@
                     android:layout_marginBottom="14dp"
                     android:layout_marginLeft="12dp"
                     android:layout_marginRight="12dp"
-                    android:layout_width="match_parent"
+                    android:layout_width="@dimen/message_item_bubble_max_width"
                     android:layout_height="wrap_content"
                     android:visibility="gone" />
                 <ViewStub android:id="@+id/mms_layout_view_audio_play_stub"
                     android:layout="@layout/mms_layout_view_audio_play"
-                    android:layout_width="match_parent"
+                    android:layout_width="@dimen/message_item_bubble_max_width"
                     android:layout_height="wrap_content"
                     android:visibility="gone" />
                 <ViewStub android:id="@+id/mms_layout_view_video_pic_play_stub"
@@ -107,11 +109,12 @@
                     android:layout_marginBottom="14dp"
                     android:layout_marginLeft="12dp"
                     android:layout_marginRight="12dp"
-                    android:layout_width="match_parent"
+                    android:layout_width="@dimen/message_item_bubble_max_width"
                     android:layout_height="wrap_content"
                     android:visibility="gone" />
                 <TextView android:id="@+id/text_view_buttom"
                     android:autoLink="all"
+                    android:maxWidth="@dimen/message_item_bubble_max_width"
                     android:paddingTop="@dimen/message_item_text_padding_left_right"
                     android:paddingStart="@dimen/message_item_text_padding_left_right"
                     android:paddingEnd="@dimen/message_item_text_padding_left_right"
@@ -124,6 +127,7 @@
                     android:textSize="16sp"
                     android:visibility="gone" />
                 <TextView android:id="@+id/downloading_title"
+                    android:maxWidth="@dimen/message_item_bubble_max_width"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="12dp"
@@ -137,6 +141,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="4dip"
                     android:paddingStart="@dimen/message_item_text_padding_left_right"
+                    android:paddingEnd="@dimen/message_item_text_padding_left_right"
                     android:paddingTop="@dimen/message_item_text_padding_top"
                     android:orientation="horizontal" >
 
@@ -184,6 +189,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:src="@drawable/ic_sms_mms_details"
+                        android:paddingEnd="3dip"
                         android:visibility="gone" />
                 </LinearLayout>
 
