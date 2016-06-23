@@ -620,4 +620,5 @@
     <string name="delivery_report">发送报告:\u0020</string>
     <string name="read_report">已读报告:\u0020</string>
     <string name="you">你:</string>
+    <string name="email_app_not_found">找不到邮件应用</string>
 </resources>
