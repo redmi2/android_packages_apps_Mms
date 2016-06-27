@@ -9521,7 +9521,7 @@ public class ComposeMessageActivity extends Activity
         private void play() {
             mMediaPlayer.start();
             mHandler.post(mUpdateThread);
-            mPlayPauseDrawable = getResources().getDrawable(R.drawable.audio_pause);
+            mPlayPauseDrawable = getResources().getDrawable(R.drawable.audio_pause).mutate();
             mPlayPauseDrawable.setTint(mColor);
             mPlayPause.setBackground(mPlayPauseDrawable);
         }
@@ -9529,7 +9529,7 @@ public class ComposeMessageActivity extends Activity
         @Override
         public void pause() {
             mMediaPlayer.pause();
-            mPlayPauseDrawable = getResources().getDrawable(R.drawable.audio_play);
+            mPlayPauseDrawable = getResources().getDrawable(R.drawable.audio_play).mutate();
             mPlayPauseDrawable.setTint(mColor);
             mPlayPause.setBackground(mPlayPauseDrawable);
         }
@@ -9555,7 +9555,7 @@ public class ComposeMessageActivity extends Activity
                     @Override
                     public void onCompletion(MediaPlayer mp) {
                         mUpdateCallBack.reset();
-                        mPlayPauseDrawable = getResources().getDrawable(R.drawable.audio_play);
+                        mPlayPauseDrawable = getResources().getDrawable(R.drawable.audio_play).mutate();
                         mPlayPauseDrawable.setTint(mColor);
                         mPlayPause.setBackground(mPlayPauseDrawable);
                         mHandler.removeCallbacks(mUpdateThread);

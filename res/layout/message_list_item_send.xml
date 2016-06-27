@@ -51,7 +51,7 @@
             <LinearLayout
                 android:id="@+id/message_block"
                 android:minHeight="@dimen/avatar_width_height"
-                android:layout_width="@dimen/message_item_bubble_max_width"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_toStartOf="@id/avatar"
                 android:layout_marginRight="10dip"
@@ -68,10 +68,11 @@
                     android:paddingStart="@dimen/message_item_text_padding_left_right"
                     android:paddingEnd="@dimen/message_item_text_padding_left_right"
                     android:paddingTop="@dimen/message_item_text_padding_top"
-                    android:layout_width="match_parent"
+                    android:maxWidth="@dimen/message_item_bubble_max_width"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:linksClickable="false"
-                    android:gravity="end"
+                    android:gravity="start"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textColor="#ff000000"
                     android:textSize="16sp"
@@ -79,7 +80,8 @@
 
                 <TextView android:id="@+id/mms_subject_text"
                     android:autoLink="all"
-                    android:layout_width="match_parent"
+                    android:maxWidth="@dimen/message_item_bubble_max_width"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:linksClickable="false"
                     android:paddingTop="@dimen/message_item_text_padding_left_right"
@@ -94,12 +96,12 @@
                     android:layout_marginBottom="14dp"
                     android:layout_marginLeft="12dp"
                     android:layout_marginRight="12dp"
-                    android:layout_width="match_parent"
+                    android:layout_width="@dimen/message_item_bubble_max_width"
                     android:layout_height="wrap_content"
                     android:visibility="gone" />
                 <ViewStub android:id="@+id/mms_layout_view_audio_play_stub"
                     android:layout="@layout/mms_layout_view_audio_play"
-                    android:layout_width="match_parent"
+                    android:layout_width="@dimen/message_item_bubble_max_width"
                     android:layout_height="wrap_content"
                     android:visibility="gone" />
                 <ViewStub android:id="@+id/mms_layout_view_video_pic_play_stub"
@@ -108,7 +110,7 @@
                     android:layout_marginBottom="14dp"
                     android:layout_marginLeft="12dp"
                     android:layout_marginRight="12dp"
-                    android:layout_width="match_parent"
+                    android:layout_width="@dimen/message_item_bubble_max_width"
                     android:layout_height="wrap_content"
                     android:visibility="gone" />
 
@@ -117,22 +119,24 @@
                     android:paddingTop="@dimen/message_item_text_padding_left_right"
                     android:paddingStart="@dimen/message_item_text_padding_left_right"
                     android:paddingEnd="@dimen/message_item_text_padding_left_right"
-                    android:layout_width="match_parent"
+                    android:maxWidth="@dimen/message_item_bubble_max_width"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:linksClickable="false"
-                    android:gravity="end"
+                    android:gravity="start"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textColor="#ff000000"
                     android:textSize="16sp"
                     android:visibility="gone"/>
 
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="4dip"
+                    android:paddingStart="@dimen/message_item_text_padding_left_right"
                     android:paddingEnd="@dimen/message_item_text_padding_left_right"
                     android:paddingTop="@dimen/message_item_text_padding_top"
-                    android:gravity="end"
+                    android:gravity="start"
                     android:orientation="horizontal" >
 
                     <ImageView
@@ -163,6 +167,7 @@
                     <TextView android:id="@+id/date_view"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:paddingEnd="3dip"
                         android:textAppearance="?android:attr/textAppearanceSmall"
                         android:textColor="@color/text_hairline" />
 
@@ -189,7 +194,7 @@
                     android:layout_height="wrap_content"
                     android:paddingEnd="@dimen/message_item_text_padding_left_right"
                     android:paddingTop="@dimen/message_item_text_padding_top"
-                    android:gravity="end"
+                    android:gravity="start"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textColor="#ff000000"
                     android:textSize="16sp"

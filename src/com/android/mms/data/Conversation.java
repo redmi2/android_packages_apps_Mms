@@ -69,7 +69,6 @@ public class Conversation {
     private static final boolean DELETEDEBUG = false;
 
     public static final int INVALID_THREAD_ID = -1;
-    private static final int INVALID_DOWNLOAD_STATUS = -1;
 
     public static final Uri sAllThreadsUri =
         Threads.CONTENT_URI.buildUpon().appendQueryParameter("simple", "true").build();
@@ -576,7 +575,7 @@ public class Conversation {
     }
 
     public synchronized static void setLatestMessageStatus(Context context, Conversation conv) {
-        int status = INVALID_DOWNLOAD_STATUS;
+        int status = DownloadManager.STATE_UNKNOWN;
         if (conv.mThreadId <= 0) {
             return;
         }
@@ -591,9 +590,7 @@ public class Conversation {
                 int mmsStatus = cursor.getInt(cursor.getColumnIndexOrThrow(Mms.STATUS));
                 int type = cursor.getInt(cursor.getColumnIndexOrThrow(Mms.MESSAGE_BOX));
                 conv.mIsLastMessageMine = Sms.isOutgoingFolder(type);
-                if (conv.mIsLastMessageMine) {
-                    status = DownloadManager.STATE_UNKNOWN;
-                } else {
+                if (!conv.mIsLastMessageMine) {
                     status = MessageUtils.getMmsDownloadStatus(mmsStatus);
                 }
             }
