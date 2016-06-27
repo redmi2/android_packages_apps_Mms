@@ -824,7 +824,7 @@ public class MessageListItem extends ZoomMessageListItem implements
 
     private void setupOnTouchListener() {
         mGestureDetector = new GestureDetector(mContext, new GestureListener());
-        mBodyTextView.setOnTouchListener(new OnTouchListener() {
+        mMessageBlock.setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 mGestureDetector.onTouchEvent(event);
@@ -859,7 +859,8 @@ public class MessageListItem extends ZoomMessageListItem implements
         public boolean onDoubleTap(MotionEvent e) {
             SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(mContext);
             if (sp.getBoolean(MessagingPreferenceActivity.ENABLE_SELECTABLE_COPY,
-                    MessagingPreferenceActivity.ENABLE_SELECTABLE_COPY_DEFAULT_VALUE)) {
+                    MessagingPreferenceActivity.ENABLE_SELECTABLE_COPY_DEFAULT_VALUE)
+                    && !TextUtils.isEmpty(mBodyTextView.getText())) {
                 startSelectableCopyActivity();
             }
             return true;
