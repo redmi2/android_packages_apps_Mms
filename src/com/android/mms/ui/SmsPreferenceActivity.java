@@ -199,10 +199,10 @@ public class SmsPreferenceActivity extends PreferenceActivity {
             prefSmsSettings.removePreference(mManageSim1Pref);
             prefSmsSettings.removePreference(mManageSim2Pref);
             prefSmsSettings.removePreference(mManageSimPref);
-            if (!MessageUtils.hasIccCard()) {
-                prefSmsSettings.removePreference(mManageSimPref);
+            if (MessageUtils.hasIccCard()) {
+                mManageSimNoMultiPref.setEnabled(true);
             } else {
-                prefSmsSettings.addPreference(mManageSimPref);
+                mManageSimNoMultiPref.setEnabled(false);
             }
         }
         if (!MmsConfig.getSMSDeliveryReportsEnabled()) {

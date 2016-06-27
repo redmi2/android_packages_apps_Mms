@@ -140,10 +140,13 @@ public class ManageSimMessages extends Activity
                 if (MessageUtils.isMultiSimEnabledMms()) {
                     int subId = intent.getIntExtra(PhoneConstants.SUBSCRIPTION_KEY,
                             SubscriptionManager.getDefaultSubscriptionId());
-                    int currentSubId = SubscriptionManager.getSubId(mSlotId)[0];
-                    Log.d(TAG, "subId: " + subId + " currentSubId: "+currentSubId);
-                    if (subId != currentSubId) {
-                        return;
+                    int[] subIdArray = SubscriptionManager.getSubId(mSlotId);
+                    if(subIdArray != null && subIdArray.length > 0) {
+                        int currentSubId = subIdArray[0];
+                        Log.d(TAG, "subId: " + subId + " currentSubId: " + currentSubId);
+                        if (subId != currentSubId) {
+                            return;
+                        }
                     }
                 }
                 refreshMessageList();
