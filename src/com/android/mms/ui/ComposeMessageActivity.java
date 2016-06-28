@@ -7723,7 +7723,6 @@ public class ComposeMessageActivity extends Activity
                     // on the UI thread.
                     Intent intent = createIntent(ComposeMessageActivity.this, 0);
 
-                    intent.putExtra(KEY_EXIT_ON_SENT, true);
                     intent.putExtra(KEY_FORWARDED_MESSAGE, true);
                     if (mTempThreadId > 0) {
                         intent.putExtra(THREAD_ID, mTempThreadId);
