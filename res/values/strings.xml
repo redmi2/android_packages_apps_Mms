@@ -419,6 +419,8 @@
     <string name="pref_title_mms_delivery_reports">Delivery reports</string>
     <!-- Settings item for enable gesture -->
     <string name="pref_title_enable_gesture">Enable gesture</string>
+    <!-- Settings item for advanced settings -->
+    <string name="pref_title_advanced_settings">Advanced settings</string>
     <!-- Settings item for other settings -->
     <string name="pref_title_other_settings">Other settings</string>
     <!-- Settings item for boolean option to enable/disable MMS delivery reports for sim1-->
@@ -1177,7 +1179,7 @@
         <item quantity="one"><xliff:g id="count">%d</xliff:g> min</item>
         <item quantity="other"><xliff:g id="count">%d</xliff:g> mins</item>
     </plurals>
-    <string name="posted_now">"Now"</string>
+    <string name="posted_now">Now</string>
     <string name="basic_permission_required">Messaging needs permission to SMS, Phone and Contacts.</string>
     <string name="next">Next &gt;</string>
     <string name="settings">Settings &gt;</string>
