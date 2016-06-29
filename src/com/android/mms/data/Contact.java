@@ -120,6 +120,7 @@ public class Contact {
     private int mColor;             // Contact color
     private String mLookupKey;      // Contact lookupKey
 
+    private Uri mThumbnailUri;
     public interface UpdateListener {
         public void onUpdate(Contact updated);
     }
@@ -837,6 +838,7 @@ public class Contact {
                     c.mSendToVoicemail = entry.mSendToVoicemail;
                     c.mPeopleReferenceUri = entry.mPeopleReferenceUri;
                     c.mLookupKey = entry.mLookupKey;
+                    c.mThumbnailUri = entry.mThumbnailUri;
 
                     c.notSynchronizedUpdateNameAndNumber();
 
@@ -1000,6 +1002,8 @@ public class Contact {
             try {
                 if (cursor.moveToFirst()) {
                     fillSelfContact(entry, cursor);
+                } else {
+                    loadAvatarUri(entry);
                 }
             } finally {
                 cursor.close();
@@ -1051,6 +1055,27 @@ public class Contact {
                 contact.mAvatarData = data;
             }
         }
+
+        private Uri loadAvatarUri(Contact entry){
+            if ((!entry.mIsMe && entry.mPersonId == 0) || entry.mAvatar != null) {
+                return null;
+            }
+
+            if (Log.isLoggable(LogTag.CONTACT, Log.DEBUG)) {
+                log("loadAvatarUri: name=" + entry.mName + ", number=" + entry.mNumber);
+            }
+
+            // If the contact is "me", then use my local profile photo. Otherwise, build a
+            // uri to get the avatar of the contact.
+            Uri contactUri = entry.mIsMe ?
+                    Profile.CONTENT_URI :
+                    ContentUris.withAppendedId(Contacts.CONTENT_URI, entry.mPersonId);
+
+            entry.setThumbnailUri(contactUri);
+
+            return contactUri;
+        }
+
         /*
          * Load the avatar data from the cursor into memory.  Don't decode the data
          * until someone calls for it (see getAvatar).  Hang onto the raw data so that
@@ -1060,21 +1085,7 @@ public class Contact {
          */
         private byte[] loadAvatarData(Contact entry) {
             byte [] data = null;
-
-            if ((!entry.mIsMe && entry.mPersonId == 0) || entry.mAvatar != null) {
-                return null;
-            }
-
-            if (Log.isLoggable(LogTag.CONTACT, Log.DEBUG)) {
-                log("loadAvatarData: name=" + entry.mName + ", number=" + entry.mNumber);
-            }
-
-            // If the contact is "me", then use my local profile photo. Otherwise, build a
-            // uri to get the avatar of the contact.
-            Uri contactUri = entry.mIsMe ?
-                    Profile.CONTENT_URI :
-                    ContentUris.withAppendedId(Contacts.CONTENT_URI, entry.mPersonId);
-
+            Uri contactUri = loadAvatarUri(entry);
             InputStream avatarDataStream = Contacts.openContactPhotoInputStream(
                         mContext.getContentResolver(),
                         contactUri);
@@ -1324,6 +1335,23 @@ public class Contact {
 
     public String getLookup() {
         return mLookupKey;
+    }
+
+    /**
+     * Save avatar(thumbnail) uri
+     *
+     * @param mThumbnailUri
+     */
+    public void setThumbnailUri(Uri mThumbnailUri) {
+        Uri contactUri = this.isMe() ?
+                Profile.CONTENT_URI :
+                ContentUris.withAppendedId(Contacts.CONTENT_URI, this.getPersonId());
+        Uri thumbnailUri = Uri.withAppendedPath(contactUri, Contacts.Photo.CONTENT_DIRECTORY);
+        this.mThumbnailUri = thumbnailUri;
+    }
+
+    public Uri getThumbnailUri(){
+        return this.mThumbnailUri;
     }
 
 }

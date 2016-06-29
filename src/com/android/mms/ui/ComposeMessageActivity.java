@@ -2412,7 +2412,7 @@ public class ComposeMessageActivity extends Activity
         mRecipientsEditor.addTextChangedListener(mRecipientsWatcher);
         mRecipientsEditor.setAdapter(new ChipsRecipientAdapter(this));
         mRecipientsEditor.setText(null);
-        mRecipientsEditor.populate(recipients);
+        mRecipientsEditor.populateWithAvatorDrawable(recipients);
         // TODO : Remove the max length limitation due to the multiple phone picker is added and the
         // user is able to select a large number of recipients from the Contacts. The coming
         // potential issue is that it is hard for user to edit a recipient from hundred of
@@ -4547,7 +4547,11 @@ public class ComposeMessageActivity extends Activity
                 final Runnable populateWorker = new Runnable() {
                     @Override
                     public void run() {
-                        mRecipientsEditor.populate(list);
+                        //Boolean param in order to allow the RecipientEntry to sort,
+                        //no need for sort RecipientEntry who added by button,
+                        //so whatever true or false.
+                        mRecipientsEditor.populateWithAvatorDrawable(list);
+
                         // Set value for mRecipientsPickList and
                         // mRecipientsWatcher will update the UI.
                         mRecipientsPickList = list;

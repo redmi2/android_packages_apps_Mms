@@ -37,6 +37,7 @@ import android.util.Log;
 import android.util.Patterns;
 
 import com.android.mms.R;
+import com.android.mms.data.Contact;
 import com.android.ex.chips.RecipientEntry;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
@@ -174,6 +175,32 @@ public class ContactRecipientEntryUtils {
                 destinationLabel, contactId, lookupKey, dataId, photoThumbnailUri,
                 isFirstLevel);
     }
+
+    /**
+     * Creates a RecipientEntry by contact.
+     */
+    public static RecipientEntry createRecipientEntryByContact(final Contact contact,
+            final boolean isFirstLevel) {
+        final long contactId = contact.getContactMethodId();
+        final String displayName = contact.getName();
+        String photoThumbnailUri = null;
+        if(contact.getThumbnailUri() != null) {
+            photoThumbnailUri = contact.getThumbnailUri().toString();
+        }
+        final String destination = contact.getNumber();
+        final int destinationType = contact.getContactMethodType();
+        final String destinationLabel = contact.getLabel();
+        final String lookupKey = contact.getLookup();
+
+        // PhoneQuery uses the contact id as the data id ("_id").
+        final long dataId = contactId;
+
+        return createRecipientEntry(displayName,
+                DisplayNameSources.STRUCTURED_NAME, destination, destinationType,
+                destinationLabel, contactId, lookupKey, dataId, photoThumbnailUri,
+                isFirstLevel);
+    }
+
 
     /**
      * Creates a RecipientEntry from the provided data fields (from the contacts cursor).

@@ -347,6 +347,10 @@ public class RecipientsEditor extends RecipientEditTextView {
         return s;
     }
 
+    /**
+     * Display recipients haven't avatar.
+     * @param list
+     */
     public void populate(ContactList list) {
         // Very tricky bug. In the recipient editor, we always leave a trailing
         // comma to make it easy for users to add additional recipients. When a
@@ -413,6 +417,27 @@ public class RecipientsEditor extends RecipientEditTextView {
             }
         }
         return list.size() > 1;
+    }
+
+    /**
+     * Display recipients have avatar.
+     * @param list
+     */
+    public void populateWithAvatorDrawable(final ContactList list){
+        if (list.size() == 0) {
+            // The base class RecipientEditTextView will ignore empty text. That's why we need
+            // this special case.
+            setText(null);
+        } else {
+            // Clear the recipient when add contact again
+            setText("");
+            for (Contact c : list) {
+                // Calling setText to set the recipients won't create chips,
+                // but calling append() or appendRecipientEntry will.
+                appendRecipientEntry(ContactRecipientEntryUtils.createRecipientEntryByContact(c,
+                        false));
+            }
+        }
     }
 
     private int pointToPosition(int x, int y) {
