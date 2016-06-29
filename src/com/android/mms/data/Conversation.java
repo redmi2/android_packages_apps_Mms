@@ -583,13 +583,21 @@ public class Conversation {
         try {
             cursor = SqliteWrapper.query(context, context.getContentResolver(),
                     getUri(conv.mThreadId),
-                    new String[] {Mms._ID, Mms.STATUS, Mms.MESSAGE_BOX},
+                    new String[] {Mms._ID, Mms.STATUS, Sms.TYPE,
+                            Mms.MESSAGE_BOX, MmsSms.TYPE_DISCRIMINATOR_COLUMN},
                     null, null, null);
             if (cursor != null && cursor.getCount() != 0) {
                 cursor.moveToFirst();
                 int mmsStatus = cursor.getInt(cursor.getColumnIndexOrThrow(Mms.STATUS));
-                int type = cursor.getInt(cursor.getColumnIndexOrThrow(Mms.MESSAGE_BOX));
-                conv.mIsLastMessageMine = Sms.isOutgoingFolder(type);
+                int boxId;
+                String type = cursor.getString(
+                        cursor.getColumnIndexOrThrow(MmsSms.TYPE_DISCRIMINATOR_COLUMN));
+                if ("sms".equals(type)) {
+                    boxId = cursor.getInt(cursor.getColumnIndexOrThrow(Sms.TYPE));
+                } else {
+                    boxId = cursor.getInt(cursor.getColumnIndexOrThrow(Mms.MESSAGE_BOX));
+                }
+                conv.mIsLastMessageMine = Sms.isOutgoingFolder(boxId);
                 if (!conv.mIsLastMessageMine) {
                     status = MessageUtils.getMmsDownloadStatus(mmsStatus);
                 }
