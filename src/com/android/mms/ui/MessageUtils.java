@@ -2810,9 +2810,14 @@ public class MessageUtils {
             public void onClick(DialogInterface dialog, int which) {
                 switch (which) {
                     case DIALOG_ITEM_EMAIL_TO:
-                        context.startActivity(new Intent(Intent.ACTION_VIEW, Uri
-                                .parse(MAIL_TO_PREFIX + address))
-                                .setFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET));
+                        try {
+                            context.startActivity(new Intent(Intent.ACTION_VIEW, Uri
+                                    .parse(MAIL_TO_PREFIX + address))
+                                    .setFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET));
+                        } catch (ActivityNotFoundException e) {
+                            Toast.makeText(context, context.getString(R.string.email_app_not_found),
+                                    Toast.LENGTH_LONG).show();
+                        }
                         break;
                     case DIALOG_ITEM_EMAIL_ADD_CONTACTS:
                         context.startActivity(ConversationList.createAddContactIntent(address));
