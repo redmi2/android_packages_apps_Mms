@@ -115,7 +115,7 @@
     </PreferenceCategory>
     <PreferenceCategory
         android:key="pref_key_advanced_settings"
-        android:title="Advanced settings" >
+        android:title="@string/pref_title_advanced_settings" >
         <Preference
             android:key="pref_key_sms_text_settings"
             android:title="@string/pref_sms_settings_title" />
