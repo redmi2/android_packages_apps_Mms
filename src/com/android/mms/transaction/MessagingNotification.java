@@ -27,6 +27,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -37,6 +38,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.TaskStackBuilder;
+import android.app.RemoteInput;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -191,6 +193,8 @@ public class MessagingNotification {
 
     private final static String NOTIFICATION_DELETED_ACTION =
             "com.android.mms.NOTIFICATION_DELETED_ACTION";
+    private static final String NOTIFICATION_GROUP_KEY = "group_key_mms";
+    private static final String NOTIFICATION_MSG_TAG = ":sms:";
 
     public static class OnDeletedReceiver extends BroadcastReceiver {
         @Override
@@ -425,7 +429,7 @@ public class MessagingNotification {
         NotificationInfo info = getNewIccMessageNotificationInfo(context, true /* isSms */,
                 address, message, null /* subject */, subId, timeMillis,
                 null /* attachmentBitmap */, contact, WorkingMessage.TEXT);
-        noti.setSmallIcon(R.drawable.notification_icon);
+        noti.setSmallIcon(R.drawable.ic_notification);
         NotificationManager nm = (NotificationManager)
                 context.getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -1076,8 +1080,15 @@ public class MessagingNotification {
     public static void cancelNotification(Context context, int notificationId) {
         NotificationManager nm = (NotificationManager) context.getSystemService(
                 Context.NOTIFICATION_SERVICE);
-
-        Log.d(TAG, "cancelNotification");
+        if (DEBUG) {
+            Log.d(TAG, "cancelNotification ID:" + notificationId);
+        }
+        if (NOTIFICATION_ID == notificationId) {
+            final String notificationTag = buildNotificationTag(context,
+                    NOTIFICATION_MSG_TAG, null);
+            nm.cancel(notificationTag, notificationId);
+            return;
+        }
         nm.cancel(notificationId);
     }
 
@@ -1128,7 +1139,8 @@ public class MessagingNotification {
         NotificationInfo mostRecentNotification = notificationSet.first();
 
         final Notification.Builder noti = new Notification.Builder(context)
-                .setWhen(mostRecentNotification.mTimeMillis);
+                .setWhen(mostRecentNotification.mTimeMillis)
+                .setColor(context.getResources().getColor(R.color.notification_accent_color));
 
         if (isNew) {
             noti.setTicker(mostRecentNotification.mTicker);
@@ -1216,7 +1228,7 @@ public class MessagingNotification {
         PendingIntent mPendingIntent = PendingIntent.getActivity(context, 0,
                 mActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         // Always have to set the small icon or the notification is ignored
-        noti.setSmallIcon(R.drawable.notification_icon);
+        noti.setSmallIcon(R.drawable.ic_notification);
 
         NotificationManager nm = (NotificationManager)
                 context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -1284,29 +1296,30 @@ public class MessagingNotification {
 
         final Notification notification;
 
+        // Create "Reply" option in notification
+        CharSequence replyText = context.getText(R.string.notification_reply);
+        CharSequence typeMessageText = context.getText(R.string.notification_type_message);
+        Intent replyIntent = new Intent(context, NotificationQuickReplyActivity.class);
+        replyIntent.putExtra(NotificationQuickReplyActivity.MSG_THREAD_ID,
+                mostRecentNotification.mThreadId);
+        replyIntent.putExtra(NotificationQuickReplyActivity.MSG_SENDER,
+                mostRecentNotification.mSender.getName());
+
+        PendingIntent replyPendingIntent = PendingIntent.getActivity(context, 0,
+                replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        RemoteInput remoteInput = new RemoteInput.Builder(
+                NotificationQuickReplyActivity.KEY_TEXT_REPLY)
+                .setLabel(typeMessageText)
+                .build();
+        Notification.Action actionReply = new Notification.Action.Builder(
+                R.drawable.notification_reply,
+                replyText,
+                replyPendingIntent)
+                .addRemoteInput(remoteInput)
+                .build();
+
         if (messageCount == 1) {
             // We've got a single message
-
-            // Create "Mark as read" option in notification
-            CharSequence markReadText = context.getText(R.string.notification_mark_as_read);
-            Intent markReadIntent = new Intent(context, NotificationActionHandleReceiver.class);
-            markReadIntent.setAction(
-                    NotificationActionHandleReceiver.ACTION_NOTIFICATION_MARK_READ);
-            markReadIntent.putExtra(NotificationActionHandleReceiver.MSG_THREAD_ID,
-                    mostRecentNotification.mThreadId);
-            PendingIntent markReadPendingIntent = PendingIntent.getBroadcast(context, 0,
-                    markReadIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-            // Create "Reply" option in notification
-            CharSequence replyText = context.getText(R.string.notification_reply);
-            Intent replyIntent = new Intent(context, NotificationQuickReplyActivity.class);
-            replyIntent.putExtra(NotificationQuickReplyActivity.MSG_THREAD_ID,
-                    mostRecentNotification.mThreadId);
-            replyIntent.putExtra(NotificationQuickReplyActivity.MSG_SENDER,
-                    mostRecentNotification.mSender.getName());
-            PendingIntent replyPendingIntent = PendingIntent.getActivity(context, 0,
-                    replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
             String bigMessage = mostRecentNotification.formatBigMessage(context).toString();
             String pictureMessage = mostRecentNotification.formatPictureMessage(context).toString();
             if (!mostRecentNotification.mIsSms && !DownloadManager.getInstance().isAuto()) {
@@ -1341,8 +1354,7 @@ public class MessagingNotification {
                             PendingIntent downloadPendingIntent = PendingIntent.getBroadcast(
                                     context, 0, downloadIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-                            noti.addAction(R.drawable.notification_reply,
-                                    replyText, replyPendingIntent);
+                            noti.addAction(actionReply);
                             noti.addAction(R.drawable.notification_download,
                                     downloadText, downloadPendingIntent);
 
@@ -1351,10 +1363,7 @@ public class MessagingNotification {
                             pictureMessage = context.getResources().getString(
                                     R.string.new_mms_download);
                         } else {
-                            noti.addAction(R.drawable.mark_as_read,
-                                    markReadText, markReadPendingIntent);
-                            noti.addAction(R.drawable.notification_reply,
-                                    replyText, replyPendingIntent);
+                            noti.addAction(actionReply);
                         }
                     }
                 } finally {
@@ -1363,8 +1372,7 @@ public class MessagingNotification {
                     }
                 }
             } else {
-                noti.addAction(R.drawable.mark_as_read, markReadText, markReadPendingIntent);
-                noti.addAction(R.drawable.notification_reply, replyText, replyPendingIntent);
+                noti.addAction(actionReply);
             }
 
             // This sets the text for the collapsed form:
@@ -1411,6 +1419,7 @@ public class MessagingNotification {
 
                 noti.setContentText(context.getString(R.string.message_count_notification,
                         messageCount));
+                noti.addAction(actionReply);
 
                 // Show a single notification -- big style with the text of all the messages
                 notification = new Notification.BigTextStyle(noti)
@@ -1438,6 +1447,8 @@ public class MessagingNotification {
                 // When collapsed, show all the senders like this:
                 //     Fred Flinstone, Barry Manilow, Pete...
                 noti.setContentText(formatSenders(context, mostRecentNotifPerThread));
+                noti.setGroup(NOTIFICATION_GROUP_KEY);
+                noti.setGroupSummary(true);
                 Notification.InboxStyle inboxStyle = new Notification.InboxStyle(noti);
 
                 // We have to set the summary text to non-empty so the content text doesn't show
@@ -1457,17 +1468,357 @@ public class MessagingNotification {
                 notification = inboxStyle.build();
 
                 uniqueThreads.clear();
+
+                //1. send group summary notification
+                notifyUserIfFullScreen(context, title);
+                doNotify(notification, context);
+                //2. send notification for every conversation.
+                for (int j = 0; j < uniqueThreadMessageCount; j++) {
+                    int index = uniqueThreadMessageCount - j - 1;
+                    if (index < 0) {
+                        break;
+                    }
+                    final String sortKey = String.format(Locale.US, "%02d", index);
+                    Long theadIdforNoti = mostRecentNotifPerThread.get(index).mThreadId;
+                    SortedSet<NotificationInfo> notiSet =
+                            new TreeSet<NotificationInfo>(notificationSet);
+                    Iterator<NotificationInfo> temoNoti = notiSet.iterator();
+                    while (temoNoti.hasNext()) {
+                        NotificationInfo tempInfo = temoNoti.next();
+                        if (tempInfo.mThreadId != theadIdforNoti) {
+                            temoNoti.remove();
+                        }
+                    }
+                    createMultiConvNotification(context, theadIdforNoti, sortKey, isNew, notiSet);
+                    notiSet.clear();
+                }
                 mostRecentNotifPerThread.clear();
 
                 if (DEBUG) {
                     Log.d(TAG, "updateNotification: multi messages," +
                             " showing inboxStyle notification");
                 }
+                //3. Done
+                return;
             }
         }
 
         notifyUserIfFullScreen(context, title);
-        nm.notify(NOTIFICATION_ID, notification);
+        doNotify(notification, context);
+    }
+
+
+    /**
+     * createMultiConvNotification is used for create bundled notification
+     * for multi conversation.
+     *
+     * @param context
+     * @param threadId        conversation thread id
+     * @param sortkey         key to sort notifications
+     * @param isNew           if we've got a new message
+     * @param notificationSet the set of notifications to display
+     */
+    private static void createMultiConvNotification(
+            Context context,
+            final long threadId,
+            final String sortkey,
+            boolean isNew,
+            SortedSet<NotificationInfo> notificationSet) {
+
+        // Figure out what we've got -- whether all sms's, mms's, or a mixture of both.
+        final int messageCount = notificationSet.size();
+        NotificationInfo mostRecentNotification = notificationSet.first();
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0,
+                mostRecentNotification.mClickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        final Notification.Builder noti = new Notification.Builder(context)
+                .setWhen(mostRecentNotification.mTimeMillis)
+                .setColor(context.getResources().getColor(R.color.notification_accent_color))
+                .setContentTitle(mostRecentNotification.mTitle)
+                .setContentIntent(pendingIntent)
+                .setDeleteIntent(PendingIntent.getBroadcast(context, 0,
+                        sNotificationOnDeleteIntent, 0))
+                .setSmallIcon(R.drawable.ic_notification)
+                .setCategory(Notification.CATEGORY_MESSAGE)
+                .setPriority(Notification.PRIORITY_HIGH)
+                .setGroup(NOTIFICATION_GROUP_KEY)
+                .setSortKey(sortkey);
+        if (DEBUG) {
+            Log.d(TAG, "createMultiConvNotification: messageCount =" + messageCount
+                    + "|threadId=" + mostRecentNotification.mThreadId +
+                    "|sender name=" + mostRecentNotification.mSender.getName() +
+                    "|Sortkey =" + sortkey);
+        }
+
+        final Resources res = context.getResources();
+        Bitmap avatar = buildNotificationAvatar(noti, context, mostRecentNotification.mSender);
+
+        // Tag notification with  senders
+        Uri peopleReferenceUri = mostRecentNotification.mSender.getPeopleReferenceUri();
+        if (peopleReferenceUri != null) {
+            noti.addPerson(peopleReferenceUri.toString());
+        }
+
+        int defaults = 0;
+
+        if (isNew) {
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+
+            boolean vibrate = false;
+            if (sp.contains(MessagingPreferenceActivity.NOTIFICATION_VIBRATE)) {
+                // The most recent change to the vibrate preference is to store a boolean
+                // value in NOTIFICATION_VIBRATE. If prefs contain that preference, use that
+                // first.
+                vibrate = sp.getBoolean(MessagingPreferenceActivity.NOTIFICATION_VIBRATE,
+                        false);
+            } else if (sp.contains(MessagingPreferenceActivity.NOTIFICATION_VIBRATE_WHEN)) {
+                // This is to support the pre-JellyBean MR1.1 version of vibrate preferences
+                // when vibrate was a tri-state setting. As soon as the user opens the Messaging
+                // app's settings, it will migrate this setting from NOTIFICATION_VIBRATE_WHEN
+                // to the boolean value stored in NOTIFICATION_VIBRATE.
+                String vibrateWhen =
+                        sp.getString(MessagingPreferenceActivity.NOTIFICATION_VIBRATE_WHEN, null);
+                vibrate = "always".equals(vibrateWhen);
+            }
+            if (vibrate) {
+                defaults |= Notification.DEFAULT_VIBRATE;
+            }
+
+            String ringtoneStr = sp.getString(MessagingPreferenceActivity.NOTIFICATION_RINGTONE,
+                    null);
+            if (!includeEmergencySMS) {
+                if (isInCall()) {
+                    noti.setSound(TextUtils.isEmpty(ringtoneStr) ? null : Uri.parse(ringtoneStr),
+                            AudioManager.STREAM_ALARM);
+                } else {
+                    noti.setSound(TextUtils.isEmpty(ringtoneStr) ? null : Uri.parse(ringtoneStr));
+                }
+            }
+
+        }
+
+        defaults |= Notification.DEFAULT_LIGHTS;
+
+        noti.setDefaults(defaults);
+
+        final Notification notification;
+        // Create "Reply" option in notification
+        CharSequence replyText = context.getText(R.string.notification_reply);
+        CharSequence typeMessageText = context.getText(R.string.notification_type_message);
+        Intent replyIntent = new Intent(context, NotificationQuickReplyActivity.class);
+        replyIntent.putExtra(NotificationQuickReplyActivity.MSG_THREAD_ID,
+                mostRecentNotification.mThreadId);
+        Uri msgUri = Mms.CONTENT_URI.buildUpon().appendPath(
+                Long.toString(mostRecentNotification.mThreadId)).build();
+        replyIntent.setData(msgUri);
+        replyIntent.putExtra(NotificationQuickReplyActivity.MSG_SENDER,
+                mostRecentNotification.mSender.getName());
+
+        PendingIntent replyPendingIntent = PendingIntent.getActivity(context, 0,
+                replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        RemoteInput remoteInput = new RemoteInput.Builder(
+                NotificationQuickReplyActivity.KEY_TEXT_REPLY)
+                .setLabel(typeMessageText)
+                .build();
+        Notification.Action actionReply = new Notification.Action.Builder(
+                R.drawable.notification_reply,
+                replyText,
+                replyPendingIntent)
+                .addRemoteInput(remoteInput)
+                .build();
+
+        if (messageCount == 1) {
+            String bigMessage = mostRecentNotification.formatBigMessage(context).toString();
+            String pictureMessage = mostRecentNotification.formatPictureMessage(context).toString();
+            if (!mostRecentNotification.mIsSms && !DownloadManager.getInstance().isAuto()) {
+                Cursor cursor = null;
+                try {
+                    cursor = SqliteWrapper.query(context, context.getContentResolver(),
+                            Mms.Inbox.CONTENT_URI, new String[]{
+                                    Mms._ID, Mms.THREAD_ID, Mms.SUBSCRIPTION_ID, Mms.MESSAGE_TYPE},
+                            Mms.THREAD_ID + "=" + mostRecentNotification.mThreadId,
+                            null, null);
+                    if (cursor != null && cursor.getCount() != 0) {
+                        cursor.moveToFirst();
+                        long subId = cursor.getLong(
+                                cursor.getColumnIndexOrThrow(Mms.SUBSCRIPTION_ID));
+                        long msgId = cursor.getLong(
+                                cursor.getColumnIndexOrThrow(Mms._ID));
+                        long msgType = cursor.getLong(
+                                cursor.getColumnIndexOrThrow(Mms.MESSAGE_TYPE));
+
+                        if (msgType == PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND) {
+                            // Create "Download" option in notification
+                            CharSequence downloadText = context.getText(
+                                    R.string.notification_download);
+                            Intent downloadIntent = new Intent(context,
+                                    NotificationActionHandleReceiver.class);
+                            downloadIntent.setAction(
+                                    NotificationActionHandleReceiver.ACTION_NOTIFICATION_DOWNLOAD);
+                            downloadIntent.putExtra(
+                                    NotificationActionHandleReceiver.MSG_SUB_ID, subId);
+                            downloadIntent.putExtra(
+                                    NotificationActionHandleReceiver.MSG_ID, msgId);
+                            downloadIntent.setData(msgUri);
+                            PendingIntent downloadPendingIntent = PendingIntent.getBroadcast(
+                                    context, 0, downloadIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                            noti.addAction(actionReply);
+                            noti.addAction(R.drawable.notification_download,
+                                    downloadText, downloadPendingIntent);
+
+                            bigMessage = context.getResources().getString(
+                                    R.string.new_mms_download);
+                            pictureMessage = context.getResources().getString(
+                                    R.string.new_mms_download);
+                        } else {
+                            noti.addAction(actionReply);
+                        }
+                    }
+                } finally {
+                    if (cursor != null) {
+                        cursor.close();
+                    }
+                }
+            } else {
+                noti.addAction(actionReply);
+            }
+
+            // This sets the text for the collapsed form:
+            noti.setContentText(bigMessage);
+
+            if (mostRecentNotification.mAttachmentBitmap != null) {
+                // The message has a picture, show that
+                noti.setLargeIcon(mostRecentNotification.mAttachmentBitmap);
+                notification = new Notification.BigPictureStyle(noti)
+                        .bigPicture(mostRecentNotification.mAttachmentBitmap)
+                        .bigLargeIcon(avatar)
+                        // This sets the text for the expanded picture form:
+                        .setSummaryText(pictureMessage)
+                        .build();
+            } else {
+                // Show a single notification -- big style with the text of the whole message
+                notification = new Notification.BigTextStyle(noti)
+                        .bigText(bigMessage)
+                        .build();
+            }
+        } else {
+            // We've got multiple messages for the same thread.
+            // Starting with the oldest new message, display the full text of each message.
+            // Begin a line for each subsequent message.
+            SpannableStringBuilder buf = new SpannableStringBuilder();
+            NotificationInfo infos[] =
+                    notificationSet.toArray(new NotificationInfo[messageCount]);
+            int len = infos.length;
+            for (int i = len - 1; i >= 0; i--) {
+                NotificationInfo info = infos[i];
+
+                buf.append(info.formatBigMessage(context));
+
+                if (i != 0) {
+                    buf.append('\n');
+                }
+            }
+
+            noti.setContentText(context.getString(R.string.message_count_notification,
+                    messageCount));
+            noti.addAction(actionReply);
+
+            // Show a single notification -- big style with the text of all the messages
+            notification = new Notification.BigTextStyle(noti)
+                    .bigText(buf)
+                    // Forcibly show the last line, with the app's smallIcon in it, if we
+                    // kicked the smallIcon out with an avatar bitmap
+                    .setSummaryText((avatar == null) ? null : " ")
+                    .build();
+        }
+
+        notification.flags |= Notification.FLAG_AUTO_CANCEL;
+        notifyUserIfFullScreen(context, mostRecentNotification.mTitle);
+        doNotify(notification, context, threadId);
+    }
+
+
+    private static void doNotify(final Notification notification, Context context,
+            final long threadId) {
+        String threadIdStr = Long.toString(threadId);
+        NotificationManager nm =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        final String notificationTag = buildNotificationTag(context,
+                NOTIFICATION_MSG_TAG, threadIdStr);
+        nm.notify(notificationTag, NOTIFICATION_ID, notification);
+    }
+
+    private static void doNotify(final Notification notification, Context context) {
+        NotificationManager nm =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        final String notificationTag = buildNotificationTag(context, NOTIFICATION_MSG_TAG, null);
+        nm.notify(notificationTag, NOTIFICATION_ID, notification);
+    }
+
+    private static Bitmap buildNotificationAvatar(final Notification.Builder notiBuilder,
+            Context context, Contact contact) {
+        if (null == contact || null == notiBuilder) {
+            return null;
+        }
+        final Resources res = context.getResources();
+        Bitmap avatar = null;
+        final int idealIconHeight =
+                res.getDimensionPixelSize(android.R.dimen.notification_large_icon_height);
+        final int idealIconWidth =
+                res.getDimensionPixelSize(android.R.dimen.notification_large_icon_width);
+
+        Drawable contactDrawable = contact.getAvatar(context, null);
+
+        if (contactDrawable != null) {
+            // Show the sender's avatar as the big icon. Contact bitmaps are 96x96 so we
+            // have to scale 'em up to 128x128 to fill the whole notification large icon.
+            if (contactDrawable instanceof RoundedBitmapDrawable) {
+                avatar = ((RoundedBitmapDrawable) contactDrawable).getBitmap();
+            }
+            if (avatar != null) {
+                if (avatar.getHeight() < idealIconHeight) {
+                    // Scale this image to fit the intended size
+                    avatar = Bitmap.createScaledBitmap(
+                            avatar, idealIconWidth, idealIconHeight, true);
+                    avatar = MaterialColorMapUtils.getCircularBitmap(context, avatar);
+                }
+                if (avatar != null) {
+                    notiBuilder.setLargeIcon(avatar);
+                }
+            }
+        } else if (LetterTileDrawable.isEnglishLetterString(contact.getNameForAvatar())) {
+            Bitmap newAvatar = MaterialColorMapUtils.getLetterTitleDraw(context,
+                    contact, idealIconWidth);
+            Bitmap roundBitmap = MaterialColorMapUtils.getCircularBitmap(context, newAvatar);
+            notiBuilder.setLargeIcon(roundBitmap);
+        } else {
+            Bitmap newAvatar = MaterialColorMapUtils.getLetterTitleDraw(context,
+                    contact, idealIconWidth);
+            Bitmap background = MaterialColorMapUtils.getCircularBitmap(context, newAvatar);
+            Drawable foregroundDrawable =
+                    context.getResources().getDrawable(R.drawable.myavatar);
+            Bitmap foreground = MaterialColorMapUtils
+                    .vectobitmap(foregroundDrawable, idealIconWidth / 2);
+            Bitmap roundBitmap = MaterialColorMapUtils.toConformBitmap(background, foreground);
+            notiBuilder.setLargeIcon(roundBitmap);
+        }
+        return avatar;
+    }
+
+
+    /**
+     * Returns a unique tag to identify a notification.
+     *
+     * @param name           The tag name (in practice, the type)
+     * @param conversationId The conversation id (optional)
+     */
+    private static String buildNotificationTag(
+            final Context context, final String name, final String conversationId) {
+        if (conversationId != null) {
+            return context.getPackageName() + name + ":" + conversationId;
+        } else {
+            return context.getPackageName() + name;
+        }
     }
 
     protected static CharSequence buildTickerMessage(
@@ -1478,18 +1829,24 @@ public class MessagingNotification {
                 displayAddress == null
                 ? ""
                 : displayAddress.replace('\n', ' ').replace('\r', ' '));
-        buf.append(':').append(' ');
+        buf.append(' ');
 
-        if ((TelephonyManager.getDefault().getPhoneCount()) > 1) {
-            //SMS/MMS is operating based of PhoneId which is 0, 1..
+        if ((TelephonyManager.getDefault().getPhoneCount()) > 1 &&
+                MessageUtils.isMsimIccCardActive()) {
             SubscriptionInfo sir = SubscriptionManager.from(context)
                     .getActiveSubscriptionInfo(subId);
+            int slotNumber = (sir != null) ? (sir.getSimSlotIndex() + 1) : 0;
 
-            String displayName = (sir != null) ? sir.getDisplayName().toString() : "";
-
-            Log.d(TAG, "SubID : " + subId + " displayName: " + displayName);
-            buf.append(displayName);
-            buf.append("-");
+            if (DEBUG) {
+                Log.d(TAG, "buildTickerMessage subId: " + subId + " slotNumber " + slotNumber);
+            }
+            String dividerStr = context.getResources().getString(R.string.notification_sim_divider);
+            String strSim = context.getResources().getString(R.string.notification_sim_info);
+            buf.append(dividerStr).append(strSim).append(slotNumber + "");
+            //SMS/MMS is operating based of PhoneId which is 0, 1..
+            if (!TextUtils.isEmpty(subject) || !TextUtils.isEmpty(body)) {
+                buf.append("-");
+            }
         }
 
         int offset = buf.length();

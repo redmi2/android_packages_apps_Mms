@@ -31,6 +31,7 @@ package com.android.mms.ui;
 
 import android.app.Activity;
 import android.app.NotificationManager;
+import android.app.RemoteInput;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
@@ -58,6 +59,7 @@ public class NotificationQuickReplyActivity extends Activity {
 
     public static final String MSG_SENDER = "msg_sender";
     public static final String MSG_THREAD_ID = "msg_thread_id";
+    public static final String KEY_TEXT_REPLY = "key_text_reply";
 
     private static Drawable sDefaultContactImage;
 
@@ -84,6 +86,13 @@ public class NotificationQuickReplyActivity extends Activity {
         Intent intent = getIntent();
         if (intent == null) {
             finish();
+        } else {
+            mMsgThreadId = intent.getLongExtra(MSG_THREAD_ID, -1);
+            mMsgSenderAddress = intent.getStringExtra(MSG_SENDER);
+            if (handleRemoteInput(intent, mMsgThreadId)) {
+                finish();
+                return;
+            }
         }
 
         getWindow().setSoftInputMode(
@@ -91,11 +100,35 @@ public class NotificationQuickReplyActivity extends Activity {
 
         setContentView(R.layout.quick_reply_message_activity);
 
-        mMsgThreadId = intent.getLongExtra(MSG_THREAD_ID, -1);
-        mMsgSenderAddress = intent.getStringExtra(MSG_SENDER);
-
         initViews();
         setSmsOrMmsSendButtonImage();
+    }
+
+    private boolean handleRemoteInput(Intent intent, final long threadId) {
+        boolean isRemoteInput = false;
+        Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
+        if (null != remoteInput) {
+            CharSequence textReply = remoteInput.getCharSequence(KEY_TEXT_REPLY);
+            if (null != textReply) {
+                String replyContent = textReply.toString();
+                if (!TextUtils.isEmpty(replyContent)) {
+                    sendSms(replyContent, mMsgSenderAddress, mMsgThreadId);
+                    isRemoteInput = true;
+                    /**
+                     * Mark as read after replied
+                     */
+                    Intent markReadIntent = new Intent(NotificationQuickReplyActivity.this,
+                            NotificationActionHandleReceiver.class);
+                    markReadIntent.setAction(
+                            NotificationActionHandleReceiver.ACTION_NOTIFICATION_MARK_READ);
+                    markReadIntent.putExtra(NotificationActionHandleReceiver.MSG_THREAD_ID,
+                            threadId);
+                    sendBroadcast(markReadIntent);
+                }
+            }
+        }
+        return isRemoteInput;
+
     }
 
     private void initViews() {

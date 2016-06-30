@@ -144,5 +144,6 @@
     <color name="audio_duration_c0lor_white">#54ffffff</color>
 
     <color name="notification_multi_icon_background_color">#0091ea</color>
+    <color name="notification_accent_color">#00a0e9</color>
 
 </resources>
