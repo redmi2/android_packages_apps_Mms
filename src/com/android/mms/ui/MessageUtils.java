@@ -2477,7 +2477,7 @@ public class MessageUtils {
                 preferStore = Integer.parseInt(prefsms.getString("pref_key_sms_store_card2", "0"));
             }
         } else {
-            preferStore = Integer.parseInt(prefsms.getString("pref_key_sms_store", "0"));
+            preferStore = Integer.parseInt(prefsms.getString("pref_key_sms_store_single", "0"));
         }
 
         return preferStore;
