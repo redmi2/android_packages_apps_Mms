@@ -289,6 +289,11 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/pref_mms_settings_title" />
 
+        <activity android:name=".ui.SMSPreferStoragePreferenceActivity"
+                  android:theme="@style/MmsSettingStyleTheme"
+                  android:configChanges="orientation|screenSize|keyboardHidden"
+                  android:label="@string/pref_sms_settings_title" />
+
         <activity android:name=".ui.WwwContextMenuActivity"
             android:label="@string/message_options"
             android:theme="@android:style/Theme.Holo.Light.Dialog"

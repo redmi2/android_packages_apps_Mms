@@ -118,6 +118,10 @@ public class SmsPreferenceActivity extends PreferenceActivity {
     private ListPreference mSmsValidityNoMultiPref;
     private ListPreference mSmsValiditysim1Pref;
     private ListPreference mSmsValiditysim2Pref;
+    private ListPreference mSmsStorePrefSingleSim;
+    private Preference mSmsStorePrefDualSim;
+    private ListPreference mSmsStorePref1;
+    private ListPreference mSmsStorePref2;
     private SwitchPreference mWapPushPref;
     private ArrayList<Preference> mSmscPrefList = new ArrayList<Preference>();
     private boolean mIsSmsEnabled;
@@ -149,6 +153,7 @@ public class SmsPreferenceActivity extends PreferenceActivity {
 
     private void createResource() {
         addPreferencesFromResource(R.xml.sms_preferences);
+        prefSmsSettings = (PreferenceScreen) findPreference("pref_key_sms_settings");
         mSmsDeliveryReportPref = findPreference("pref_key_sms_delivery_reports");
         mSmsDeliveryReportNoMultiPref = (SwitchPreference)
                 findPreference("pref_key_sms_delivery_reports_no_multi");
@@ -169,10 +174,13 @@ public class SmsPreferenceActivity extends PreferenceActivity {
         mSmsValidityNoMultiPref = (ListPreference)
                 findPreference("pref_key_sms_validity_period_no_multi");
         mWapPushPref = (SwitchPreference) findPreference("pref_key_enable_wap_push");
-        prefSmsSettings = (PreferenceScreen) findPreference("pref_key_sms_settings");
         mSmsCenterNumber = findPreference("pref_key_sms_center_number");
         mSmsCenterNumberSim1 = findPreference(SMS_CENTER_NUMBER_SIM1);
         mSmsCenterNumberSim2 = findPreference(SMS_CENTER_NUMBER_SIM2);
+        mSmsStorePrefSingleSim = (ListPreference) findPreference("pref_key_sms_store_single");
+        mSmsStorePrefDualSim = (Preference) findPreference("pref_key_sms_store_dual");
+        mSmsStorePref1 = (ListPreference) findPreference("pref_key_sms_store_card1");
+        mSmsStorePref2 = (ListPreference) findPreference("pref_key_sms_store_card2");
         setSmsValidityPeriodPref();
         setMessagePriorityPref();
         prefSmsSettings.removePreference(mSmsCenterNumber);
@@ -246,6 +254,83 @@ public class SmsPreferenceActivity extends PreferenceActivity {
                     mSmsDeliveryReportNoMultiPref.setEnabled(false);
                 }
             }
+        }
+        if (getResources().getBoolean(R.bool.config_savelocation)) {
+            if (TelephonyManager.getDefault().isMultiSimEnabled()) {
+                prefSmsSettings.removePreference(mSmsStorePrefSingleSim);
+                if (!MessageUtils.hasIccCard(MessageUtils.SUB1) &&
+                        !MessageUtils.hasIccCard(MessageUtils.SUB2)) {
+                    mSmsStorePrefDualSim.setEnabled(false);
+                    prefSmsSettings.removePreference(mSmsStorePref1);
+                    prefSmsSettings.removePreference(mSmsStorePref2);
+                } else if (MessageUtils.hasIccCard(MessageUtils.SUB1) &&
+                        MessageUtils.hasIccCard(MessageUtils.SUB2)) {
+                    prefSmsSettings.removePreference(mSmsStorePref1);
+                    prefSmsSettings.removePreference(mSmsStorePref2);
+                } else if (MessageUtils.hasIccCard(MessageUtils.SUB1) &&
+                        !MessageUtils.hasIccCard(MessageUtils.SUB2)) {
+                    prefSmsSettings.removePreference(mSmsStorePrefDualSim);
+                    prefSmsSettings.removePreference(mSmsStorePref2);
+                    setSmsPrefStorageSummary(MessageUtils.SUB1);
+                } else if (!MessageUtils.hasIccCard(MessageUtils.SUB1) &&
+                        MessageUtils.hasIccCard(MessageUtils.SUB2)) {
+                    prefSmsSettings.removePreference(mSmsStorePrefDualSim);
+                    prefSmsSettings.removePreference(mSmsStorePref1);
+                    setSmsPrefStorageSummary(MessageUtils.SUB2);
+                }
+            } else {
+                prefSmsSettings.removePreference(mSmsStorePref1);
+                prefSmsSettings.removePreference(mSmsStorePref2);
+                if (!MessageUtils.hasIccCard()) {
+                    mSmsStorePrefSingleSim.setEnabled(false);
+                }
+            }
+        } else {
+            prefSmsSettings.removePreference(mSmsStorePrefSingleSim);
+            prefSmsSettings.removePreference(mSmsStorePrefDualSim);
+            prefSmsSettings.removePreference(mSmsStorePref1);
+            prefSmsSettings.removePreference(mSmsStorePref2);
+        }
+    }
+
+    private void setSmsPrefStorageSummary(int subscription) {
+        switch (subscription) {
+            case MessageUtils.SUB1:
+                mSmsStorePref1
+                        .setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                            public boolean onPreferenceChange(
+                                    Preference preference, Object newValue) {
+                                final String summary = newValue.toString();
+                                int index = mSmsStorePref1
+                                        .findIndexOfValue(summary);
+                                mSmsStorePref1
+                                        .setSummary(mSmsStorePref1
+                                                .getEntries()[index]);
+                                mSmsStorePref1.setValue(summary);
+                                return true;
+                            }
+                        });
+                mSmsStorePref1.setSummary(mSmsStorePref1.getEntry());
+                break;
+            case MessageUtils.SUB2:
+                mSmsStorePref2
+                        .setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                            public boolean onPreferenceChange(
+                                    Preference preference, Object newValue) {
+                                final String summary = newValue.toString();
+                                int index = mSmsStorePref2
+                                        .findIndexOfValue(summary);
+                                mSmsStorePref2
+                                        .setSummary(mSmsStorePref2
+                                                .getEntries()[index]);
+                                mSmsStorePref2.setValue(summary);
+                                return true;
+                            }
+                        });
+                mSmsStorePref2.setSummary(mSmsStorePref2.getEntry());
+                break;
+            default:
+                break;
         }
     }
 
@@ -748,6 +833,8 @@ public class SmsPreferenceActivity extends PreferenceActivity {
             startActivity(intent);
         } else if (preference == mSmsCenterNumber) {
             startActivity(new Intent(this, SMSCPreferenceActivity.class));
+        } else if (preference == mSmsStorePrefDualSim) {
+            startActivity(new Intent(this, SMSPreferStoragePreferenceActivity.class));
         }
         return super.onPreferenceTreeClick(preferenceScreen, preference);
     }

@@ -33,6 +33,26 @@
     android:key="pref_key_sms_settings"
     android:title="@string/pref_sms_settings_title" >
 
+    <ListPreference android:key="pref_key_sms_store_single"
+                    android:title="@string/pref_title_sms_store"
+                    android:defaultValue="@string/def_sms_store_value"
+                    android:dialogTitle="@string/pref_title_sms_store"
+                    android:entries="@array/entries_sms_store"
+                    android:entryValues="@array/entries_sms_store_value" />
+    <Preference android:key="pref_key_sms_store_dual"
+                    android:title="@string/pref_title_sms_store"/>
+    <ListPreference android:key="pref_key_sms_store_card1"
+                    android:title="@string/pref_title_sms_store"
+                    android:defaultValue="@string/def_sms_store_card1_value"
+                    android:dialogTitle="@string/pref_title_sms_store"
+                    android:entries="@array/entries_sms_store"
+                    android:entryValues="@array/entries_sms_store_value" />
+    <ListPreference android:key="pref_key_sms_store_card2"
+                    android:title="@string/pref_title_sms_store"
+                    android:defaultValue="@string/def_sms_store_card2_value"
+                    android:dialogTitle="@string/pref_title_sms_store"
+                    android:entries="@array/entries_sms_store"
+                    android:entryValues="@array/entries_sms_store_value" />
     <Preference
         android:key="pref_key_sms_delivery_reports"
         android:summary="@string/pref_summary_sms_delivery_reports"
