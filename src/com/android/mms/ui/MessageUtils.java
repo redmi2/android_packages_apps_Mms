@@ -389,7 +389,7 @@ public class MessageUtils {
     /* Basic permissions SMS application should have */
     public static String[] sSMSBasicPermissions = new String[] {
         Manifest.permission.READ_SMS, Manifest.permission.READ_PHONE_STATE,
-        Manifest.permission.READ_CONTACTS
+        Manifest.permission.READ_CONTACTS, Manifest.permission.READ_EXTERNAL_STORAGE
     };
 
     private MessageUtils() {
