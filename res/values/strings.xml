@@ -1191,4 +1191,5 @@
     <string name="notification_type_message">Type message</string>
     <string name="notification_sim_info">Sim</string>
     <string name="notification_sim_divider" translatable="false">&#183;&#160;</string>
+    <string name="deleting_sim_sms">Deleting SIM SMS\u2026</string>
 </resources>

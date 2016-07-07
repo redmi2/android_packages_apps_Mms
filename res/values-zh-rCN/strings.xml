@@ -632,4 +632,5 @@
     <string name="email_app_not_found">找不到邮件应用</string>
     <string name="notification_type_message">键入信息</string>
     <string name="notification_sim_info">卡</string>
+    <string name="deleting_sim_sms">"正在删除SIM卡短信..."</string>
 </resources>
