@@ -1126,24 +1126,10 @@ public class Conversation {
             conv.mMessageCount = c.getInt(MESSAGE_COUNT);
 
             String attachmentInfo = c.getString(ATTACHMENT_INFO);
-            boolean isLastMms = !"SMS".equals(attachmentInfo);
-            setLatestMessageStatus(context, conv);
-            if (!TextUtils.isEmpty(attachmentInfo) && isLastMms
-                    && conv.mIsLastMessageMine) {
-                conv.mAttachmentInfo = context.getResources().getString(R.string.you)
-                        + attachmentInfo;
-            } else {
-                conv.mAttachmentInfo = attachmentInfo;
-            }
-
+            conv.mAttachmentInfo = attachmentInfo;
             // Replace the snippet with a default value if it's empty.
             String snippet = MessageUtils.cleanseMmsSubject(context,
                     MessageUtils.extractEncStrFromCursor(c, SNIPPET, SNIPPET_CS));
-            if (!TextUtils.isEmpty(snippet)) {
-                if (!isLastMms && conv.mIsLastMessageMine) {
-                    snippet = context.getResources().getString(R.string.you) + snippet;
-                }
-            }
             conv.mSnippet = snippet;
 
             conv.setHasUnreadMessages(c.getInt(READ) == 0);
