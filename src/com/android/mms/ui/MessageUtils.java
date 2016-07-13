@@ -2397,11 +2397,11 @@ public class MessageUtils {
                 @Override
                 public View getView(int position, View convertView, ViewGroup parent) {
                     View v = super.getView(position, convertView, parent);
+                    URLSpan span = getItem(position);
+                    String url = span.getURL();
+                    Uri uri = Uri.parse(url);
+                    TextView tv = (TextView) v;
                     try {
-                        URLSpan span = getItem(position);
-                        String url = span.getURL();
-                        Uri uri = Uri.parse(url);
-                        TextView tv = (TextView) v;
                         Drawable d = context.getPackageManager().getActivityIcon(
                                 new Intent(Intent.ACTION_VIEW, uri));
                         if (d != null) {
@@ -2410,18 +2410,20 @@ public class MessageUtils {
                             tv.setCompoundDrawablePadding(10);
                             tv.setCompoundDrawables(d, null, null, null);
                         }
-                        String tmpUrl = null;
-                        if (url != null) {
-                            if (url.startsWith(MAIL_TO_PREFIX)) {
-                                url = url.substring(MAIL_TO_PREFIX.length());
-                            }
-                            tmpUrl = url.replaceAll("tel:", "");
-                        }
-                        tv.setText(tmpUrl);
                     } catch (android.content.pm.PackageManager.NameNotFoundException ex) {
                         // it's ok if we're unable to set the drawable for this view - the user
                         // can still use it.
+                        tv.setCompoundDrawables(null,null,null,null);
+                        Log.d(TAG,"NameNotFoundException");
                     }
+                    String tmpUrl = null;
+                    if (url != null) {
+                        if (url.startsWith(MAIL_TO_PREFIX)) {
+                            url = url.substring(MAIL_TO_PREFIX.length());
+                        }
+                        tmpUrl = url.replaceAll("tel:", "");
+                    }
+                    tv.setText(tmpUrl);
                     return v;
                 }
             };
