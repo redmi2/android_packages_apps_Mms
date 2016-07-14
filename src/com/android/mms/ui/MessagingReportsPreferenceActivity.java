@@ -51,14 +51,6 @@ public class MessagingReportsPreferenceActivity extends PreferenceActivity {
 
     private static String MSG_TYPE = "msg_type";
 
-    public static final String MMS_READ_REPORT_SUB1 = "pref_key_mms_read_reports_slot1";
-
-    public static final String MMS_READ_REPORT_SUB2 = "pref_key_mms_read_reports_slot2";
-
-    public static final String MMS_DELIVERY_REPORT_SUB1 = "pref_key_mms_delivery_reports_slot1";
-
-    public static final String MMS_DELIVERY_REPORT_SUB2 = "pref_key_mms_delivery_reports_slot2";
-
     public static final String SMS_DELIVERY_REPORT_SUB1 = "pref_key_sms_delivery_reports_slot1";
 
     public static final String SMS_DELIVERY_REPORT_SUB2 = "pref_key_sms_delivery_reports_slot2";

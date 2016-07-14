@@ -163,29 +163,25 @@ public class MmsMessageSender implements MessageSender {
         // Delivery report.
         int slotId = SubscriptionManager.getSlotId(mSubId);
         boolean dr = false;
-        if (MessageUtils.isMsimIccCardActive()) {
-            dr = prefs.getBoolean((slotId == PhoneConstants.SUB1) ?
-                    MessagingReportsPreferenceActivity.MMS_DELIVERY_REPORT_SUB1 :
-                    MessagingReportsPreferenceActivity.MMS_DELIVERY_REPORT_SUB2,
-                    DEFAULT_DELIVERY_REPORT_MODE);
-        } else {
+        if (MessageUtils.isMultiSimEnabledMms()) {
             dr = prefs.getBoolean((slotId == PhoneConstants.SUB1) ?
                     MmsPreferenceActivity.MMS_DELIVERY_REPORT_SUB1 :
                     MmsPreferenceActivity.MMS_DELIVERY_REPORT_SUB2,
+                    DEFAULT_DELIVERY_REPORT_MODE);
+        } else {
+            dr = prefs.getBoolean(MmsPreferenceActivity.MMS_DELIVERY_REPORT_SS,
                     DEFAULT_DELIVERY_REPORT_MODE);
         }
         sendReq.setDeliveryReport(dr ? PduHeaders.VALUE_YES : PduHeaders.VALUE_NO);
         // Read report.
         boolean rr = false;
-        if (MessageUtils.isMsimIccCardActive()) {
-            rr = prefs.getBoolean((slotId == PhoneConstants.SUB1) ?
-                    MessagingReportsPreferenceActivity.MMS_READ_REPORT_SUB1 :
-                    MessagingReportsPreferenceActivity.MMS_READ_REPORT_SUB2,
-                    DEFAULT_READ_REPORT_MODE);
-        } else {
+        if (MessageUtils.isMultiSimEnabledMms()) {
             rr = prefs.getBoolean((slotId == PhoneConstants.SUB1) ?
                     MmsPreferenceActivity.MMS_READ_REPORT_SUB1 :
                     MmsPreferenceActivity.MMS_READ_REPORT_SUB2,
+                    DEFAULT_READ_REPORT_MODE);
+        } else {
+            rr = prefs.getBoolean(MmsPreferenceActivity.MMS_READ_REPORT_SS,
                     DEFAULT_READ_REPORT_MODE);
         }
         sendReq.setReadReport(rr ? PduHeaders.VALUE_YES : PduHeaders.VALUE_NO);
