@@ -480,11 +480,13 @@ public class MessageListItem extends ZoomMessageListItem implements
 
     private void updateSimIndicatorView(int subscription) {
         boolean simVisible = !mMessageItem.getCanClusterWithNextMessage();
-        if (MessageUtils.isMsimIccCardActive() && subscription >= 0 && simVisible) {
+        if (mIsMsimIccCardActived && subscription >= 0 && simVisible) {
             Drawable mSimIndicatorIcon = MessageUtils.getMultiSimIcon(mContext,
                     subscription);
             mSimIndicatorView.setImageDrawable(mSimIndicatorIcon);
             mSimIndicatorView.setVisibility(View.VISIBLE);
+        } else {
+            mSimIndicatorView.setVisibility(View.GONE);
         }
     }
 
@@ -1174,7 +1176,7 @@ public class MessageListItem extends ZoomMessageListItem implements
                                        String contentType) {
         SpannableStringBuilder buf = new SpannableStringBuilder();
 
-        if (TelephonyManager.getDefault().getPhoneCount() > 1) {
+        if (mIsMsimIccCardActived) {
             //SMS/MMS is operating on PhoneId which is 0, 1..
             //Sub ID will be 1, 2, ...
             SubscriptionInfo sir = SubscriptionManager.from(mContext)
