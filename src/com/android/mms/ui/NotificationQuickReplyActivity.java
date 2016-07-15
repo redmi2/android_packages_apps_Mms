@@ -36,7 +36,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -55,10 +57,11 @@ import com.android.mms.ui.ComposeMessageActivity;
 
 public class NotificationQuickReplyActivity extends Activity {
 
-    private static final String TAG = "NotificationQuickReplyActivity";
+    private static final String TAG = "QuickReplyActivity";
 
     public static final String MSG_SENDER = "msg_sender";
     public static final String MSG_THREAD_ID = "msg_thread_id";
+    public static final String MSG_SUB_ID = "msg_sub_id";
     public static final String KEY_TEXT_REPLY = "key_text_reply";
 
     private static Drawable sDefaultContactImage;
@@ -71,6 +74,7 @@ public class NotificationQuickReplyActivity extends Activity {
 
     private long mMsgThreadId;
     private String mMsgSenderAddress;
+    private int mMsgSubId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,6 +93,7 @@ public class NotificationQuickReplyActivity extends Activity {
         } else {
             mMsgThreadId = intent.getLongExtra(MSG_THREAD_ID, -1);
             mMsgSenderAddress = intent.getStringExtra(MSG_SENDER);
+            mMsgSubId = intent.getIntExtra(MSG_SUB_ID, -1);
             if (handleRemoteInput(intent, mMsgThreadId)) {
                 finish();
                 return;
@@ -188,7 +193,7 @@ public class NotificationQuickReplyActivity extends Activity {
 
     private void sendSms(String msgText, String address, long threadId) {
         String[] dests = TextUtils.split(address, ";");
-        int subId = SubscriptionManager.getDefaultSmsSubscriptionId();
+        int subId = getSmsSubscriptionId();
         SmsMessageSender sender = new SmsMessageSender(this, dests, msgText, threadId, subId);
         try {
             sender.sendMessage(threadId);
@@ -197,6 +202,20 @@ public class NotificationQuickReplyActivity extends Activity {
         } finally {
             finish();
         }
+    }
+
+    private int getSmsSubscriptionId() {
+        int subId = SubscriptionManager.getDefaultSmsSubscriptionId();
+        if ((TelephonyManager.getDefault().getPhoneCount()) > 1 &&
+                MessageUtils.isMsimIccCardActive() &&
+                SmsManager.getDefault().isSMSPromptEnabled()) {
+            if (mMsgSubId >= 0) {
+                subId = mMsgSubId;
+            } else {
+                Log.e(TAG, "Error SUB:" + mMsgSubId);
+            }
+        }
+        return subId;
     }
 
     private void setSmsOrMmsSendButtonImage() {

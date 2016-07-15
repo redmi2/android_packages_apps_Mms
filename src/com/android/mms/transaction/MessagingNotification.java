@@ -592,26 +592,28 @@ public class MessagingNotification {
         public final int mAttachmentType;
         public final String mSubject;
         public final long mThreadId;
+        public final int mSubId;
 
         /**
-         * @param isSms true if sms, false if mms
-         * @param clickIntent where to go when the user taps the notification
-         * @param message for a single message, this is the message text
-         * @param subject text of mms subject
-         * @param ticker text displayed ticker-style across the notification, typically formatted
-         * as sender: message
-         * @param timeMillis date the message was received
-         * @param title for a single message, this is the sender
+         * @param isSms            true if sms, false if mms
+         * @param clickIntent      where to go when the user taps the notification
+         * @param message          for a single message, this is the message text
+         * @param subject          text of mms subject
+         * @param ticker           text displayed ticker-style across the notification,
+         *                         typically formatted as sender: message
+         * @param timeMillis       date the message was received
+         * @param title            for a single message, this is the sender
          * @param attachmentBitmap a bitmap of an attachment, such as a picture or video
-         * @param sender contact of the sender
-         * @param attachmentType of the mms attachment
-         * @param threadId thread this message belongs to
+         * @param sender           contact of the sender
+         * @param attachmentType   of the mms attachment
+         * @param threadId         thread this message belongs to
+         * @param subId            sub which this message belongs to
          */
         public NotificationInfo(boolean isSms,
                 Intent clickIntent, String message, String subject,
                 CharSequence ticker, long timeMillis, String title,
                 Bitmap attachmentBitmap, Contact sender,
-                int attachmentType, long threadId) {
+                int attachmentType, long threadId, int subId) {
             mIsSms = isSms;
             mClickIntent = clickIntent;
             mMessage = message;
@@ -623,6 +625,7 @@ public class MessagingNotification {
             mSender = sender;
             mAttachmentType = attachmentType;
             mThreadId = threadId;
+            mSubId = subId;
         }
 
         public long getTime() {
@@ -1020,7 +1023,7 @@ public class MessagingNotification {
 
         return new NotificationInfo(isSms,
                 clickIntent, message, subject, ticker, timeMillis,
-                senderInfoName, attachmentBitmap, contact, attachmentType, threadId);
+                senderInfoName, attachmentBitmap, contact, attachmentType, threadId, subId);
     }
 
     private static final Intent getClickIntent(Context context, boolean isSms, long threadId) {
@@ -1074,7 +1077,7 @@ public class MessagingNotification {
 
         return new NotificationInfo(isSms,
                 clickIntent, message, subject, ticker, timeMillis,
-                senderInfoName, attachmentBitmap, contact, attachmentType, 0);
+                senderInfoName, attachmentBitmap, contact, attachmentType, 0, subId);
     }
 
     public static void cancelNotification(Context context, int notificationId) {
@@ -1296,28 +1299,6 @@ public class MessagingNotification {
 
         final Notification notification;
 
-        // Create "Reply" option in notification
-        CharSequence replyText = context.getText(R.string.notification_reply);
-        CharSequence typeMessageText = context.getText(R.string.notification_type_message);
-        Intent replyIntent = new Intent(context, NotificationQuickReplyActivity.class);
-        replyIntent.putExtra(NotificationQuickReplyActivity.MSG_THREAD_ID,
-                mostRecentNotification.mThreadId);
-        replyIntent.putExtra(NotificationQuickReplyActivity.MSG_SENDER,
-                mostRecentNotification.mSender.getName());
-
-        PendingIntent replyPendingIntent = PendingIntent.getActivity(context, 0,
-                replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        RemoteInput remoteInput = new RemoteInput.Builder(
-                NotificationQuickReplyActivity.KEY_TEXT_REPLY)
-                .setLabel(typeMessageText)
-                .build();
-        Notification.Action actionReply = new Notification.Action.Builder(
-                R.drawable.notification_reply,
-                replyText,
-                replyPendingIntent)
-                .addRemoteInput(remoteInput)
-                .build();
-
         if (messageCount == 1) {
             // We've got a single message
             String bigMessage = mostRecentNotification.formatBigMessage(context).toString();
@@ -1338,6 +1319,7 @@ public class MessagingNotification {
                                 cursor.getColumnIndexOrThrow(Mms._ID));
                         long msgType = cursor.getLong(
                                 cursor.getColumnIndexOrThrow(Mms.MESSAGE_TYPE));
+                        addNotificationReplyAction(noti, context, mostRecentNotification);
 
                         if (msgType == PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND) {
                             // Create "Download" option in notification
@@ -1354,7 +1336,6 @@ public class MessagingNotification {
                             PendingIntent downloadPendingIntent = PendingIntent.getBroadcast(
                                     context, 0, downloadIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-                            noti.addAction(actionReply);
                             noti.addAction(R.drawable.notification_download,
                                     downloadText, downloadPendingIntent);
 
@@ -1362,8 +1343,6 @@ public class MessagingNotification {
                                     R.string.new_mms_download);
                             pictureMessage = context.getResources().getString(
                                     R.string.new_mms_download);
-                        } else {
-                            noti.addAction(actionReply);
                         }
                     }
                 } finally {
@@ -1372,7 +1351,7 @@ public class MessagingNotification {
                     }
                 }
             } else {
-                noti.addAction(actionReply);
+                addNotificationReplyAction(noti, context, mostRecentNotification);
             }
 
             // This sets the text for the collapsed form:
@@ -1419,7 +1398,7 @@ public class MessagingNotification {
 
                 noti.setContentText(context.getString(R.string.message_count_notification,
                         messageCount));
-                noti.addAction(actionReply);
+                addNotificationReplyAction(noti, context, mostRecentNotification);
 
                 // Show a single notification -- big style with the text of all the messages
                 notification = new Notification.BigTextStyle(noti)
@@ -1601,30 +1580,6 @@ public class MessagingNotification {
         noti.setDefaults(defaults);
 
         final Notification notification;
-        // Create "Reply" option in notification
-        CharSequence replyText = context.getText(R.string.notification_reply);
-        CharSequence typeMessageText = context.getText(R.string.notification_type_message);
-        Intent replyIntent = new Intent(context, NotificationQuickReplyActivity.class);
-        replyIntent.putExtra(NotificationQuickReplyActivity.MSG_THREAD_ID,
-                mostRecentNotification.mThreadId);
-        Uri msgUri = Mms.CONTENT_URI.buildUpon().appendPath(
-                Long.toString(mostRecentNotification.mThreadId)).build();
-        replyIntent.setData(msgUri);
-        replyIntent.putExtra(NotificationQuickReplyActivity.MSG_SENDER,
-                mostRecentNotification.mSender.getName());
-
-        PendingIntent replyPendingIntent = PendingIntent.getActivity(context, 0,
-                replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        RemoteInput remoteInput = new RemoteInput.Builder(
-                NotificationQuickReplyActivity.KEY_TEXT_REPLY)
-                .setLabel(typeMessageText)
-                .build();
-        Notification.Action actionReply = new Notification.Action.Builder(
-                R.drawable.notification_reply,
-                replyText,
-                replyPendingIntent)
-                .addRemoteInput(remoteInput)
-                .build();
 
         if (messageCount == 1) {
             String bigMessage = mostRecentNotification.formatBigMessage(context).toString();
@@ -1645,6 +1600,7 @@ public class MessagingNotification {
                                 cursor.getColumnIndexOrThrow(Mms._ID));
                         long msgType = cursor.getLong(
                                 cursor.getColumnIndexOrThrow(Mms.MESSAGE_TYPE));
+                        addNotificationReplyAction(noti, context, mostRecentNotification);
 
                         if (msgType == PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND) {
                             // Create "Download" option in notification
@@ -1652,6 +1608,8 @@ public class MessagingNotification {
                                     R.string.notification_download);
                             Intent downloadIntent = new Intent(context,
                                     NotificationActionHandleReceiver.class);
+                            Uri msgUri = Mms.CONTENT_URI.buildUpon().appendPath(
+                                    Long.toString(mostRecentNotification.mThreadId)).build();
                             downloadIntent.setAction(
                                     NotificationActionHandleReceiver.ACTION_NOTIFICATION_DOWNLOAD);
                             downloadIntent.putExtra(
@@ -1662,7 +1620,6 @@ public class MessagingNotification {
                             PendingIntent downloadPendingIntent = PendingIntent.getBroadcast(
                                     context, 0, downloadIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-                            noti.addAction(actionReply);
                             noti.addAction(R.drawable.notification_download,
                                     downloadText, downloadPendingIntent);
 
@@ -1670,8 +1627,6 @@ public class MessagingNotification {
                                     R.string.new_mms_download);
                             pictureMessage = context.getResources().getString(
                                     R.string.new_mms_download);
-                        } else {
-                            noti.addAction(actionReply);
                         }
                     }
                 } finally {
@@ -1680,7 +1635,7 @@ public class MessagingNotification {
                     }
                 }
             } else {
-                noti.addAction(actionReply);
+                addNotificationReplyAction(noti, context, mostRecentNotification);
             }
 
             // This sets the text for the collapsed form:
@@ -1721,7 +1676,7 @@ public class MessagingNotification {
 
             noti.setContentText(context.getString(R.string.message_count_notification,
                     messageCount));
-            noti.addAction(actionReply);
+            addNotificationReplyAction(noti, context, mostRecentNotification);
 
             // Show a single notification -- big style with the text of all the messages
             notification = new Notification.BigTextStyle(noti)
@@ -1753,6 +1708,39 @@ public class MessagingNotification {
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         final String notificationTag = buildNotificationTag(context, NOTIFICATION_MSG_TAG, null);
         nm.notify(notificationTag, NOTIFICATION_ID, notification);
+    }
+
+    private static void addNotificationReplyAction(final Notification.Builder notiBuilder,
+            Context context, NotificationInfo notificationInfo) {
+        if (null == notiBuilder || null == notificationInfo) {
+            return;
+        }
+        CharSequence replyText = context.getText(R.string.notification_reply);
+        CharSequence typeMessageText = context.getText(R.string.notification_type_message);
+        Intent replyIntent = new Intent(context, NotificationQuickReplyActivity.class);
+        replyIntent.putExtra(NotificationQuickReplyActivity.MSG_THREAD_ID,
+                notificationInfo.mThreadId);
+        Uri msgUri = Mms.CONTENT_URI.buildUpon().appendPath(
+                Long.toString(notificationInfo.mThreadId)).build();
+        replyIntent.setData(msgUri);
+        replyIntent.putExtra(NotificationQuickReplyActivity.MSG_SENDER,
+                notificationInfo.mSender.getName());
+        replyIntent.putExtra(NotificationQuickReplyActivity.MSG_SUB_ID,
+                notificationInfo.mSubId);
+
+        PendingIntent replyPendingIntent = PendingIntent.getActivity(context, 0,
+                replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        RemoteInput remoteInput = new RemoteInput.Builder(
+                NotificationQuickReplyActivity.KEY_TEXT_REPLY)
+                .setLabel(typeMessageText)
+                .build();
+        Notification.Action actionReply = new Notification.Action.Builder(
+                R.drawable.notification_reply,
+                replyText,
+                replyPendingIntent)
+                .addRemoteInput(remoteInput)
+                .build();
+        notiBuilder.addAction(actionReply);
     }
 
     private static Bitmap buildNotificationAvatar(final Notification.Builder notiBuilder,
@@ -1840,9 +1828,12 @@ public class MessagingNotification {
             if (DEBUG) {
                 Log.d(TAG, "buildTickerMessage subId: " + subId + " slotNumber " + slotNumber);
             }
-            String dividerStr = context.getResources().getString(R.string.notification_sim_divider);
-            String strSim = context.getResources().getString(R.string.notification_sim_info);
-            buf.append(dividerStr).append(strSim).append(slotNumber + "");
+            if (slotNumber > 0) {
+                String dividerStr = context.getResources().getString(
+                        R.string.notification_sim_divider);
+                String strSim = context.getResources().getString(R.string.notification_sim_info);
+                buf.append(dividerStr).append(strSim).append(slotNumber + "");
+            }
             //SMS/MMS is operating based of PhoneId which is 0, 1..
             if (!TextUtils.isEmpty(subject) || !TextUtils.isEmpty(body)) {
                 buf.append("-");
