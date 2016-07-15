@@ -35,9 +35,9 @@
 
     <Preference
         android:key="pref_key_manage_sim_messages_slot1"
-        android:title="@string/pref_title_manage_sim_messages_slot1" />
+        android:title="@string/settings_pre_sim1" />
     <Preference
         android:key="pref_key_manage_sim_messages_slot2"
-        android:title="@string/pref_title_manage_sim_messages_slot2" />
+        android:title="@string/settings_pre_sim2" />
 
 </PreferenceScreen>

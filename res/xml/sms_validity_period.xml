@@ -39,13 +39,13 @@
         android:entries="@array/entries_sms_validity_period"
         android:entryValues="@array/entries_sms_validity_period_value"
         android:key="pref_key_sms_validity_period_for_sim1"
-        android:title="@string/pref_title_sms_validity_period_slot1" />
+        android:title="@string/settings_pre_sim1" />
     <ListPreference
         android:defaultValue="@string/default_sms_validity_period"
         android:dialogTitle="@string/pref_title_sms_validity_period"
         android:entries="@array/entries_sms_validity_period"
         android:entryValues="@array/entries_sms_validity_period_value"
         android:key="pref_key_sms_validity_period_for_sim2"
-        android:title="@string/pref_title_sms_validity_period_slot2" />
+        android:title="@string/settings_pre_sim2" />
 
 </PreferenceScreen>
