@@ -460,6 +460,10 @@ public class MessageItem {
         return !isFailedMessage() && isOutgoingMessage();
     }
 
+    public boolean isSentMms() {
+        return isMms() && (mBoxId == Mms.MESSAGE_BOX_SENT);
+    }
+
     public boolean isFailedMessage() {
         boolean isFailedMms = isMms()
                             && (mErrorType >= MmsSms.ERR_TYPE_GENERIC_PERMANENT

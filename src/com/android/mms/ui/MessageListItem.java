@@ -1316,26 +1316,19 @@ public class MessageListItem extends ZoomMessageListItem implements
             }
         }
 
-        // Message details icon - this icon is shown both for sms and mms messages. For mms,
-        // we show the icon if the read report or delivery report setting was set when the
+        // Report icon for mms.
+        // We show the icon if the read report or delivery report setting was set when the
         // message was sent. Showing the icon tells the user there's more information
         // by selecting the "View report" menu.
-        /*
-        if (msgItem.mDeliveryStatus == MessageItem.DeliveryStatus.INFO
-                || (msgItem.isMms() && !msgItem.isSending() &&
-                        msgItem.mDeliveryStatus == MessageItem.DeliveryStatus.PENDING)) {
-            mDetailsIndicator.setImageResource(R.drawable.ic_sms_mms_details);
-            mDetailsIndicator.setVisibility(View.VISIBLE);
-        } else if (msgItem.isMms() && !msgItem.isSending() &&
+        // Display delivery icon only when target received, read report status will be displayed
+        // in "View report" UI.
+        if (msgItem.isMms() && msgItem.isSentMms() &&
                 msgItem.mDeliveryStatus == MessageItem.DeliveryStatus.RECEIVED) {
-            mDetailsIndicator.setImageResource(R.drawable.report);
-            mDetailsIndicator.setVisibility(View.VISIBLE);
-        } else if (msgItem.mReadReport) {
             mDetailsIndicator.setImageResource(R.drawable.report);
             mDetailsIndicator.setVisibility(View.VISIBLE);
         } else {
             mDetailsIndicator.setVisibility(View.GONE);
-        }*/
+        }
     }
 
     @Override
