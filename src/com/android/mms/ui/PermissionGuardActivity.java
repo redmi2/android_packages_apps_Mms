@@ -29,8 +29,11 @@
 
 package com.android.mms.ui;
 
+import java.util.ArrayList;
+
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -56,18 +59,21 @@ public class PermissionGuardActivity extends Activity {
     private static final int PERMISSION_REQUEST_CODE = 1;
     private static final String PACKAGE_URI_PREFIX = "package:";
     public static final String ORIGINAL_INTENT = "original_intent";
+    public static final String EXT_PERMISSIONS = "ext_permissions";
+    private String [] mExtPermissions;
+
     private Intent mOriginalIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // TODO Auto-generated method stub
         super.onCreate(savedInstanceState);
+        mExtPermissions = getIntent().getExtras().getStringArray(EXT_PERMISSIONS);
+        mOriginalIntent = (Intent) getIntent().getExtras().get(ORIGINAL_INTENT);
         if (redirectIfNeeded()){
             return;
         }
-        mOriginalIntent = (Intent) getIntent().getExtras().get(ORIGINAL_INTENT);
         setContentView(R.layout.permission_guard_activity);
-
         mExit = (TextView) findViewById(R.id.exit);
         mExit.setOnClickListener(new OnClickListener() {
             @Override
@@ -95,14 +101,32 @@ public class PermissionGuardActivity extends Activity {
 
     protected void goRequestPermissions() {
         mRequestTime = SystemClock.elapsedRealtime();
-        requestPermissions(MessageUtils.getMissingBasicPermissions(), PERMISSION_REQUEST_CODE);
+        final ArrayList<String> missingList = new ArrayList<String>();
+        String [] missingPermissions = MessageUtils.getMissingBasicPermissions();
+        for (int i=0; i<missingPermissions.length;i++){
+            missingList.add(missingPermissions[i]);
+        }
+        if (mExtPermissions != null) {
+            for (int i=0; i< mExtPermissions.length;i++){
+                missingList.add(mExtPermissions[i]);
+            }
+        }
+        final String[] missingArray = new String[missingList.size()];
+        missingList.toArray(missingArray);
+        requestPermissions(missingArray, PERMISSION_REQUEST_CODE);
     }
 
     @Override
     public void onRequestPermissionsResult(final int requestCode, final String permissions[],
             final int[] grantResults) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (MessageUtils.hasBasicPermissions()) {
+            boolean bGranted = true;
+            for (int i = 0; i < grantResults.length; i++) {
+                if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
+                    bGranted = false;
+                }
+            }
+            if (bGranted) {
                 enter();
             } else {
                 final long current = SystemClock.elapsedRealtime();
@@ -124,7 +148,12 @@ public class PermissionGuardActivity extends Activity {
     }
 
     private boolean redirectIfNeeded() {
-        if (!MessageUtils.hasBasicPermissions()){
+        if (mExtPermissions != null) {
+            if (!(MessageUtils.hasBasicPermissions() && MessageUtils
+                    .hasPermissions(mExtPermissions))) {
+                return false;
+            }
+        } else if (!MessageUtils.hasBasicPermissions()) {
             return false;
         }
         enter();

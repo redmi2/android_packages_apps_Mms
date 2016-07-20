@@ -389,7 +389,10 @@ public class MessageUtils {
     /* Basic permissions SMS application should have */
     public static String[] sSMSBasicPermissions = new String[] {
         Manifest.permission.READ_SMS, Manifest.permission.READ_PHONE_STATE,
-        Manifest.permission.READ_CONTACTS, Manifest.permission.READ_EXTERNAL_STORAGE
+        Manifest.permission.READ_CONTACTS
+    };
+    public static String [] sSMSExtendPermissions = new String [] {
+        Manifest.permission.READ_EXTERNAL_STORAGE
     };
 
     private MessageUtils() {
@@ -3178,9 +3181,10 @@ public class MessageUtils {
     /**
      * Launch permission check
      */
-    public static void launchPermissionCheckActivity(Activity activity) {
+    public static void launchPermissionCheckActivity(Activity activity,String [] permissions) {
         final Intent intent = new Intent(activity, PermissionGuardActivity.class);
-        intent.putExtra(PermissionGuardActivity.ORIGINAL_INTENT,activity.getIntent());
+        intent.putExtra(PermissionGuardActivity.ORIGINAL_INTENT, activity.getIntent());
+        intent.putExtra(PermissionGuardActivity.EXT_PERMISSIONS, permissions);
         activity.startActivity(intent);
     }
 
@@ -3188,12 +3192,13 @@ public class MessageUtils {
      * Check basic permission before enter app
      */
     public static boolean checkPermissionsIfNeeded(Activity activity) {
-        if (!hasBasicPermissions()) {
-            launchPermissionCheckActivity(activity);
-        } else {
+        if (hasBasicPermissions()) {
             MmsApp.getApplication().initPermissionRelated();
-            return false;
+            if (hasPermissions(sSMSExtendPermissions)) {
+                return false;
+            }
         }
+        launchPermissionCheckActivity(activity, sSMSExtendPermissions);
         activity.finish();
         return true;
     }
