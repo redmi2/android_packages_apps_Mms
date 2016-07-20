@@ -583,7 +583,11 @@ public class MessageListItem extends ZoomMessageListItem implements
                         backgroundDrawable = MaterialColorMapUtils.getLetterTitleDraw(mContext,
                                 contact);
                     }
-                    defaultColor = ComposeMessageActivity.getSendContactColor();
+                    if (isSimCardMessage()) {
+                        defaultColor = mContext.getResources().getColor(R.color.default_actionabr_background);
+                    } else {
+                        defaultColor = ComposeMessageActivity.getSendContactColor();
+                    }
                 }
                 if (TextUtils.isEmpty(mMessageItem.mSubject)
                         && TextUtils.isEmpty(mMessageItem.mBody)) {

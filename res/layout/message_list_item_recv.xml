@@ -198,6 +198,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:paddingTop="@dimen/message_item_text_padding_left_right"
+                    android:paddingStart="@dimen/message_item_text_padding_left_right"
+                    android:paddingEnd="@dimen/message_item_text_padding_left_right"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textColor="#ffffffff"
                     android:textSize="16sp"
