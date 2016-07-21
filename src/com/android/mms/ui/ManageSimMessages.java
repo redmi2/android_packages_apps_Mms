@@ -168,6 +168,7 @@ public class ManageSimMessages extends Activity
         mQueryHandler = new QueryHandler(mContentResolver, this);
         setContentView(R.layout.sim_list);
         mSimList = (ListView) findViewById(R.id.messages);
+        mSimList.setDivider(null);
         mMessage = (TextView) findViewById(R.id.empty_message);
         mProgressDialog = createProgressDialog();
 
