@@ -302,6 +302,7 @@ public class ConversationListItem extends RelativeLayout implements Contact.Upda
                 break;
             default:
                 Log.e(TAG, "No valid group layout found");
+                return;
         }
         ViewGroup groupAvatar = (ViewGroup) LayoutInflater.from(mContext)
                 .inflate(group_layout, parent, false);
