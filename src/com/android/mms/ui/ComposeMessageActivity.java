@@ -2391,7 +2391,7 @@ public class ComposeMessageActivity extends Activity
         }
         // Must grab the recipients before the view is made visible because getRecipients()
         // returns empty recipients when the editor is visible.
-        ContactList recipients = getRecipients();
+        final ContactList recipients = getRecipients();
 
         ViewStub stub = (ViewStub)findViewById(R.id.recipients_editor_stub);
         if (stub != null) {
@@ -2411,8 +2411,23 @@ public class ComposeMessageActivity extends Activity
         mRecipientsPicker.setOnClickListener(this);
         mRecipientsEditor.addTextChangedListener(mRecipientsWatcher);
         mRecipientsEditor.setAdapter(new ChipsRecipientAdapter(this));
-        mRecipientsEditor.setText(null);
-        mRecipientsEditor.populateWithAvatorDrawable(recipients);
+
+        // Populate recipient editor with runnable thread to ensure display correctly.
+        final Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                Uri uri = getIntent().getData();
+                if (uri != null) {
+                    String recipient = Conversation.getRecipients(uri);
+                    mRecipientsEditor.setText(recipient + ",");
+                } else {
+                    mRecipientsEditor.setText(null);
+                }
+                mRecipientsEditor.populateWithAvatorDrawable(recipients);
+            }
+        };
+        mHandler.post(r);
+
         // TODO : Remove the max length limitation due to the multiple phone picker is added and the
         // user is able to select a large number of recipients from the Contacts. The coming
         // potential issue is that it is hard for user to edit a recipient from hundred of
