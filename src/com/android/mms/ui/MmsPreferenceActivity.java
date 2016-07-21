@@ -77,16 +77,19 @@ public class MmsPreferenceActivity extends PreferenceActivity {
     private static String TAG = "MmsPreferenceActivity";
 
     public static final String MMS_DELIVERY_REPORT_MODE_SIM = "pref_key_mms_delivery_reports";
+    public static final String MMS_DELIVERY_REPORT_SS = "pref_key_mms_delivery_reports_ss";
 
-    public static final String MMS_DELIVERY_REPORT_SUB1 = "pref_key_mms_delivery_reports_sim1";
+    public static final String MMS_DELIVERY_REPORT_SUB1 = "pref_key_mms_delivery_reports_card1";
 
-    public static final String MMS_DELIVERY_REPORT_SUB2 = "pref_key_mms_delivery_reports_sim2";
+    public static final String MMS_DELIVERY_REPORT_SUB2 = "pref_key_mms_delivery_reports_card2";
 
     public static final String MMS_READ_REPORT_MODE = "pref_key_mms_read_reports";
 
-    public static final String MMS_READ_REPORT_SUB1 = "pref_key_mms_read_reports_sim1";
+    public static final String MMS_READ_REPORT_SS = "pref_key_mms_read_reports_ss";
 
-    public static final String MMS_READ_REPORT_SUB2 = "pref_key_mms_read_reports_sim2";
+    public static final String MMS_READ_REPORT_SUB1 = "pref_key_mms_read_reports_card1";
+
+    public static final String MMS_READ_REPORT_SUB2 = "pref_key_mms_read_reports_card2";
 
     public static final String AUTO_RETRIEVAL = "pref_key_mms_auto_retrieval";
 
@@ -111,8 +114,10 @@ public class MmsPreferenceActivity extends PreferenceActivity {
     private PreferenceScreen mMmsSettingsPref;
     private Preference mMmsDeliveryReportPref;
     private Preference mMmsReadReportPref;
+    private SwitchPreference mMmsDeliveryReportPrefSS;
     private SwitchPreference mMmsDeliveryReportPrefSub1;
     private SwitchPreference mMmsDeliveryReportPrefSub2;
+    private SwitchPreference mMmsReadReportPrefSS;
     private SwitchPreference mMmsReadReportPrefSub1;
     private SwitchPreference mMmsReadReportPrefSub2;
     private SwitchPreference mMmsAutoRetrievialPref;
@@ -134,15 +139,17 @@ public class MmsPreferenceActivity extends PreferenceActivity {
         addPreferencesFromResource(R.xml.mms_preferences);
         mMmsSettingsPref = (PreferenceScreen) findPreference("pref_key_mms_settings");
         mMmsDeliveryReportPref = (Preference) findPreference("pref_key_mms_delivery_reports");
+        mMmsDeliveryReportPrefSS = (SwitchPreference) findPreference(MMS_DELIVERY_REPORT_SS);
         mMmsDeliveryReportPrefSub1 = (SwitchPreference)
-                findPreference("pref_key_mms_delivery_reports_sim1");
+                findPreference(MMS_DELIVERY_REPORT_SUB1);
         mMmsDeliveryReportPrefSub2 = (SwitchPreference)
-                findPreference("pref_key_mms_delivery_reports_sim2");
+                findPreference(MMS_DELIVERY_REPORT_SUB2);
         mMmsReadReportPref = (Preference) findPreference("pref_key_mms_read_reports");
+        mMmsReadReportPrefSS = (SwitchPreference) findPreference(MMS_READ_REPORT_SS);
         mMmsReadReportPrefSub1 = (SwitchPreference)
-                findPreference("pref_key_mms_read_reports_sim1");
+                findPreference(MMS_READ_REPORT_SUB1);
         mMmsReadReportPrefSub2 = (SwitchPreference)
-                findPreference("pref_key_mms_read_reports_sim2");
+                findPreference(MMS_READ_REPORT_SUB2);
         mMmsAutoRetrievialPref = (SwitchPreference) findPreference("pref_key_mms_auto_retrieval");
         mMmsDuringPref = (SwitchPreference) findPreference("pref_key_mms_retrieval_during_roaming");
         mMmsValidityPref = (Preference) findPreference("pref_key_mms_expiry");
@@ -152,10 +159,12 @@ public class MmsPreferenceActivity extends PreferenceActivity {
         setMmsExpiryPref();
         if (!MmsConfig.getSMSDeliveryReportsEnabled()) {
             mMmsSettingsPref.removePreference(mMmsDeliveryReportPref);
+            mMmsSettingsPref.removePreference(mMmsDeliveryReportPrefSS);
             mMmsSettingsPref.removePreference(mMmsDeliveryReportPrefSub1);
             mMmsSettingsPref.removePreference(mMmsDeliveryReportPrefSub2);
         } else {
             if (TelephonyManager.getDefault().isMultiSimEnabled()) {
+                mMmsSettingsPref.removePreference(mMmsDeliveryReportPrefSS);
                 if (!MessageUtils.isIccCardActivated(MessageUtils.SUB1)) {
                     mMmsSettingsPref.removePreference(mMmsDeliveryReportPref);
                     mMmsSettingsPref
@@ -181,14 +190,20 @@ public class MmsPreferenceActivity extends PreferenceActivity {
                     mMmsSettingsPref.addPreference(mMmsDeliveryReportPref);
                     mMmsDeliveryReportPref.setEnabled(false);
                 }
+            } else {
+                mMmsSettingsPref.removePreference(mMmsDeliveryReportPref);
+                mMmsSettingsPref.removePreference(mMmsDeliveryReportPrefSub1);
+                mMmsSettingsPref.removePreference(mMmsDeliveryReportPrefSub2);
             }
         }
         if (!MmsConfig.getMMSReadReportsEnabled()) {
             mMmsSettingsPref.removePreference(mMmsReadReportPref);
+            mMmsSettingsPref.removePreference(mMmsReadReportPrefSS);
             mMmsSettingsPref.removePreference(mMmsReadReportPrefSub1);
             mMmsSettingsPref.removePreference(mMmsReadReportPrefSub2);
         } else {
             if (TelephonyManager.getDefault().isMultiSimEnabled()) {
+                mMmsSettingsPref.removePreference(mMmsReadReportPrefSS);
                 if (!MessageUtils.isIccCardActivated(MessageUtils.SUB1)) {
                     mMmsSettingsPref.removePreference(mMmsReadReportPref);
                     mMmsSettingsPref.removePreference(mMmsReadReportPrefSub1);
@@ -208,6 +223,10 @@ public class MmsPreferenceActivity extends PreferenceActivity {
                     mMmsSettingsPref.addPreference(mMmsReadReportPref);
                     mMmsReadReportPref.setEnabled(false);
                 }
+            } else {
+                mMmsSettingsPref.removePreference(mMmsReadReportPref);
+                mMmsSettingsPref.removePreference(mMmsReadReportPrefSub1);
+                mMmsSettingsPref.removePreference(mMmsReadReportPrefSub2);
             }
         }
     }

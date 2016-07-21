@@ -35,11 +35,11 @@
 
     <SwitchPreference
         android:defaultValue="@bool/def_sms_delivery_reports_slot1"
-        android:key="pref_key_mms_delivery_reports_slot1"
+        android:key="pref_key_mms_delivery_reports_card1"
         android:title="@string/settings_pre_sim1" />
     <SwitchPreference
         android:defaultValue="@bool/def_sms_delivery_reports_slot2"
-        android:key="pref_key_mms_delivery_reports_slot2"
+        android:key="pref_key_mms_delivery_reports_card2"
         android:title="@string/settings_pre_sim2" />
 
 </PreferenceScreen>

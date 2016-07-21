@@ -37,15 +37,20 @@
         android:key="pref_key_mms_delivery_reports"
         android:summary="@string/pref_summary_mms_delivery_reports"
         android:title="@string/pref_title_mms_delivery_reports" />
+    <SwitchPreference
+        android:defaultValue="@bool/def_sms_delivery_reports_slot1"
+        android:key="pref_key_mms_delivery_reports_ss"
+        android:summary="@string/pref_summary_mms_delivery_reports"
+        android:title="@string/pref_title_mms_delivery_reports" />
 
     <SwitchPreference
         android:defaultValue="@bool/def_sms_delivery_reports_slot1"
-        android:key="pref_key_mms_delivery_reports_sim1"
+        android:key="pref_key_mms_delivery_reports_card1"
         android:summary="@string/pref_summary_mms_delivery_reports"
         android:title="@string/pref_title_mms_delivery_reports" />
     <SwitchPreference
         android:defaultValue="@bool/def_sms_delivery_reports_slot2"
-        android:key="pref_key_mms_delivery_reports_sim2"
+        android:key="pref_key_mms_delivery_reports_card2"
         android:summary="@string/pref_summary_mms_delivery_reports"
         android:title="@string/pref_title_mms_delivery_reports" />
 
@@ -53,15 +58,20 @@
         android:key="pref_key_mms_read_reports"
         android:summary="@string/pref_summary_mms_read_reports"
         android:title="@string/pref_title_mms_read_reports" />
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="pref_key_mms_read_reports_ss"
+        android:summary="@string/pref_summary_mms_read_reports"
+        android:title="@string/pref_title_mms_read_reports" />
 
     <SwitchPreference
         android:defaultValue="false"
-        android:key="pref_key_mms_read_reports_sim1"
+        android:key="pref_key_mms_read_reports_card1"
         android:summary="@string/pref_summary_mms_read_reports"
         android:title="@string/pref_title_mms_read_reports" />
     <SwitchPreference
         android:defaultValue="false"
-        android:key="pref_key_mms_read_reports_sim2"
+        android:key="pref_key_mms_read_reports_card2"
         android:summary="@string/pref_summary_mms_read_reports"
         android:title="@string/pref_title_mms_read_reports" />
     <SwitchPreference
