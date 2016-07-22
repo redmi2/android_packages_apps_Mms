@@ -62,7 +62,11 @@ public class NotificationQuickReplyActivity extends Activity {
     public static final String MSG_SENDER = "msg_sender";
     public static final String MSG_THREAD_ID = "msg_thread_id";
     public static final String MSG_SUB_ID = "msg_sub_id";
+    public static final String MSG_ADDRESS = "msg_address";
+
     public static final String KEY_TEXT_REPLY = "key_text_reply";
+    public static final String KEY_IS_GROUP = "key_is_group";
+    public static final String KEY_SORT = "key_sort";
 
     private static Drawable sDefaultContactImage;
 
@@ -82,10 +86,6 @@ public class NotificationQuickReplyActivity extends Activity {
         if (MessageUtils.checkPermissionsIfNeeded(this)) {
             return;
         }
-
-        NotificationManager notificationManager =
-            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancel(MessagingNotification.NOTIFICATION_ID);
 
         Intent intent = getIntent();
         if (intent == null) {
@@ -119,21 +119,37 @@ public class NotificationQuickReplyActivity extends Activity {
                 if (!TextUtils.isEmpty(replyContent)) {
                     sendSms(replyContent, mMsgSenderAddress, mMsgThreadId);
                     isRemoteInput = true;
-                    /**
-                     * Mark as read after replied
-                     */
-                    Intent markReadIntent = new Intent(NotificationQuickReplyActivity.this,
-                            NotificationActionHandleReceiver.class);
-                    markReadIntent.setAction(
-                            NotificationActionHandleReceiver.ACTION_NOTIFICATION_MARK_READ);
-                    markReadIntent.putExtra(NotificationActionHandleReceiver.MSG_THREAD_ID,
-                            threadId);
-                    sendBroadcast(markReadIntent);
+                    boolean isGroup = intent.getBooleanExtra(KEY_IS_GROUP, false);
+                    String address = intent.getStringExtra(MSG_ADDRESS);
+                    String sortkey = intent.getStringExtra(KEY_SORT);
+                    Context context = getApplicationContext();
+
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            MessagingNotification.updateNotificationItem(context,
+                                    mMsgThreadId, mMsgSenderAddress, address,
+                                    textReply.toString(), isGroup, sortkey);
+                        }
+                    }.start();
+
+                    sendMarkAsRead(threadId, isGroup);
                 }
             }
         }
         return isRemoteInput;
 
+    }
+
+    private void sendMarkAsRead(final long threadId, boolean isGroup){
+        Intent markReadIntent = new Intent(NotificationQuickReplyActivity.this,
+                NotificationActionHandleReceiver.class);
+        markReadIntent.setAction(
+                NotificationActionHandleReceiver.ACTION_NOTIFICATION_MARK_READ);
+        markReadIntent.putExtra(NotificationActionHandleReceiver.MSG_THREAD_ID,
+                threadId);
+        markReadIntent.putExtra(KEY_IS_GROUP, isGroup);
+        sendBroadcast(markReadIntent);
     }
 
     private void initViews() {

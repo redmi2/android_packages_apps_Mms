@@ -1095,6 +1095,25 @@ public class MessagingNotification {
         nm.cancel(notificationId);
     }
 
+    public static void cancelNotificationItem(Context context, int notificationId,
+            final long conversationId, boolean isGroup) {
+        if(NOTIFICATION_ID != notificationId){
+            return;
+        }
+        if (DEBUG) {
+            Log.d(TAG, "cancelNotificationItem ID:" + conversationId + "|isGroup="+isGroup);
+        }
+        if(isGroup){
+            NotificationManager nm = (NotificationManager) context.getSystemService(
+                    Context.NOTIFICATION_SERVICE);
+            final String notificationTag = buildNotificationTag(context,
+                    NOTIFICATION_MSG_TAG, Long.toString(conversationId));
+            nm.cancel(notificationTag, notificationId);
+        }else{
+            cancelNotification(context,notificationId);
+        }
+    }
+
     private static void updateDeliveryNotification(final Context context,
                                                    boolean isStatusMessage,
                                                    final CharSequence message,
@@ -1319,7 +1338,8 @@ public class MessagingNotification {
                                 cursor.getColumnIndexOrThrow(Mms._ID));
                         long msgType = cursor.getLong(
                                 cursor.getColumnIndexOrThrow(Mms.MESSAGE_TYPE));
-                        addNotificationReplyAction(noti, context, mostRecentNotification);
+                        addNotificationReplyAction(noti, context, mostRecentNotification,
+                                false, null);
 
                         if (msgType == PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND) {
                             // Create "Download" option in notification
@@ -1351,7 +1371,7 @@ public class MessagingNotification {
                     }
                 }
             } else {
-                addNotificationReplyAction(noti, context, mostRecentNotification);
+                addNotificationReplyAction(noti, context, mostRecentNotification, false, null);
             }
 
             // This sets the text for the collapsed form:
@@ -1398,7 +1418,7 @@ public class MessagingNotification {
 
                 noti.setContentText(context.getString(R.string.message_count_notification,
                         messageCount));
-                addNotificationReplyAction(noti, context, mostRecentNotification);
+                addNotificationReplyAction(noti, context, mostRecentNotification, false, null);
 
                 // Show a single notification -- big style with the text of all the messages
                 notification = new Notification.BigTextStyle(noti)
@@ -1600,7 +1620,8 @@ public class MessagingNotification {
                                 cursor.getColumnIndexOrThrow(Mms._ID));
                         long msgType = cursor.getLong(
                                 cursor.getColumnIndexOrThrow(Mms.MESSAGE_TYPE));
-                        addNotificationReplyAction(noti, context, mostRecentNotification);
+                        addNotificationReplyAction(noti, context, mostRecentNotification,
+                                true, sortkey);
 
                         if (msgType == PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND) {
                             // Create "Download" option in notification
@@ -1635,7 +1656,7 @@ public class MessagingNotification {
                     }
                 }
             } else {
-                addNotificationReplyAction(noti, context, mostRecentNotification);
+                addNotificationReplyAction(noti, context, mostRecentNotification, true, sortkey);
             }
 
             // This sets the text for the collapsed form:
@@ -1676,7 +1697,7 @@ public class MessagingNotification {
 
             noti.setContentText(context.getString(R.string.message_count_notification,
                     messageCount));
-            addNotificationReplyAction(noti, context, mostRecentNotification);
+            addNotificationReplyAction(noti, context, mostRecentNotification, true, sortkey);
 
             // Show a single notification -- big style with the text of all the messages
             notification = new Notification.BigTextStyle(noti)
@@ -1692,6 +1713,75 @@ public class MessagingNotification {
         doNotify(notification, context, threadId);
     }
 
+    /**
+     * Update notification item after direct replied.
+     * @param context
+     * @param threadId conversation thread id
+     * @param name     sender's name
+     * @param address  sender's number
+     * @param replyMsg direct replied message
+     * @param isGroup  whether it is group item
+     * @param sortkey  sortkey for group item
+     */
+    public static void updateNotificationItem(
+            Context context,
+            final long threadId,
+            String name,
+            String address,
+            String replyMsg,
+            boolean isGroup,
+            final String sortkey) {
+        Intent clickIntent = getClickIntent(context, true, threadId);
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0,
+                clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        final Notification.Builder noti = new Notification.Builder(context)
+                .setWhen(System.currentTimeMillis())
+                .setColor(context.getResources().getColor(R.color.notification_accent_color))
+                .setContentTitle(name)
+                .setContentIntent(pendingIntent)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setCategory(Notification.CATEGORY_MESSAGE)
+                .setPriority(Notification.PRIORITY_HIGH);
+
+        if (DEBUG) {
+            Log.d(TAG, "updateNotificationItem: name =" + name
+                    + "|threadId=" + threadId + "|address=" + address
+                    + "|isGroup=" + isGroup + "|sortkey=" + sortkey);
+        }
+        if (isGroup) {
+            noti.setGroup(NOTIFICATION_GROUP_KEY);
+            if(null != sortkey) {
+                noti.setSortKey(sortkey);
+            }
+        }
+
+        final Resources res = context.getResources();
+        //contact.get may cost sometime
+        Contact contact = Contact.get(address, false);
+        buildNotificationAvatar(noti, context, contact);
+
+        Uri peopleReferenceUri = contact.getPeopleReferenceUri();
+        if (peopleReferenceUri != null) {
+            noti.addPerson(peopleReferenceUri.toString());
+        }
+
+        final Notification notification;
+        StringBuilder replyString = new StringBuilder(res.getString(R.string.you));
+        replyString.append(" ").append(replyMsg);
+        noti.setContentText(replyString.toString());
+        notification = new Notification.BigTextStyle(noti)
+                .bigText(replyString)
+                .build();
+
+        notification.flags |= Notification.FLAG_AUTO_CANCEL;
+        if (isGroup) {
+            doNotify(notification, context, threadId);
+        } else {
+            doNotify(notification, context);
+        }
+
+    }
 
     private static void doNotify(final Notification notification, Context context,
             final long threadId) {
@@ -1711,7 +1801,8 @@ public class MessagingNotification {
     }
 
     private static void addNotificationReplyAction(final Notification.Builder notiBuilder,
-            Context context, NotificationInfo notificationInfo) {
+            Context context, NotificationInfo notificationInfo,
+            boolean isGroup, final String sortkey) {
         if (null == notiBuilder || null == notificationInfo) {
             return;
         }
@@ -1727,6 +1818,12 @@ public class MessagingNotification {
                 notificationInfo.mSender.getName());
         replyIntent.putExtra(NotificationQuickReplyActivity.MSG_SUB_ID,
                 notificationInfo.mSubId);
+        replyIntent.putExtra(NotificationQuickReplyActivity.MSG_ADDRESS,
+                notificationInfo.mSender.getNumber());
+        replyIntent.putExtra(NotificationQuickReplyActivity.KEY_IS_GROUP,
+                isGroup);
+        replyIntent.putExtra(NotificationQuickReplyActivity.KEY_SORT,
+                sortkey);
 
         PendingIntent replyPendingIntent = PendingIntent.getActivity(context, 0,
                 replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
