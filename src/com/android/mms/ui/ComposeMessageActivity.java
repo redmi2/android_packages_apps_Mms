@@ -4581,6 +4581,7 @@ public class ComposeMessageActivity extends Activity
                         if (mIsRcsEnabled && mRcsShareVcard) {
                             rcsSend();
                         }
+                        updateSendButtonState();
                     }
                 };
                 handler.post(populateWorker);
