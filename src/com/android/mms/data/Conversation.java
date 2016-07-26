@@ -480,6 +480,88 @@ public class Conversation {
     }
 
     /**
+     * Marks all messages in this conversation as read and delay to updates
+     * relevant notifications.  This method returns immediately;
+     * work is dispatched to a background thread. This function should
+     * always be called from the UI thread.
+     */
+    public void markAsReadDelayNotification () {
+        if (DELETEDEBUG) {
+            Contact.logWithTrace(TAG, "markAsReadDelayNotification mMarkAsReadWaiting: "
+            + mMarkAsReadWaiting + " mMarkAsReadBlocked: " + mMarkAsReadBlocked);
+        }
+        if (mMarkAsReadWaiting) {
+            // We've already been asked to mark everything as read, but we're blocked.
+            return;
+        }
+        if (mMarkAsReadBlocked) {
+            // We're blocked so record the fact that we want to mark the messages as read
+            // when we get unblocked.
+            mMarkAsReadWaiting = true;
+            return;
+        }
+        final Uri threadUri = getUri();
+
+        new AsyncTask<Void, Void, Void>() {
+            protected Void doInBackground(Void... none) {
+                if (DELETEDEBUG || Log.isLoggable(LogTag.APP, Log.VERBOSE)) {
+                    LogTag.debug("markAsReadDelayNotification.doInBackground");
+                }
+                // If we have no Uri to mark (as in the case of a conversation that
+                // has not yet made its way to disk), there's nothing to do.
+                if (threadUri != null) {
+                    buildReadContentValues();
+
+                    // Check the read flag first. It's much faster to do a query than
+                    // to do an update. Timing this function show it's about 10x faster to
+                    // do the query compared to the update, even when there's nothing to
+                    // update.
+                    boolean needUpdate = true;
+
+                    Cursor c = mContext.getContentResolver().query(threadUri,
+                            UNREAD_PROJECTION, UNREAD_SELECTION, null, null);
+                    if (c != null) {
+                        try {
+                            needUpdate = c.getCount() > 0;
+                        } finally {
+                            c.close();
+                        }
+                    }
+
+                    if (needUpdate) {
+                        sendReadReport(mContext, mThreadId, PduHeaders.READ_STATUS_READ);
+                        LogTag.debug("markAsReadDelayNotification: update uri: " +
+                                threadUri);
+                        try {
+                            mContext.getContentResolver().update(threadUri,
+                                    sReadContentValues, UNREAD_SELECTION, null);
+                        } catch (SQLiteFullException e) {
+                            Log.e(TAG, "Database is full");
+                            e.printStackTrace();
+                            showStorageFullToast(mContext);
+                            return null;
+                        }
+                        setHasUnreadMessages(false);
+
+                        try {
+                            //Display replied message
+                            Thread.currentThread().sleep(1500);
+                        } catch (final InterruptedException e) {
+                            Log.e(TAG, "markAsReadDelayNotification", e);
+                        }
+
+                        MessagingNotification.blockingUpdateAllNotifications(mContext,
+                                MessagingNotification.THREAD_NONE);
+                    } else {
+                        setHasUnreadMessages(false);
+                    }
+                }
+                return null;
+            }
+        }.execute();
+    }
+
+    /**
      * Call this with false to prevent marking messages as read. The code calls this so
      * the DB queries in markAsRead don't slow down the main query for messages. Once we've
      * queried for all the messages (see ComposeMessageActivity.onQueryComplete), then we

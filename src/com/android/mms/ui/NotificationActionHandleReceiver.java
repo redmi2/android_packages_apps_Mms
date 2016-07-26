@@ -78,10 +78,13 @@ public class NotificationActionHandleReceiver extends BroadcastReceiver {
                 (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (ACTION_NOTIFICATION_MARK_READ.equals(intent.getAction())) {
             long threadId = intent.getLongExtra(MSG_THREAD_ID, Conversation.INVALID_THREAD_ID);
+            boolean isGroup = intent.getBooleanExtra(
+                    NotificationQuickReplyActivity.KEY_IS_GROUP, false);
             Conversation conv = Conversation.get(context, threadId, true);
             if (conv != null) {
-                conv.markAsRead();
-                notificationManager.cancel(MessagingNotification.NOTIFICATION_ID);
+                conv.markAsReadDelayNotification();
+                MessagingNotification.cancelNotificationItem(context,
+                        MessagingNotification.NOTIFICATION_ID, threadId, isGroup);
             }
         } else if (ACTION_NOTIFICATION_DOWNLOAD.equals(intent.getAction())) {
             long msgId = intent.getLongExtra(MSG_ID, -1);
