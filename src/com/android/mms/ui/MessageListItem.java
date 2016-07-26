@@ -842,6 +842,15 @@ public class MessageListItem extends ZoomMessageListItem implements
     private class GestureListener extends GestureDetector.SimpleOnGestureListener {
         @Override
         public boolean onSingleTapConfirmed(MotionEvent e) {
+            // Resend failed message
+            if (mMessageItem != null &&
+                    (mMessageItem.isOutgoingMessage() &&
+                            mMessageItem.isFailedMessage())) {
+                // Assuming the current message is a failed one, reload it into the compose view so
+                // the user can resend it.
+                sendMessage(mMessageItem, MSG_LIST_RESEND);
+                return true;
+            }
             // Check for links. If none, do nothing; if 1, open it; if >1, ask user to pick one
             final URLSpan[] spans = mBodyTextView.getUrls();
             if (spans.length == 0) {
