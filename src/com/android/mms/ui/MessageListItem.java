@@ -430,6 +430,7 @@ public class MessageListItem extends ZoomMessageListItem implements
         }
 
         updateSimIndicatorView(mMessageItem.mSubId);
+        setupOnTouchListener();
 
         switch (mMessageItem.getMmsDownloadStatus()) {
             case DownloadManager.STATE_PRE_DOWNLOADING:
