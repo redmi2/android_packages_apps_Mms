@@ -91,6 +91,8 @@ public class PlayVideoOrPicActivity extends Activity {
     private boolean mHasVideoPaused;
     private int mVideoPosition;
     private int mLastSystemUiVis;
+    private View mRootView;
+    private boolean mFullScreen = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -99,8 +101,19 @@ public class PlayVideoOrPicActivity extends Activity {
             return;
         }
         setContentView(R.layout.mms_play_video_pic);
-
+        mRootView = findViewById(R.id.mms_play_video_pic);
         mImage = (ImageView) this.findViewById(R.id.mms_play_image);
+        mRootView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View arg0) {
+                if (mFullScreen) {
+                    setImmersiveMode(false);
+                } else {
+                    setImmersiveMode(true);
+                }
+
+            }
+        });
         mVideo = (VideoView) this.findViewById(R.id.mms_play_video);
         mVideoControllerLayout = (ViewGroup) findViewById(R.id.video_controller_layout);
         mProgressBar = (VideoProgressBar) this.findViewById(R.id.video_progress);
@@ -119,7 +132,6 @@ public class PlayVideoOrPicActivity extends Activity {
                 }
             }
         });
-
         getActionBar().setDisplayHomeAsUpEnabled(true);
         getActionBar().setBackgroundDrawable(new ColorDrawable(Color.BLACK));
 
@@ -177,6 +189,35 @@ public class PlayVideoOrPicActivity extends Activity {
         if (mType == WorkingMessage.VIDEO && mHasVideoPaused) {
             mHasVideoPaused = false;
             mVideo.seekTo(mVideoPosition);
+        }
+    }
+
+    private void setImmersiveMode(boolean enable) {
+        int flags = 0;
+        if (enable) {
+            flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE;
+
+        } else {
+            flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+
+        }
+        mRootView.setSystemUiVisibility(flags);
+        mFullScreen = enable;
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (mFullScreen) {
+            setImmersiveMode(false);
+        } else {
+            super.onBackPressed();
         }
     }
 
