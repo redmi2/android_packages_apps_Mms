@@ -3313,7 +3313,9 @@ public class ComposeMessageActivity extends Activity
         if (intent != null) {
             currentClass = intent.getStringExtra(EXTRA_START_COMPOSE_FROM);
         }
-        if (NotificationConversationList.class.getSimpleName().equals(currentClass)) {
+        if(SearchConversationActivity.class.getSimpleName().equals(currentClass)){
+            super.onBackPressed();
+        } else if (NotificationConversationList.class.getSimpleName().equals(currentClass)) {
             startActivity(new Intent(this, NotificationConversationList.class));
         } else {
             startActivity(new Intent(this, ConversationList.class));

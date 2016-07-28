@@ -40,4 +40,11 @@ All Rights Reserved. -->
     <dimen name="quick_reply_view_message_margin_start">15dip</dimen>
 
     <dimen name="full_screen_view_message_padding">24dip</dimen>
+
+    <dimen name="search_box_icon_size">24dp</dimen>
+    <dimen name="search_box_close_icon_size">56dp</dimen>
+    <dimen name="search_box_close_icon_padding">16dp</dimen>
+    <dimen name="search_box_navigation_icon_margin">0dp</dimen>
+    <dimen name="search_box_text_left_margin">15dp</dimen>
+    <dimen name="search_text_size">16sp</dimen>
 </resources>

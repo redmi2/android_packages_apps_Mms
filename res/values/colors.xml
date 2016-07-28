@@ -146,4 +146,7 @@
     <color name="notification_multi_icon_background_color">#0091ea</color>
     <color name="notification_accent_color">#00a0e9</color>
 
+    <color name="searchbox_background_color">#ffffff</color>
+    <color name="searchbox_input_color">#db000000</color>
+    <color name="searchbox_hint_color">#42000000</color>
 </resources>

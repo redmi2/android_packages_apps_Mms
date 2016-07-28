@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.messaging.ui;
+package com.android.mms.ui;
 
 import android.content.Context;
 import android.database.ContentObserver;
