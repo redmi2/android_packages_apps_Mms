@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014, 2016, The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -64,7 +64,8 @@ public class AttachmentPagerAdapter extends PagerAdapter {
     public static final int ADD_SLIDESHOW        = 7;
     public static final int ADD_CONTACT_AS_TEXT  = 8;
     public static final int ADD_CONTACT_AS_VCARD = 9;
-    public static final int ADD_MAP              = 10;
+    public static final int ADD_TEMPLATE         = 10;
+    public static final int ADD_MAP              = 11;
 
     private static final String GRID_ITEM_IMAGE = "grid_item_image";
     private static final String GRID_ITEM_TEXT  = "grid_item_text";
@@ -203,6 +204,9 @@ public class AttachmentPagerAdapter extends PagerAdapter {
                     (!mIsReplace && mHasAttachment) ? R.drawable.ic_attach_vcard_disable
                             : R.drawable.ic_attach_vcard_holo_light));
         }
+        list.add(new IconListItem(mContext.getString(R.string.import_message_template),
+                R.drawable.ic_attach_template_holo_light));
+
         if (isRcsAttachment) {
             list.add(new IconListItem(mContext.getString(R.string.attach_map),
                     R.drawable.rcs_caiyun_sharefile));
