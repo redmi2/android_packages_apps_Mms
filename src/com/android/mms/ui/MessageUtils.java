@@ -350,7 +350,7 @@ public class MessageUtils {
     // Filter numbers start with 106575, 1069, and numbers of carrier,
     // bank and public service such as 12306.
     private static Pattern sNotificationNumberPattern = Pattern.compile(
-            "^1065(\\d)*$|^1069(\\d)*$|^100(\\d)*$|^955(\\d)*$|^12306$");
+            "^1065(\\d)*$|^1069(\\d)*$|^100(\\d)*$|^95[15](\\d)*$|^12306$");
 
     private static final String NOTIFICATION_MSG_FLAG = "1";
 
