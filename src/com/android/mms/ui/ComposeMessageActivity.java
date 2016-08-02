@@ -7830,6 +7830,7 @@ public class ComposeMessageActivity extends Activity
 
             boolean noRcsSelected = mRcsSelected == 0;
             boolean noRcsMediaSelected = mRcsMediaSelected == 0;
+            mode.getMenu().findItem(R.id.lock).setVisible(false);
             if (checkedCount > 1) {
                 // no detail
                 mode.getMenu().findItem(R.id.detail).setVisible(false);
@@ -7843,6 +7844,7 @@ public class ComposeMessageActivity extends Activity
                 mode.getMenu().findItem(R.id.copy_text).setVisible(false);
 
                 // all locked show unlock, other wise show lock.
+                /*
                 if (mUnlockedCount == 0) {
                     mode.getMenu()
                             .findItem(R.id.lock)
@@ -7854,7 +7856,7 @@ public class ComposeMessageActivity extends Activity
                             .findItem(R.id.lock)
                             .setTitle(
                                     getContext().getString(R.string.menu_lock));
-                }
+                }*/
 
                 if (mMmsSelected > 0 || (mIsRcsEnabled && !noRcsMediaSelected)) {
                     mode.getMenu().findItem(R.id.forward).setVisible(false);
@@ -7876,6 +7878,7 @@ public class ComposeMessageActivity extends Activity
                 } else {
                     mode.getMenu().findItem(R.id.save_attachment).setVisible(mMmsSelected > 0);
                 }
+                /*
                 if (mUnlockedCount == 0) {
                     mode.getMenu()
                             .findItem(R.id.lock)
@@ -7887,7 +7890,7 @@ public class ComposeMessageActivity extends Activity
                             .findItem(R.id.lock)
                             .setTitle(
                                     getContext().getString(R.string.menu_lock));
-                }
+                }*/
 
                 mode.getMenu().findItem(R.id.resend).setVisible(isFailedMessage(position));
                 if (mIsRcsEnabled) {
