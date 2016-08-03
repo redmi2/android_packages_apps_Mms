@@ -129,6 +129,9 @@
         android:title="@string/pref_title_sms_validity_period" />
 
     <Preference
+        android:key="pref_key_sms_center_number_no_multi"
+        android:title="@string/pref_title_center_number" />
+    <Preference
         android:key="pref_key_sms_center_number"
         android:title="@string/pref_title_center_number" />
     <Preference android:key="0" />

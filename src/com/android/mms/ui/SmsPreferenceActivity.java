@@ -89,6 +89,8 @@ public class SmsPreferenceActivity extends PreferenceActivity {
 
     public static final String SMSC_CENTER_NUMBER = "pref_key_msm_center_number";
 
+    public static final String SMSC_CENTER_NUMBER_SS ="pref_key_sms_center_number_no_multi";
+
     private static String SMS_CENTER_NUMBER_SIM1 = "0";
 
     private static String SMS_CENTER_NUMBER_SIM2 = "1";
@@ -104,6 +106,7 @@ public class SmsPreferenceActivity extends PreferenceActivity {
     private Preference mSmsDeliveryReportPref;
     private Preference mSmsDeliveryReportNoMultiPref;
     private Preference mSmsCenterNumber;
+    private Preference mSmsCenterNumberSS;
     private Preference mSmsCenterNumberSim1;
     private Preference mSmsCenterNumberSim2;
     private SwitchPreference mSmsDeliveryReportSim1Pref;
@@ -175,6 +178,7 @@ public class SmsPreferenceActivity extends PreferenceActivity {
                 findPreference("pref_key_sms_validity_period_no_multi");
         mWapPushPref = (SwitchPreference) findPreference("pref_key_enable_wap_push");
         mSmsCenterNumber = findPreference("pref_key_sms_center_number");
+        mSmsCenterNumberSS = findPreference(SMSC_CENTER_NUMBER_SS);
         mSmsCenterNumberSim1 = findPreference(SMS_CENTER_NUMBER_SIM1);
         mSmsCenterNumberSim2 = findPreference(SMS_CENTER_NUMBER_SIM2);
         mSmsStorePrefSingleSim = (ListPreference) findPreference("pref_key_sms_store_single");
@@ -183,7 +187,6 @@ public class SmsPreferenceActivity extends PreferenceActivity {
         mSmsStorePref2 = (ListPreference) findPreference("pref_key_sms_store_card2");
         setSmsValidityPeriodPref();
         setMessagePriorityPref();
-        prefSmsSettings.removePreference(mSmsCenterNumber);
         showSmscPref();
         if (MessageUtils.isMultiSimEnabledMms()) {
             prefSmsSettings.removePreference(mManageSimNoMultiPref);
@@ -342,38 +345,62 @@ public class SmsPreferenceActivity extends PreferenceActivity {
         mSmsSignatureEditPref.setEnabled(isChecked);
     }
 
-    private void showSmscPref() {
-        int count = TelephonyManager.getDefault().getPhoneCount();
-        for (int i = 0; i < count; i++) {
-            final Preference pref = findPreference(String.valueOf(i));
-            pref.setTitle(getSMSCDialogTitle(count, i));
-            if (getResources().getBoolean(R.bool.show_edit_smsc)) {
-                pref.setOnPreferenceClickListener(null);
-            } else {
-                pref.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-                    @Override
-                    public boolean onPreferenceClick(Preference preference) {
-                        MyEditDialogFragment dialog = MyEditDialogFragment
-                                .newInstance(SmsPreferenceActivity.this,
-                                        preference.getTitle(),
-                                        preference.getSummary(),
-                                        Integer.valueOf(preference.getKey()));
-                        dialog.show(getFragmentManager(), "dialog");
-                        return true;
-                    }
-                });
+    private OnPreferenceClickListener getSMSCPrefOnClickListener(final int subId) {
+        return  new OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                MyEditDialogFragment dialog = MyEditDialogFragment
+                        .newInstance(SmsPreferenceActivity.this,
+                                preference.getTitle(),
+                                preference.getSummary(),
+                                subId);
+                dialog.show(getFragmentManager(), "dialog");
+                return true;
             }
+        };
+    }
 
-            mSmscPrefList.add(pref);
-            boolean isCDMA = false;
-            int subId[] = SubscriptionManager.getSubId(i);
-            if (subId != null && subId.length != 0) {
-                isCDMA = MessageUtils.isCDMAPhone(subId[0]);
-            }
-            if (!isCDMA && !isAirPlaneModeOn() && MessageUtils.hasActivatedIccCard(i)) {
-                prefSmsSettings.addPreference(pref);
+    private void showSmscPref() {
+        if (!MessageUtils.isMultiSimEnabledMms()) {
+            //remove all multi
+            prefSmsSettings.removePreference(mSmsCenterNumber);
+            prefSmsSettings.removePreference(mSmsCenterNumberSim1);
+            prefSmsSettings.removePreference(mSmsCenterNumberSim2);
+            if (getResources().getBoolean(R.bool.show_edit_smsc)) {
+                mSmsCenterNumberSS.setOnPreferenceClickListener(null);
             } else {
-                prefSmsSettings.removePreference(pref);
+                mSmsCenterNumberSS.setOnPreferenceClickListener(getSMSCPrefOnClickListener(0));
+            }
+            boolean  isCDMA = MessageUtils.isCDMAPhone(0);
+            if (!isCDMA && !isAirPlaneModeOn() && MessageUtils.isIccCardActivated()) {
+                mSmsCenterNumberSS.setEnabled(true);
+            } else {
+                mSmsCenterNumberSS.setEnabled(false);
+            }
+        } else {
+            prefSmsSettings.removePreference(mSmsCenterNumberSS);
+            prefSmsSettings.removePreference(mSmsCenterNumber);
+            int count = TelephonyManager.getDefault().getPhoneCount();
+            for (int i = 0; i < count; i++) {
+                final Preference pref = findPreference(String.valueOf(i));
+                pref.setTitle(getSMSCDialogTitle(count, i));
+                if (getResources().getBoolean(R.bool.show_edit_smsc)) {
+                    pref.setOnPreferenceClickListener(null);
+                } else {
+                   pref.setOnPreferenceClickListener(getSMSCPrefOnClickListener(Integer.valueOf(pref.getKey())));
+                }
+
+                mSmscPrefList.add(pref);
+                boolean isCDMA = false;
+                int subId[] = SubscriptionManager.getSubId(i);
+                if (subId != null && subId.length != 0) {
+                    isCDMA = MessageUtils.isCDMAPhone(subId[0]);
+                }
+                if (!isCDMA && !isAirPlaneModeOn() && MessageUtils.hasActivatedIccCard(i)) {
+                    prefSmsSettings.addPreference(pref);
+                } else {
+                    prefSmsSettings.removePreference(pref);
+                }
             }
         }
 
@@ -387,56 +414,82 @@ public class SmsPreferenceActivity extends PreferenceActivity {
     }
 
     private void updateSMSCPref() {
-        if (mSmscPrefList == null || mSmscPrefList.size() == 0) {
-            return;
-        }
-        int count = TelephonyManager.getDefault().getPhoneCount();
-        int iccCardActivited = 0;
-        for (int i = 0; i < count; i++) {
-            boolean isCDMA = false;
-            int subId[] = SubscriptionManager.getSubId(i);
-            if (subId != null && subId.length != 0) {
-                isCDMA = MessageUtils.isCDMAPhone(subId[0]);
+        if (!MessageUtils.isMultiSimEnabledMms()) {
+            boolean isCDMA =  MessageUtils.isCDMAPhone(0);
+            if (!isCDMA && !isAirPlaneModeOn() && MessageUtils.isIccCardActivated()) {
+                mSmsCenterNumberSS.setEnabled(true);
+                setSMSCPrefState(0, true);
+            } else {
+                mSmsCenterNumberSS.setEnabled(false);
             }
-            if (!isCDMA && !isAirPlaneModeOn()
-                    && MessageUtils.hasActivatedIccCard(i)) {
-                iccCardActivited++;
-            }
-            setSMSCPrefState(i, !isCDMA && !isAirPlaneModeOn()
-                    && MessageUtils.hasActivatedIccCard(i));
-        }
-        if (iccCardActivited == 0) {
-            prefSmsSettings.addPreference(mSmsCenterNumber);
-            mSmsCenterNumber.setEnabled(false);
-        } else if (iccCardActivited == 2) {
-            prefSmsSettings.addPreference(mSmsCenterNumber);
-            prefSmsSettings.removePreference(mSmsCenterNumberSim1);
-            prefSmsSettings.removePreference(mSmsCenterNumberSim2);
-            mSmsCenterNumber.setEnabled(true);
-        } else {
-            prefSmsSettings.removePreference(mSmsCenterNumber);
-        }
 
+        } else {
+            if (mSmscPrefList == null || mSmscPrefList.size() == 0) {
+                return;
+            }
+            int count = TelephonyManager.getDefault().getPhoneCount();
+            int iccCardActivited = 0;
+            for (int i = 0; i < count; i++) {
+                boolean isCDMA = false;
+                int subId[] = SubscriptionManager.getSubId(i);
+                if (subId != null && subId.length != 0) {
+                    isCDMA = MessageUtils.isCDMAPhone(subId[0]);
+                }
+                if (!isCDMA && !isAirPlaneModeOn()
+                        && MessageUtils.hasActivatedIccCard(i)) {
+                    iccCardActivited++;
+                }
+                setSMSCPrefState(i, !isCDMA && !isAirPlaneModeOn()
+                        && MessageUtils.hasActivatedIccCard(i));
+            }
+            if (iccCardActivited == 0) {
+                prefSmsSettings.addPreference(mSmsCenterNumber);
+                mSmsCenterNumber.setEnabled(false);
+            } else if (iccCardActivited == 2) {
+                prefSmsSettings.addPreference(mSmsCenterNumber);
+                prefSmsSettings.removePreference(mSmsCenterNumberSim1);
+                prefSmsSettings.removePreference(mSmsCenterNumberSim2);
+                mSmsCenterNumber.setEnabled(true);
+            } else {
+                prefSmsSettings.removePreference(mSmsCenterNumber);
+            }
+        }
     }
 
     private void setSMSCPrefState(int id, boolean prefEnabled) {
         // We need update the preference summary.
-        if (prefEnabled) {
-            Log.d(TAG, "get SMSC from sub= " + id);
-            if (getResources().getBoolean(R.bool.def_enable_reset_smsc)) {
-                updateSmscFromPreference(id);
-            } else {
-                final Message callback = mHandler
-                        .obtainMessage(EVENT_GET_SMSC_DONE);
-                Bundle userParams = new Bundle();
-                userParams.putInt(PhoneConstants.SLOT_KEY, id);
-                callback.obj = userParams;
-                MessageUtils.getSmscFromSub(this, id, callback);
+        if (!MessageUtils.isMultiSimEnabledMms()) {
+            if (prefEnabled) {
+                if (getResources().getBoolean(R.bool.def_enable_reset_smsc)) {
+                    updateSmscFromPreference(id);
+                } else {
+                    final Message callback = mHandler
+                            .obtainMessage(EVENT_GET_SMSC_DONE);
+                    Bundle userParams = new Bundle();
+                    userParams.putInt(PhoneConstants.SLOT_KEY, id);
+                    callback.obj = userParams;
+                    MessageUtils.getSmscFromSub(this, id, callback);
+                }
             }
         } else {
-            mSmscPrefList.get(id).setSummary(null);
+            if (prefEnabled) {
+                Log.d(TAG, "get SMSC from sub= " + id);
+                if (getResources().getBoolean(R.bool.def_enable_reset_smsc)) {
+                    updateSmscFromPreference(id);
+                } else {
+                    final Message callback = mHandler
+                            .obtainMessage(EVENT_GET_SMSC_DONE);
+                    Bundle userParams = new Bundle();
+                    userParams.putInt(PhoneConstants.SLOT_KEY, id);
+                    callback.obj = userParams;
+                    MessageUtils.getSmscFromSub(this, id, callback);
+                }
+            } else {
+                mSmscPrefList.get(id).setSummary(null);
+            }
+            mSmscPrefList.get(id).setEnabled(prefEnabled);
+
         }
-        mSmscPrefList.get(id).setEnabled(prefEnabled);
     }
 
     private void updateSmscFromPreference(int sub) {
@@ -444,8 +497,12 @@ public class SmsPreferenceActivity extends PreferenceActivity {
                 .getString(SMSC_DEFAULT, ""/*
                                             * SmsManager.getDefault(). getSmscAddressFromIcc()
                                             */);
-        if (sub != -1) {
-            mSmscPrefList.get(sub).setSummary(smsc);
+        if (!MessageUtils.isMultiSimEnabledMms()) {
+            mSmsCenterNumberSS.setSummary(smsc);
+        } else {
+            if (sub != -1) {
+                mSmscPrefList.get(sub).setSummary(smsc);
+            }
         }
     }
 
@@ -740,7 +797,11 @@ public class SmsPreferenceActivity extends PreferenceActivity {
                 }
                 Log.d(TAG, "Update SMSC: sub= " + sub + " SMSC= " + summary);
                 int end = summary.lastIndexOf("\"");
-                mSmscPrefList.get(sub).setSummary(summary.substring(1, end));
+                if (!MessageUtils.isMultiSimEnabledMms()) {
+                    mSmsCenterNumberSS.setSummary(summary.substring(1, end));
+                } else {
+                    mSmscPrefList.get(sub).setSummary(summary.substring(1, end));
+                }
             }
         }
     }

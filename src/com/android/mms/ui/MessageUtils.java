@@ -2007,6 +2007,12 @@ public class MessageUtils {
         return (simState != TelephonyManager.SIM_STATE_ABSENT)
                     && (simState != TelephonyManager.SIM_STATE_UNKNOWN);
     }
+    public static boolean isIccCardActivated() {
+        TelephonyManager tm = TelephonyManager.getDefault();
+        int simState = tm.getSimState();
+        return (simState != TelephonyManager.SIM_STATE_ABSENT)
+                    && (simState != TelephonyManager.SIM_STATE_UNKNOWN);
+    }
 
     public static boolean hasActivatedIccCard(int subscription) {
         return TelephonyManager.getDefault().isMultiSimEnabled() ?
