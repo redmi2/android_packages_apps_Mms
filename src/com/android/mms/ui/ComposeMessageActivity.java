@@ -7968,6 +7968,10 @@ public class ComposeMessageActivity extends Activity
                 long id, boolean checked) {
             logMultiChoice("onItemCheckedStateChanged... position=" + position
                     + ", checked=" + checked);
+            if (mMsgListAdapter == null || mMsgListAdapter.getCount() <= 0) {
+                logMultiChoice("onItemCheckedStateChanged list not ready!");
+                return;
+            }
 
             mCheckedCount = getListView().getCheckedItemCount();
             updateStatics(position, checked);
