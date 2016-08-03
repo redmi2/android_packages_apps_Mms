@@ -4031,6 +4031,9 @@ public class ComposeMessageActivity extends Activity
                             REQUEST_CODE_ATTACH_ADD_CONTACT_VCARD);
                 }
                 break;
+            case AttachmentPagerAdapter.ADD_TEMPLATE:
+                showDialog(DIALOG_IMPORT_TEMPLATE);
+                break;
             case AttachmentPagerAdapter.ADD_MAP:
                 if (mIsRcsEnabled && mWorkingMessage.requiresMms()) {
                     toast(R.string.mms_does_not_support_location_sharing);
