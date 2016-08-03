@@ -379,6 +379,11 @@ public class MessageUtils {
     public static final int COLUMN_DELIVERY_STATUS     = 0;
     public static final int COLUMN_READ_STATUS         = 1;
 
+    private static final String MMS_SELECTION =
+                Mms.MESSAGE_TYPE + " = " + PduHeaders.MESSAGE_TYPE_SEND_REQ + " OR " +
+                Mms.MESSAGE_TYPE + " = " + PduHeaders.MESSAGE_TYPE_RETRIEVE_CONF + " OR " +
+                Mms.MESSAGE_TYPE + " = " + PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND;
+
     /* Begin add for RCS */
     private static final int SELECT_LOCAL = 2;
     public static final String EXTRA_KEY_NEW_MESSAGE_UNREAD = "unread";
@@ -2548,48 +2553,65 @@ public class MessageUtils {
         return MMS_DATA_DATA_DIR;
     }
 
-    public static long getMmsUsed(Context mContext) {
-        int mmsCount = 0;
-        int smsCount = 0;
-        long mmsfileSize = 0;
-        Uri MMS_URI = Uri.parse("content://mms");
-        Uri SMS_URI = Uri.parse("content://sms");
-        Cursor cursor = SqliteWrapper.query(mContext, mContext.getContentResolver(), MMS_URI,
-                new String[] {
-                    "m_size"
-                }, null, null, null);
+    private static class MessageInfo {
+        private int count = 0;
+        private long size = 0;
+    }
 
-        if (cursor != null) {
+    private static MessageInfo getSmsUsed(Context mContext) {
+        int count = 0;
+        long size = 0;
+        Cursor cursor = SqliteWrapper.query(mContext, mContext.getContentResolver(),
+                Sms.CONTENT_URI,
+                new String[] {
+                        "body"
+                }, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            count = cursor.getCount();
             try {
-                mmsCount = cursor.getCount();
-                if (mmsCount > 0) {
-                    cursor.moveToPosition(-1);
-                    while (cursor.moveToNext()) {
-                        mmsfileSize += (cursor.getInt(0) == 0 ? DEFAULT_MMS_SIZE
-                                * KILOBYTE_SIZE : cursor.getInt(0));
+                while (cursor.moveToNext()) {
+                    String body = cursor.getString(0);
+                    if (body != null) {
+                        size += body.getBytes().length;
                     }
-                } else {
-                    return 0;
                 }
             } finally {
                 cursor.close();
             }
         }
-        cursor = SqliteWrapper.query(mContext, mContext.getContentResolver(), SMS_URI,
+        MessageInfo msgInfo = new MessageInfo();
+        msgInfo.count = count;
+        msgInfo.size = size;
+        Log.d(TAG, "SMS count = " + count + " size = " + size);
+        return msgInfo;
+    }
+
+    private static MessageInfo getMmsUsed(Context mContext) {
+        int mmsCount = 0;
+        long mmsfileSize = 0;
+        Cursor cursor = SqliteWrapper.query(mContext, mContext.getContentResolver(),
+                Telephony.Mms.CONTENT_URI,
                 new String[] {
-                    "_id"
-                }, null, null, null);
-        if (cursor != null) {
+                        "m_size"
+                }, MMS_SELECTION, null, null);
+
+        if (cursor != null && cursor.moveToFirst()) {
+            mmsCount = cursor.getCount();
             try {
-                smsCount = cursor.getCount();
+                while (cursor.moveToNext()) {
+                    mmsfileSize += (cursor.getInt(0) == 0 ? DEFAULT_MMS_SIZE
+                            * KILOBYTE_SIZE : cursor.getInt(0));
+                }
             } finally {
                 cursor.close();
             }
         }
-
-        Log.v(TAG, "mmsUsed =" + mmsfileSize);
+        Log.v(TAG, "MMS count = " + mmsCount + " size = " + mmsfileSize);
+        MessageInfo msgInfo = new MessageInfo();
+        msgInfo.count = mmsCount;
         long mmsMinSize = mmsCount * MIN_MMS_SIZE * KILOBYTE_SIZE;
-        return (mmsfileSize < mmsMinSize ? mmsMinSize : mmsfileSize);
+        msgInfo.size = (mmsfileSize < mmsMinSize ? mmsMinSize : mmsfileSize);
+        return msgInfo;
     }
 
     public static long getStoreAll() {
@@ -2639,7 +2661,7 @@ public class MessageUtils {
         int msgCount = 0;
 
         Cursor cursor = SqliteWrapper.query(context, context.getContentResolver(),
-                MESSAGES_COUNT_URI, null, null, null, null);
+                Sms.CONTENT_URI, null, null, null, null);
 
         if (cursor != null) {
             try {
@@ -2787,14 +2809,13 @@ public class MessageUtils {
         protected StringBuilder doInBackground(String... params) {
             StringBuilder memoryStatus = new StringBuilder();
             memoryStatus.append(mContext.getString(R.string.sms_phone_used));
-            memoryStatus.append(" " + getSmsMessageCount(mContext) + "\n");
-            memoryStatus.append(mContext.getString(R.string.sms_phone_capacity));
-            memoryStatus.append(" " + mContext.getResources()
-                    .getInteger(R.integer.max_sms_message_count) + "\n\n");
+            MessageInfo smsInfo = getSmsUsed(mContext);
+            memoryStatus.append(" " + smsInfo.count + "\n");
             memoryStatus.append(mContext.getString(R.string.mms_phone_used));
-            memoryStatus.append(" " + formatMemorySize(getMmsUsed(mContext)) + "\n");
-            memoryStatus.append(mContext.getString(R.string.mms_phone_capacity));
-            memoryStatus.append(" " + formatMemorySize(getStoreAll()) + "\n");
+            MessageInfo mmsInfo = getMmsUsed(mContext);
+            memoryStatus.append(" " + mmsInfo.count + "\n");
+            memoryStatus.append(mContext.getString(R.string.total_memory_used));
+            memoryStatus.append(" " + formatMemorySize(smsInfo.size + mmsInfo.size) + "\n");
             return memoryStatus;
         }
 
