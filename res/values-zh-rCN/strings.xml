@@ -578,6 +578,7 @@
     <string name="sms_phone_capacity">"短信容量:"</string>
     <string name="mms_phone_used">"已用彩信:"</string>
     <string name="mms_phone_capacity">"彩信容量:"</string>
+    <string name="total_memory_used">"已使用容量:"</string>
 
     <!-- ConfigurationClient -->
     <string name="omacp_configuration">OMACP配置</string>

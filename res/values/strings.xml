@@ -991,7 +991,7 @@
     <string name="sms_phone_capacity">Sms Capacity:</string>
     <string name="mms_phone_used">Mms Used:</string>
     <string name="mms_phone_capacity">Mms Capacity:</string>
-
+    <string name="total_memory_used">Total Memory Used:</string>
     <string name="sub">SUB</string>
 
     <!-- Settings item description for SMS Validity period -->
