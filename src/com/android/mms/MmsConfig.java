@@ -126,7 +126,7 @@ public class MmsConfig {
     // will be sent as a single MMS message with multiple "TO" fields set for each recipient.
     // If mEnableGroupMms is false, the group MMS setting/preference will be hidden in the settings
     // activity.
-    private static boolean mEnableGroupMms = true;
+    private static boolean mEnableGroupMms = false;
 
     private static int MAX_SLIDE_NUM = 10;
 
