@@ -2722,9 +2722,12 @@ public class ComposeMessageActivity extends Activity
         // Note that originalThreadId might be zero but if this is a draft and we save the
         // draft, ensureThreadId gets called async from WorkingMessage.asyncUpdateDraftSmsMessage
         // the thread will get a threadId behind the UI thread's back.
-        long originalThreadId = mConversation.getThreadId();
         long threadId = intent.getLongExtra(THREAD_ID, 0);
         Uri intentUri = intent.getData();
+        if (null == mConversation) {
+            mConversation = Conversation.get(this, intentUri, false);
+        }
+        long originalThreadId = mConversation.getThreadId();
         boolean sameThread = false;
         if (threadId > 0) {
             conversation = Conversation.get(this, threadId, false);
@@ -2733,7 +2736,9 @@ public class ComposeMessageActivity extends Activity
                 // We've got a draft. Make sure the working recipients are synched
                 // to the conversation so when we compare conversations later in this function,
                 // the compare will work.
-                mWorkingMessage.syncWorkingRecipients();
+                if (null != mWorkingMessage) {
+                    mWorkingMessage.syncWorkingRecipients();
+                }
             }
             // Get the "real" conversation based on the intentUri. The intentUri might specify
             // the conversation by a phone number or by a thread id. We'll typically get a threadId

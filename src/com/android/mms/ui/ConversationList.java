@@ -746,7 +746,12 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
 
     public void startAsyncQuery() {
         try {
-            mEmptyView.setText(R.string.loading_conversations);
+            if (null != mEmptyView) {
+                mEmptyView.setText(R.string.loading_conversations);
+            }
+            if (null == mQueryHandler) {
+                mQueryHandler = new ThreadListQueryHandler(getContentResolver());
+            }
 
             Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN, NOT_OBSOLETE);
             SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
