@@ -195,7 +195,7 @@
 
                 <TextView
                     android:id="@+id/sim_message_address"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingTop="@dimen/message_item_text_padding_left_right"
                     android:paddingStart="@dimen/message_item_text_padding_left_right"
