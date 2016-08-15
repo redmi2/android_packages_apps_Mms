@@ -378,12 +378,7 @@ public class MessageItem {
      }
 
     private String formatTimeStamp(Context context, boolean isSent, long timestamp) {
-        if (context.getResources().getBoolean(R.bool.config_display_sent_time)) {
-            return MessageUtils.formatTimeStampString(context, timestamp);
-        } else {
-            return String.format(context.getString(R.string.sent_on),
-                    MessageUtils.formatTimeStampString(context, timestamp));
-        }
+        return MessageUtils.formatTimeStampString(context, timestamp);
     }
 
     public boolean isCdmaInboxMessage() {
