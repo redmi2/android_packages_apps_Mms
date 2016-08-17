@@ -513,7 +513,7 @@ public class ComposeMessageActivity extends Activity
 
     private WorkingMessage mWorkingMessage;         // The message currently being composed.
 
-    private AlertDialog mInvalidRecipientDialog;
+    private AlertDialog mInvalidRecipientDialog, mMsgDetailDialog;
 
     private boolean mWaitingForSubActivity;
     private boolean mInAsyncAddAttathProcess = false;
@@ -975,7 +975,7 @@ public class ComposeMessageActivity extends Activity
         }
         String messageDetails = MessageUtils.getMessageDetails(
                 ComposeMessageActivity.this, cursor, messageSize);
-        new AlertDialog.Builder(ComposeMessageActivity.this)
+        mMsgDetailDialog = new AlertDialog.Builder(ComposeMessageActivity.this)
                 .setTitle(R.string.message_details_title)
                 .setMessage(messageDetails)
                 .setCancelable(true)
@@ -3132,6 +3132,14 @@ public class ComposeMessageActivity extends Activity
         if (mMsgListAdapter != null) {
             mMsgListAdapter.changeCursor(null);
             mMsgListAdapter.cancelBackgroundLoading();
+        }
+        if (mInvalidRecipientDialog != null && mInvalidRecipientDialog.isShowing()) {
+            mInvalidRecipientDialog.dismiss();
+            mInvalidRecipientDialog = null;
+        }
+        if (mMsgDetailDialog != null && mMsgDetailDialog.isShowing()) {
+            mMsgDetailDialog.dismiss();
+            mMsgDetailDialog = null;
         }
 
         super.onDestroy();
