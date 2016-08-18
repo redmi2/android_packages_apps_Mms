@@ -1317,7 +1317,17 @@ public class ComposeMessageActivity extends Activity
                     public void onClick(View v) {
                         int subId = SubscriptionManager.getSubId(phoneId)[0];
                         LogTag.debugD("LaunchMsimDialog: subscription selected " + subId);
-                        processMsimSendMessage(subId, bCheckEcmMode);
+                        if (!SubscriptionManager.from(getApplicationContext())
+                                .isActiveSubId(subId)) {
+                            Toast.makeText(ComposeMessageActivity.this,
+                                    getString(R.string.send_via_invalid_sub),
+                                    Toast.LENGTH_LONG).show();
+                            if (mMsimDialog != null) {
+                                mMsimDialog.dismiss();
+                            }
+                        } else {
+                            processMsimSendMessage(subId, bCheckEcmMode);
+                        }
                 }
             });
         }
