@@ -1045,6 +1045,23 @@ public class Conversation {
     }
 
     /**
+     * Start a query for in the database on the specified AsyncQueryHandler with the specified
+     * "where" clause.
+     *
+     * @param handler   An AsyncQueryHandler that will receive onQueryComplete
+     *                  upon completion of the query
+     * @param token     The token that will be passed to onQueryComplete
+     * @param selection A where clause (can be null) to select particular conv items.
+     * @param uri       uri for query
+     */
+
+    public static void startConversationQuery(AsyncQueryHandler handler, int token,
+            String selection, Uri uri) {
+        handler.startQuery(token, null, uri,
+                DEFAULT_ALL_THREADS_PROJECTION, selection, null, "date DESC");
+    }
+
+    /**
      * Start a delete of the conversation with the specified thread ID.
      *
      * @param handler An AsyncQueryHandler that will receive onDeleteComplete

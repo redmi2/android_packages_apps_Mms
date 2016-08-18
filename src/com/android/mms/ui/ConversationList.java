@@ -151,8 +151,6 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     private Handler mHandler;
     private boolean mDoOnceAfterFirstQuery;
     private TextView mUnreadConvCount;
-    private MenuItem mSearchItem;
-    private SearchView mSearchView;
     private View mSmsPromoBannerView;
     private int mSavedFirstVisiblePosition = AdapterView.INVALID_POSITION;
     private int mSavedFirstItemOffset;
@@ -748,7 +746,12 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
 
     public void startAsyncQuery() {
         try {
-            mEmptyView.setText(R.string.loading_conversations);
+            if (null != mEmptyView) {
+                mEmptyView.setText(R.string.loading_conversations);
+            }
+            if (null == mQueryHandler) {
+                mQueryHandler = new ThreadListQueryHandler(getContentResolver());
+            }
 
             Conversation.startQuery(mQueryHandler, THREAD_LIST_QUERY_TOKEN, NOT_OBSOLETE);
             SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
@@ -775,23 +778,6 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         }
     }
 
-    SearchView.OnQueryTextListener mQueryTextListener = new SearchView.OnQueryTextListener() {
-        @Override
-        public boolean onQueryTextSubmit(String query) {
-            Intent intent = new Intent();
-            intent.setClass(ConversationList.this, SearchActivity.class);
-            intent.putExtra(SearchManager.QUERY, query);
-            startActivity(intent);
-            mSearchItem.collapseActionView();
-            return true;
-        }
-
-        @Override
-        public boolean onQueryTextChange(String newText) {
-            return false;
-        }
-    };
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         //In folder mode, it will jump to MailBoxMessageList,finish current
@@ -800,21 +786,6 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             return true;
         }
         getMenuInflater().inflate(R.menu.conversation_list_menu, menu);
-
-        if (!getResources().getBoolean(R.bool.config_classify_search)) {
-            mSearchItem = menu.findItem(R.id.search);
-            mSearchItem.setActionView(new SearchView(getApplicationContext()));
-            mSearchView = (SearchView) mSearchItem.getActionView();
-            mSearchView.setOnQueryTextListener(mQueryTextListener);
-            mSearchView.setQueryHint(getString(R.string.search_hint));
-            mSearchView.setIconifiedByDefault(true);
-            SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-
-            if (searchManager != null) {
-                SearchableInfo info = searchManager.getSearchableInfo(this.getComponentName());
-                mSearchView.setSearchableInfo(info);
-            }
-        }
 
         MenuItem item = menu.findItem(R.id.action_change_to_conversation_mode);
         if (item != null) {
@@ -896,10 +867,6 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             // block search entirely (by simply returning false).
             return false;
         }
-
-        if (mSearchItem != null) {
-            mSearchItem.expandActionView();
-        }
         return true;
     }
 
@@ -907,11 +874,8 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
             case R.id.search:
-                if (getResources().getBoolean(R.bool.config_classify_search)) {
-                    Intent searchintent = new Intent(this, SearchActivityExtend.class);
-                    startActivityIfNeeded(searchintent, -1);
-                    break;
-                }
+                Intent searchintent = new Intent(this, SearchConversationActivity.class);
+                startActivity(searchintent);
                 return true;
             case R.id.action_delete_all:
                 // The invalid threadId of -1 means all threads here.
@@ -1152,8 +1116,6 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             if (getResources().getBoolean(R.bool.config_classify_search)) {
                 Intent searchintent = new Intent(this, SearchActivityExtend.class);
                 startActivityIfNeeded(searchintent, -1);
-            } else if (mSearchView != null) {
-                mSearchView.setIconified(false);
             }
             return true;
         }

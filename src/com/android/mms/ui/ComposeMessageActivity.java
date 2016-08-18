@@ -523,7 +523,7 @@ public class ComposeMessageActivity extends Activity
 
     private WorkingMessage mWorkingMessage;         // The message currently being composed.
 
-    private AlertDialog mInvalidRecipientDialog;
+    private AlertDialog mInvalidRecipientDialog, mMsgDetailDialog;
 
     private boolean mWaitingForSubActivity;
     private boolean mInAsyncAddAttathProcess = false;
@@ -996,7 +996,7 @@ public class ComposeMessageActivity extends Activity
         }
         String messageDetails = MessageUtils.getMessageDetails(
                 ComposeMessageActivity.this, cursor, messageSize);
-        new AlertDialog.Builder(ComposeMessageActivity.this)
+        mMsgDetailDialog = new AlertDialog.Builder(ComposeMessageActivity.this)
                 .setTitle(R.string.message_details_title)
                 .setMessage(messageDetails)
                 .setCancelable(true)
@@ -2765,9 +2765,12 @@ public class ComposeMessageActivity extends Activity
         // Note that originalThreadId might be zero but if this is a draft and we save the
         // draft, ensureThreadId gets called async from WorkingMessage.asyncUpdateDraftSmsMessage
         // the thread will get a threadId behind the UI thread's back.
-        long originalThreadId = mConversation.getThreadId();
         long threadId = intent.getLongExtra(THREAD_ID, 0);
         Uri intentUri = intent.getData();
+        if (null == mConversation) {
+            mConversation = Conversation.get(this, intentUri, false);
+        }
+        long originalThreadId = mConversation.getThreadId();
         boolean sameThread = false;
         if (threadId > 0) {
             conversation = Conversation.get(this, threadId, false);
@@ -2776,7 +2779,9 @@ public class ComposeMessageActivity extends Activity
                 // We've got a draft. Make sure the working recipients are synched
                 // to the conversation so when we compare conversations later in this function,
                 // the compare will work.
-                mWorkingMessage.syncWorkingRecipients();
+                if (null != mWorkingMessage) {
+                    mWorkingMessage.syncWorkingRecipients();
+                }
             }
             // Get the "real" conversation based on the intentUri. The intentUri might specify
             // the conversation by a phone number or by a thread id. We'll typically get a threadId
@@ -3171,6 +3176,14 @@ public class ComposeMessageActivity extends Activity
             mMsgListAdapter.changeCursor(null);
             mMsgListAdapter.cancelBackgroundLoading();
         }
+        if (mInvalidRecipientDialog != null && mInvalidRecipientDialog.isShowing()) {
+            mInvalidRecipientDialog.dismiss();
+            mInvalidRecipientDialog = null;
+        }
+        if (mMsgDetailDialog != null && mMsgDetailDialog.isShowing()) {
+            mMsgDetailDialog.dismiss();
+            mMsgDetailDialog = null;
+        }
 
         if (mEnablePresence) {
             if (mIsBound) {
@@ -3361,7 +3374,9 @@ public class ComposeMessageActivity extends Activity
         if (intent != null) {
             currentClass = intent.getStringExtra(EXTRA_START_COMPOSE_FROM);
         }
-        if (NotificationConversationList.class.getSimpleName().equals(currentClass)) {
+        if(SearchConversationActivity.class.getSimpleName().equals(currentClass)){
+            super.onBackPressed();
+        } else if (NotificationConversationList.class.getSimpleName().equals(currentClass)) {
             startActivity(new Intent(this, NotificationConversationList.class));
         } else {
             startActivity(new Intent(this, ConversationList.class));
