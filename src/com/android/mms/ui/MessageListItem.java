@@ -1151,6 +1151,7 @@ public class MessageListItem extends ZoomMessageListItem implements
             mDownloadMessage = (TextView) findViewById(R.id.download_msg);
             if (getResources().getBoolean(R.bool.config_mms_cancelable)) {
                 mDownloading = (Button) findViewById(R.id.btn_cancel_download);
+                ((Button)mDownloading).setText(R.string.cancel_downloading);
                 mDownloading.setOnClickListener(new OnClickListener() {
                     @Override
                     public void onClick(View v) {
