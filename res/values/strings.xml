@@ -1192,4 +1192,5 @@
     <string name="notification_sim_info">SIM</string>
     <string name="notification_sim_divider" translatable="false">&#183;&#160;</string>
     <string name="deleting_sim_sms">Deleting SIM SMS\u2026</string>
+    <string name="send_via_invalid_sub">Current subscription is not active, cannot send message.</string>
 </resources>
