@@ -8063,6 +8063,9 @@ public class ComposeMessageActivity extends Activity
 
                 mode.getMenu().findItem(R.id.report).setVisible(isDeliveryReportMsg(position));
             }
+            MenuItem moremenu = mode.getMenu().findItem(R.id.more);
+            boolean hasVisible = moremenu.getSubMenu().hasVisibleItems();
+            moremenu.setVisible(hasVisible);
         }
 
         private MessageItem getMessageItemByPos(int position) {
