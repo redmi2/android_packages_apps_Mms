@@ -3705,10 +3705,6 @@ public class ComposeMessageActivity extends Activity
         }
 
         if (MmsConfig.getMmsEnabled() && mIsSmsEnabled) {
-            if (!isSubjectEditorVisible() && !mConversation.isGroupChat()) {
-                menu.add(0, MENU_ADD_SUBJECT, 0, R.string.add_subject).setIcon(
-                        R.drawable.ic_menu_edit);
-            }
             if (showAddAttachementButton()) {
                 mAddAttachmentButton.setVisibility(View.VISIBLE);
             }
