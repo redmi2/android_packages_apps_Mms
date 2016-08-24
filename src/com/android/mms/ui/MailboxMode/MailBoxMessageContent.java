@@ -328,12 +328,6 @@ public class MailBoxMessageContent extends Activity {
             menu.add(0, MENU_DELETE, 0, R.string.menu_delete_msg);
         }
 
-        if (isLockMessage()) {
-            menu.add(0, MENU_LOCK, 0, R.string.menu_unlock);
-        } else {
-            menu.add(0, MENU_LOCK, 0, R.string.menu_lock);
-        }
-
         if (!Contact.get(mMsgFrom, false).existsInDatabase()) {
             menu.add(0, MENU_SAVE_TO_CONTACT, 0, R.string.menu_add_to_contacts);
         }
