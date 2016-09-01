@@ -764,6 +764,7 @@ public class ComposeMessageActivity extends Activity
 
     private boolean mIsBurnMessage = false;
     private boolean isDisposeImage = false;
+    private boolean mIsEnableSelectCopy = false;
 
     private long mRcsForwardId = 0;
 
@@ -5640,6 +5641,8 @@ public class ComposeMessageActivity extends Activity
         mTextEditor.setOnEditorActionListener(this);
         mTextEditor.addTextChangedListener(mTextEditorWatcher);
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+        mIsEnableSelectCopy = sp.getBoolean(MessagingPreferenceActivity.ENABLE_SELECTABLE_COPY,
+                MessagingPreferenceActivity.ENABLE_SELECTABLE_COPY_DEFAULT_VALUE);
         float mTextSize = sp.getFloat(MessagingPreferenceActivity.ZOOM_MESSAGE,
                 MmsConfig.DEFAULT_FONT_SIZE);
         mTextEditor.setTextSize((int) mTextSize + ZoomMessageListItem.DIFF_FONT_SIZE);
@@ -5796,11 +5799,18 @@ public class ComposeMessageActivity extends Activity
         mMsgListView.setItemsCanFocus(false);
         mMsgListView.setVisibility((mSendDiscreetMode || MessageUtils.isMailboxMode())
                 ? View.INVISIBLE : View.VISIBLE);
-        mMsgListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mMsgListView.setOnItemClickListener(new OnItemDoubleClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemSingleClick(AdapterView<?> parent, View view, int position, long id) {
                 if (view != null && view instanceof MessageListItem) {
                     ((MessageListItem) view).onMessageListItemClick();
+                }
+            }
+
+            @Override
+            public void onItemDoubleClick(AdapterView<?> parent, View view, int position, long id) {
+                if (mIsEnableSelectCopy && view != null && view instanceof MessageListItem) {
+                    ((MessageListItem) view).startSelectableCopyActivity();
                 }
             }
         });
