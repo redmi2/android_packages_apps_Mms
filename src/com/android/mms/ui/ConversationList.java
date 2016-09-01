@@ -1456,7 +1456,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                     }
                 }
                 // Make sure the conversation cache reflects the threads in the DB.
-                Conversation.init(ConversationList.this);
+                Conversation.init(getApplicationContext());
 
                 // Update the notification for new messages since they
                 // may be deleted.
