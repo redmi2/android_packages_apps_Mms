@@ -1668,7 +1668,7 @@ public class ComposeMessageActivity extends Activity
                 // Don't warn the user on every character they type when they're over the limit,
                 // only when the actual # of recipients changes.
                 mLastRecipientCount = recipientCount;
-                if (tooMany) {
+                if (tooMany && (index > 0)) {
                     String tooManyMsg = getString(R.string.too_many_recipients, recipientCount,
                             recipientLimit);
                     Toast.makeText(ComposeMessageActivity.this,
