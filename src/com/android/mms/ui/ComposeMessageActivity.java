@@ -6668,7 +6668,7 @@ public class ComposeMessageActivity extends Activity
                 }
 
                 // Make sure the conversation cache reflects the threads in the DB.
-                Conversation.init(ComposeMessageActivity.this);
+                Conversation.init(getApplicationContext());
                 finish();
             } else if (token == DELETE_MESSAGE_TOKEN) {
                 // Check to see if we just deleted the last message
