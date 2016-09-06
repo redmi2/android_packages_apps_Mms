@@ -121,4 +121,6 @@
     <bool name="config_regional_presence_enable">false</bool>
     <!-- Flag indicating the whether show service provider name on message list item -->
     <bool name="config_show_spn_on_list_item">false</bool>
+
+    <bool name="config_resend_to_edit">false</bool>
 </resources>
