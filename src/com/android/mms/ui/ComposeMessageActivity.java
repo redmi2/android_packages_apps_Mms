@@ -2526,6 +2526,10 @@ public class ComposeMessageActivity extends Activity
         if (MessageUtils.checkPermissionsIfNeeded(this)) {
             return;
         }
+        if (MessageUtils.checkIsPhoneMemoryFull(this)) {
+            ComposeMessageActivity.this.finish();
+            return;
+        }
         resetConfiguration(getResources().getConfiguration());
         final Window window = ComposeMessageActivity.this.getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
