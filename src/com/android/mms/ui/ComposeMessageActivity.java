@@ -2526,6 +2526,10 @@ public class ComposeMessageActivity extends Activity
         if (MessageUtils.checkPermissionsIfNeeded(this)) {
             return;
         }
+        if (MessageUtils.checkIsPhoneMemoryFull(this)) {
+            ComposeMessageActivity.this.finish();
+            return;
+        }
         resetConfiguration(getResources().getConfiguration());
         final Window window = ComposeMessageActivity.this.getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
@@ -7293,8 +7297,14 @@ public class ComposeMessageActivity extends Activity
                 RcsMessageOpenUtils.retransmisMessage(mMsgListAdapter.getCachedMessageItem(
                         c.getString(COLUMN_MSG_TYPE), c.getLong(COLUMN_ID), c));
             } else {
-                resendMessage(mMsgListAdapter.getCachedMessageItem(c.getString(COLUMN_MSG_TYPE),
-                        c.getLong(COLUMN_ID), c));
+                MessageItem item = mMsgListAdapter.getCachedMessageItem(
+                        c.getString(COLUMN_MSG_TYPE), c.getLong(COLUMN_ID), c);
+                if (getResources().getBoolean(R.bool.config_resend_to_edit)) {
+                    editMessageItem(item);
+                    drawBottomPanel();
+                } else {
+                    resendMessage(item);
+                }
             }
         }
 
