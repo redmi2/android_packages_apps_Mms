@@ -423,9 +423,11 @@ public class MessageListItem extends ZoomMessageListItem implements
             mBodyTextView.setText(formatMessage(mMessageItem, null,
                     mMessageItem.mSubId, mMessageItem.mSubject,
                     mMessageItem.mHighlight, mMessageItem.mTextContentType));
+            mBodyTextView.setVisibility(View.VISIBLE);
 
             mDateView.setText(buildTimestampLine(msgSizeText + ", "
                     + mMessageItem.mTimestamp));
+            mDateView.setVisibility(View.VISIBLE);
         }
 
         updateSimIndicatorView(mMessageItem.mSubId);
