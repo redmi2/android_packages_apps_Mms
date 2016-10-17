@@ -6136,7 +6136,7 @@ public class ComposeMessageActivity extends Activity
 
         // Close the soft on-screen keyboard if we're in landscape mode so the user can see the
         // conversation.
-        if (mIsLandscape) {
+        if (mIsLandscape || isInMultiWindowMode()) {
             hideKeyboard();
         }
 
