@@ -3361,14 +3361,6 @@ public class ComposeMessageActivity extends Activity
         if (!mWorkingMessage.isWorthSaving()) {
             exit.run();
             mWorkingMessage.discard();
-            new Thread() {
-                @Override
-                public void run() {
-                    // Remove the obsolete threads in database.
-                    getContentResolver().delete(
-                            android.provider.Telephony.Threads.OBSOLETE_THREADS_URI, null, null);
-                }
-            }.start();
             return;
         }
 
@@ -5348,9 +5340,15 @@ public class ComposeMessageActivity extends Activity
             } else {
                 LogTag.debugD("send MMS button clicked");
             }
-            if (MessageUtils.pupConnectWifiAlertDialog(getContext())) {
-                LogTag.debugD("not send for pupConnectWifiAlertDialog");
-                return ;
+            try {
+                if (MessageUtils.isWfcUnavailable(getContext())) {
+                    MessageUtils.pupConnectWifiAlertDialog(getContext());
+                    MessageUtils.pupConnectWifiNotification(getContext());
+                    LogTag.debugD("not send for pupConnectWifiAlertDialog");
+                    return;
+                }
+            } catch (SettingNotFoundException e) {
+                e.printStackTrace();
             }
             if (mShowTwoButtons) {
                 confirmSendMessageIfNeeded(SubscriptionManager.getSubId(PhoneConstants.SUB1)[0]);
@@ -6136,7 +6134,7 @@ public class ComposeMessageActivity extends Activity
 
         // Close the soft on-screen keyboard if we're in landscape mode so the user can see the
         // conversation.
-        if (mIsLandscape) {
+        if (mIsLandscape || isInMultiWindowMode()) {
             hideKeyboard();
         }
 
