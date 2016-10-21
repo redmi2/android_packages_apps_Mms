@@ -4580,9 +4580,13 @@ public class ComposeMessageActivity extends Activity
         // The EXTRA_PHONE_URIS stores the phone's urls that were selected by user in the
         // multiple phone picker.
         Bundle bundle = data.getExtras().getBundle("result");
+        if (null == bundle) {
+            bundle = new Bundle();
+        }
+        Bundle onlyNumberBundle = data.getExtras().getBundle("result_only_number");
+        final Bundle numberBundle = (null != onlyNumberBundle) ? onlyNumberBundle : (new Bundle());
         final Set<String> keySet = bundle.keySet();
         final int recipientCount = (keySet != null) ? keySet.size() : 0;
-        final Bundle numberBundle = data.getExtras().getBundle("result_only_number");
         final Set<String> numberKeySet = numberBundle.keySet();
         final int numberRecipientCount = (numberKeySet != null) ? numberKeySet.size() : 0;
 
