@@ -510,7 +510,8 @@ public class MessageListItem extends ZoomMessageListItem implements
 
     private void updateAvatarView(String addr, boolean isSelf) {
         mAvatar.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        boolean avatarVisible = !mMessageItem.getCanClusterWithPreviousMessage();
+        boolean avatarVisible = isSimCardMessage() ||
+                !mMessageItem.getCanClusterWithPreviousMessage();
         Drawable backgroundDrawable = null;
         Drawable avatarDrawable;
 
